@@ -358,6 +358,56 @@ function AdminPermissionEditor({ admin, onSaved }) {
   )
 }
 
+function AdminPasswordEditor({ adminName, onSaved }) {
+  const [password, setPassword] = useState('')
+  const [showPw, setShowPw] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  async function handleSave() {
+    if (!password) return
+    setSaving(true)
+    try {
+      const res = await apiFetchOrLogout(`/api/admin/users/${encodeURIComponent(adminName)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      })
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        alert(d.error || 'Failed to save.')
+        return
+      }
+      setPassword('')
+      onSaved()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div style={{ padding: '10px 16px 14px', background: 'var(--sidebar-bg)', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ position: 'relative', flex: 1, maxWidth: 280 }}>
+        <input
+          className="form-input"
+          type={showPw ? 'text' : 'password'}
+          placeholder="New password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          style={{ width: '100%', paddingRight: 32 }}
+          onKeyDown={e => e.key === 'Enter' && handleSave()}
+          autoFocus
+        />
+        <button type="button" onClick={() => setShowPw(v => !v)} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 14, padding: 0 }} title={showPw ? 'Hide' : 'Show'}>
+          {showPw ? '🙈' : '👁'}
+        </button>
+      </div>
+      <button className="btn-primary" style={{ fontSize: 12, padding: '4px 14px' }} onClick={handleSave} disabled={saving || !password}>
+        {saving ? 'Saving…' : 'Save'}
+      </button>
+    </div>
+  )
+}
+
 function AdminsTab() {
   const [admins, setAdmins] = useState([])
   const [loading, setLoading] = useState(true)
@@ -366,6 +416,7 @@ function AdminsTab() {
   const [showPw, setShowPw] = useState(false)
   const [adding, setAdding] = useState(false)
   const [expanded, setExpanded] = useState(null)
+  const [expandedPw, setExpandedPw] = useState(null)
 
   useEffect(() => { fetchAdmins() }, [])
 
@@ -492,9 +543,16 @@ function AdminsTab() {
                   <button
                     className="btn-ghost"
                     style={{ fontSize: 12, padding: '4px 10px' }}
-                    onClick={() => setExpanded(v => v === admin.name ? null : admin.name)}
+                    onClick={() => { setExpanded(v => v === admin.name ? null : admin.name); setExpandedPw(null) }}
                   >
                     {expanded === admin.name ? 'Done' : 'Permissions'}
+                  </button>
+                  <button
+                    className="btn-ghost"
+                    style={{ fontSize: 12, padding: '4px 10px' }}
+                    onClick={() => { setExpandedPw(v => v === admin.name ? null : admin.name); setExpanded(null) }}
+                  >
+                    {expandedPw === admin.name ? 'Cancel' : 'Change Password'}
                   </button>
                   <button className="btn-ghost" style={{ fontSize: 12, padding: '4px 10px', color: 'var(--danger, #e05)' }} onClick={() => handleRemove(admin.name)}>
                     Remove
@@ -503,6 +561,9 @@ function AdminsTab() {
               </div>
               {expanded === admin.name && (
                 <AdminPermissionEditor admin={admin} onSaved={async () => { await fetchAdmins(); setExpanded(null) }} />
+              )}
+              {expandedPw === admin.name && (
+                <AdminPasswordEditor adminName={admin.name} onSaved={() => setExpandedPw(null)} />
               )}
             </li>
           ))}
