@@ -1,0 +1,93 @@
+{
+  "nodes": [
+    {
+      "id": "AUTH-001",
+      "label": "Authentication System",
+      "type": "prd",
+      "meta": {
+        "version": "1.0.0",
+        "owner": "platform-team",
+        "status": "draft",
+        "path": "prds\\AUTH-001.md"
+      }
+    },
+    {
+      "id": "USER-001",
+      "label": "User Profile Service",
+      "type": "prd",
+      "meta": {
+        "version": "1.0.0",
+        "owner": "identity-team",
+        "status": "draft",
+        "path": "prds\\USER-001.md"
+      }
+    },
+    {
+      "id": "API-004",
+      "label": "API-004",
+      "type": "prd",
+      "meta": {}
+    },
+    {
+      "id": "proj:aipm",
+      "label": "AIPM",
+      "type": "project",
+      "meta": {
+        "slug": "aipm",
+        "description": "",
+        "createdAt": "2026-05-19T07:08:50.457Z"
+      }
+    },
+    {
+      "id": "ver:aipm:1.0.0",
+      "label": "v1.0.0",
+      "type": "version",
+      "meta": {
+        "project": "aipm",
+        "version": "1.0.0",
+        "createdAt": "2026-05-19T07:08:50.458Z",
+        "updatedAt": ""
+      }
+    },
+    {
+      "id": "prop:aipm:prop-1779174565744",
+      "label": "Sanatan Sansaar User",
+      "type": "proposal:pending",
+      "meta": {
+        "project": "aipm",
+        "status": "pending",
+        "description": "",
+        "createdAt": "2026-05-19T07:09:25.744Z",
+        "promotedToVersion": null
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "AUTH-001",
+      "to": "USER-001",
+      "type": "depends_on"
+    },
+    {
+      "from": "AUTH-001",
+      "to": "API-004",
+      "type": "depends_on"
+    },
+    {
+      "from": "proj:aipm",
+      "to": "ver:aipm:1.0.0",
+      "type": "has_version"
+    },
+    {
+      "from": "proj:aipm",
+      "to": "prop:aipm:prop-1779174565744",
+      "type": "has_proposal"
+    }
+  ],
+  "meta": {
+    "projects": 1,
+    "versions": 1,
+    "proposals": 1,
+    "prds": 3
+  }
+}

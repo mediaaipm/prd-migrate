@@ -1,0 +1,31 @@
+const { getProject, updateProject, deleteProject } = require('../../../lib/prd-store');
+const { logAudit } = require('../../../lib/audit-log');
+const { requirePermission, requireProjectAccess } = require('../../../lib/require-permission');
+const { requireSuperAdmin } = require('../../../lib/require-superadmin');
+
+export default async function handler(req, res) {
+  const { slug } = req.query;
+  if (!await requireProjectAccess(slug, req, res)) return;
+  if (req.method === 'GET') {
+    const project = await getProject(slug);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    await logAudit(req, 'view_project', 'project', { slug });
+    return res.status(200).json(project);
+  }
+  if (req.method === 'PUT') {
+    if (!requirePermission('project:update')(req, res)) return;
+    const { name, description } = req.body || {};
+    const project = await updateProject(slug, { name, description });
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    await logAudit(req, 'update_project', 'project', { slug, name });
+    return res.status(200).json(project);
+  }
+  if (req.method === 'DELETE') {
+    if (!requireSuperAdmin(req, res)) return;
+    const ok = await deleteProject(slug);
+    if (!ok) return res.status(404).json({ error: 'Project not found' });
+    await logAudit(req, 'delete_project', 'project', { slug });
+    return res.status(200).json({ deleted: true });
+  }
+  res.status(405).json({ error: 'Method not allowed' });
+}

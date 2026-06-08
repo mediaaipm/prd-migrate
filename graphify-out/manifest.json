@@ -1,0 +1,347 @@
+{
+  "C:\\HVWork\\PRD_Manager\\next.config.js": {
+    "mtime": 1779196393.2395225,
+    "ast_hash": "73c8846edc2f5021b1337d3a2be52204",
+    "semantic_hash": "73c8846edc2f5021b1337d3a2be52204"
+  },
+  "C:\\HVWork\\PRD_Manager\\api\\save_prd.js": {
+    "mtime": 1778943264.7205095,
+    "ast_hash": "3c408bebb34b6bb0df83b6d95baa1b01",
+    "semantic_hash": "3c408bebb34b6bb0df83b6d95baa1b01"
+  },
+  "C:\\HVWork\\PRD_Manager\\api\\webhook.js": {
+    "mtime": 1778943264.7205095,
+    "ast_hash": "68be74a9e338126a5b3ff0bcaf775bb3",
+    "semantic_hash": "68be74a9e338126a5b3ff0bcaf775bb3"
+  },
+  "C:\\HVWork\\PRD_Manager\\components\\DiffViewer.js": {
+    "mtime": 1779187582.6988616,
+    "ast_hash": "1c20521d81c7ad05ab60121c965c2b3c",
+    "semantic_hash": "1c20521d81c7ad05ab60121c965c2b3c"
+  },
+  "C:\\HVWork\\PRD_Manager\\components\\Editor.js": {
+    "mtime": 1779280875.0515335,
+    "ast_hash": "b38c967f8ae8390d57bbe904b0709174",
+    "semantic_hash": "b38c967f8ae8390d57bbe904b0709174"
+  },
+  "C:\\HVWork\\PRD_Manager\\components\\Nav.js": {
+    "mtime": 1779359627.21507,
+    "ast_hash": "3628c4385681fa848107fbd804655b60",
+    "semantic_hash": "3628c4385681fa848107fbd804655b60"
+  },
+  "C:\\HVWork\\PRD_Manager\\components\\TaskTree.js": {
+    "mtime": 1779357187.002103,
+    "ast_hash": "062635ddfbb8c88c3e3586bed7c04caf",
+    "semantic_hash": "062635ddfbb8c88c3e3586bed7c04caf"
+  },
+  "C:\\HVWork\\PRD_Manager\\lib\\api-fetch.js": {
+    "mtime": 1779356952.207508,
+    "ast_hash": "b78747a4f1a50c0b1cab9493702fe5b2",
+    "semantic_hash": "b78747a4f1a50c0b1cab9493702fe5b2"
+  },
+  "C:\\HVWork\\PRD_Manager\\lib\\audit-log.js": {
+    "mtime": 1779350671.2260118,
+    "ast_hash": "9817daed1c4f6b5ab6e599f73340a3aa",
+    "semantic_hash": "9817daed1c4f6b5ab6e599f73340a3aa"
+  },
+  "C:\\HVWork\\PRD_Manager\\lib\\prd-store.js": {
+    "mtime": 1779193257.0562959,
+    "ast_hash": "eba0947d8465d1c863a83c1df2de21ec",
+    "semantic_hash": "eba0947d8465d1c863a83c1df2de21ec"
+  },
+  "C:\\HVWork\\PRD_Manager\\lib\\task-store.js": {
+    "mtime": 1779202975.5365427,
+    "ast_hash": "0754d474571867e88da164b3fbdf1dc7",
+    "semantic_hash": "0754d474571867e88da164b3fbdf1dc7"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\admin.js": {
+    "mtime": 1779357097.2471502,
+    "ast_hash": "fadc9e33c4c874fdc898d7879e06d601",
+    "semantic_hash": "fadc9e33c4c874fdc898d7879e06d601"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\editor.js": {
+    "mtime": 1779174365.9757357,
+    "ast_hash": "fdc3405404211d946b4a90b7dfa3134d",
+    "semantic_hash": "fdc3405404211d946b4a90b7dfa3134d"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\index.js": {
+    "mtime": 1779357018.0049577,
+    "ast_hash": "41a8ee3bd0d4be1ad2130c7ffe576b7a",
+    "semantic_hash": "41a8ee3bd0d4be1ad2130c7ffe576b7a"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\_app.js": {
+    "mtime": 1779356947.4313958,
+    "ast_hash": "cb65208a626228edf5735c8fc14ab824",
+    "semantic_hash": "cb65208a626228edf5735c8fc14ab824"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\api\\assignees\\index.js": {
+    "mtime": 1779280856.1142387,
+    "ast_hash": "aa765195e872ee13a40b72d53c0114e8",
+    "semantic_hash": "aa765195e872ee13a40b72d53c0114e8"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\api\\assignees\\[name].js": {
+    "mtime": 1779356998.0853882,
+    "ast_hash": "d94ff5cea7ff3ff94077f63731490832",
+    "semantic_hash": "d94ff5cea7ff3ff94077f63731490832"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\api\\audit\\index.js": {
+    "mtime": 1779357005.2865217,
+    "ast_hash": "77b4ad5fb398a81ae7502473e9e3acba",
+    "semantic_hash": "77b4ad5fb398a81ae7502473e9e3acba"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\api\\auth\\login.js": {
+    "mtime": 1779356942.30066,
+    "ast_hash": "669781a37ab183157085cbf67ee03939",
+    "semantic_hash": "669781a37ab183157085cbf67ee03939"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\api\\projects\\index.js": {
+    "mtime": 1779280745.408594,
+    "ast_hash": "a7fcf301a2158e24c2e2949b34a9fb98",
+    "semantic_hash": "a7fcf301a2158e24c2e2949b34a9fb98"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\api\\projects\\[slug].js": {
+    "mtime": 1779356959.9718347,
+    "ast_hash": "661b93b139118b9b1074860f41ae0981",
+    "semantic_hash": "661b93b139118b9b1074860f41ae0981"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\api\\projects\\[slug]\\diff.js": {
+    "mtime": 1779350062.8979626,
+    "ast_hash": "b0ffb7e1f65235ca7ee2d1ebc69fd74b",
+    "semantic_hash": "b0ffb7e1f65235ca7ee2d1ebc69fd74b"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\api\\projects\\[slug]\\proposals\\index.js": {
+    "mtime": 1779280784.7415316,
+    "ast_hash": "cb3b51c9bf7f209634fc0d7dbd0495b1",
+    "semantic_hash": "cb3b51c9bf7f209634fc0d7dbd0495b1"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\api\\projects\\[slug]\\proposals\\[id].js": {
+    "mtime": 1779356969.4409847,
+    "ast_hash": "ea804db32dbf6dbf4a564b5bd69a5676",
+    "semantic_hash": "ea804db32dbf6dbf4a564b5bd69a5676"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\api\\projects\\[slug]\\proposals\\[id]\\promote.js": {
+    "mtime": 1779280801.1038713,
+    "ast_hash": "d89bbe801b059728b794fc870c43b8f6",
+    "semantic_hash": "d89bbe801b059728b794fc870c43b8f6"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\api\\projects\\[slug]\\tasks\\index.js": {
+    "mtime": 1779280811.5356138,
+    "ast_hash": "565771a9ea57ab4809461378cdea1654",
+    "semantic_hash": "565771a9ea57ab4809461378cdea1654"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\api\\projects\\[slug]\\tasks\\[taskId].js": {
+    "mtime": 1779356981.151093,
+    "ast_hash": "6e4e73059f27f36e6ce16fb5dcca5106",
+    "semantic_hash": "6e4e73059f27f36e6ce16fb5dcca5106"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\api\\projects\\[slug]\\versions\\index.js": {
+    "mtime": 1779280768.412825,
+    "ast_hash": "88f77856401602facf9962fdd124dfd1",
+    "semantic_hash": "88f77856401602facf9962fdd124dfd1"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\api\\projects\\[slug]\\versions\\[version].js": {
+    "mtime": 1779350050.2347636,
+    "ast_hash": "cde663692363544056c7acf5a05d49f4",
+    "semantic_hash": "cde663692363544056c7acf5a05d49f4"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\api\\projects\\[slug]\\versions\\[version]\\tasks\\index.js": {
+    "mtime": 1779280835.3372514,
+    "ast_hash": "5d3503bfb6f78dbff7727c01e572fcf3",
+    "semantic_hash": "5d3503bfb6f78dbff7727c01e572fcf3"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\api\\projects\\[slug]\\versions\\[version]\\tasks\\[taskId].js": {
+    "mtime": 1779356991.8398337,
+    "ast_hash": "151446345090ed32b43bcfa2e1aedce2",
+    "semantic_hash": "151446345090ed32b43bcfa2e1aedce2"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\projects\\[slug]\\diff.js": {
+    "mtime": 1779187605.4540176,
+    "ast_hash": "a04370add193fe7ede79676251835e34",
+    "semantic_hash": "a04370add193fe7ede79676251835e34"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\projects\\[slug]\\index.js": {
+    "mtime": 1779357031.6914144,
+    "ast_hash": "34ad995254aa622188829c3e2246e12b",
+    "semantic_hash": "34ad995254aa622188829c3e2246e12b"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\projects\\[slug]\\tasks.js": {
+    "mtime": 1779542857.0990632,
+    "ast_hash": "a2ee2c9612cd43c1f1025d46538bf611",
+    "semantic_hash": "a2ee2c9612cd43c1f1025d46538bf611"
+  },
+  "C:\\HVWork\\PRD_Manager\\scripts\\generate_graph.py": {
+    "mtime": 1779177285.8676727,
+    "ast_hash": "4a273eaa64843777f7eb4d92e8269c67",
+    "semantic_hash": "4a273eaa64843777f7eb4d92e8269c67"
+  },
+  "C:\\HVWork\\PRD_Manager\\scripts\\seed-kv.js": {
+    "mtime": 1779193270.4225447,
+    "ast_hash": "d388784f9cf3e2ad308157b8f80fc2e6",
+    "semantic_hash": "d388784f9cf3e2ad308157b8f80fc2e6"
+  },
+  "C:\\HVWork\\PRD_Manager\\scripts\\seed-tasks.js": {
+    "mtime": 1779181483.3859403,
+    "ast_hash": "e6ac09ebe97f986467d4583fcdf2a122",
+    "semantic_hash": "e6ac09ebe97f986467d4583fcdf2a122"
+  },
+  "C:\\HVWork\\PRD_Manager\\dev-err.txt": {
+    "mtime": 1779181830.750445,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "C:\\HVWork\\PRD_Manager\\dev-out.txt": {
+    "mtime": 1779181830.7488503,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "C:\\HVWork\\PRD_Manager\\PRD.md": {
+    "mtime": 1778941996.0818875,
+    "ast_hash": "5eb9aa1c5749309858198684651dd2f0",
+    "semantic_hash": "5eb9aa1c5749309858198684651dd2f0"
+  },
+  "C:\\HVWork\\PRD_Manager\\README-graphify.md": {
+    "mtime": 1778943264.6994061,
+    "ast_hash": "aeabdf2937a49fba9491d20a942d7187",
+    "semantic_hash": "aeabdf2937a49fba9491d20a942d7187"
+  },
+  "C:\\HVWork\\PRD_Manager\\README-ui.md": {
+    "mtime": 1778943396.5472534,
+    "ast_hash": "c3254f27c18bde4bb1489f885e7e215d",
+    "semantic_hash": "c3254f27c18bde4bb1489f885e7e215d"
+  },
+  "C:\\HVWork\\PRD_Manager\\requirements.txt": {
+    "mtime": 1778943591.8317122,
+    "ast_hash": "76ad3722db4fd7e9cb28245ddfe9b959",
+    "semantic_hash": "76ad3722db4fd7e9cb28245ddfe9b959"
+  },
+  "C:\\HVWork\\PRD_Manager\\docs\\github-schema.md": {
+    "mtime": 1778943096.638412,
+    "ast_hash": "b8d449da9f42963458178f29c11234c5",
+    "semantic_hash": "b8d449da9f42963458178f29c11234c5"
+  },
+  "C:\\HVWork\\PRD_Manager\\graphify\\graph.html": {
+    "mtime": 1778942666.8294425,
+    "ast_hash": "7905911978fd765deab141d6b0a782db",
+    "semantic_hash": "7905911978fd765deab141d6b0a782db"
+  },
+  "C:\\HVWork\\PRD_Manager\\prds\\AUTH-001.md": {
+    "mtime": 1778943757.3626947,
+    "ast_hash": "7665939b229d37d70e470ab2a4873d80",
+    "semantic_hash": "7665939b229d37d70e470ab2a4873d80"
+  },
+  "C:\\HVWork\\PRD_Manager\\prds\\USER-001.md": {
+    "mtime": 1778943759.8312347,
+    "ast_hash": "625b3f4451a451ff924afa8f43264f2c",
+    "semantic_hash": "625b3f4451a451ff924afa8f43264f2c"
+  },
+  "C:\\HVWork\\PRD_Manager\\public\\graphify\\graph.html": {
+    "mtime": 1779177251.7209592,
+    "ast_hash": "8441c8cd26e70f79798d4bcfb71e0b01",
+    "semantic_hash": "8441c8cd26e70f79798d4bcfb71e0b01"
+  },
+  "C:\\HVWork\\PRD_Manager\\.graphify_ast.json": {
+    "mtime": 1779705013.980677,
+    "ast_hash": "44ca6c9960775337cde104bd32a76c4a",
+    "semantic_hash": "44ca6c9960775337cde104bd32a76c4a"
+  },
+  "C:\\HVWork\\PRD_Manager\\.graphify_detect.json": {
+    "mtime": 1779704979.5540133,
+    "ast_hash": "1fcd8a82d38ea1121cb01bb386e67387",
+    "semantic_hash": "1fcd8a82d38ea1121cb01bb386e67387"
+  },
+  "C:\\HVWork\\PRD_Manager\\package.json": {
+    "mtime": 1779192294.4787147,
+    "ast_hash": "d12f659da0aa0d13afda3c7318994506",
+    "semantic_hash": "d12f659da0aa0d13afda3c7318994506"
+  },
+  "C:\\HVWork\\PRD_Manager\\.claude\\settings.local.json": {
+    "mtime": 1779706554.9977615,
+    "ast_hash": "244e7fb79e4e888a3bd12e71b34a934c",
+    "semantic_hash": "244e7fb79e4e888a3bd12e71b34a934c"
+  },
+  "C:\\HVWork\\PRD_Manager\\components\\KanbanBoard.js": {
+    "mtime": 1779515990.3631022,
+    "ast_hash": "3aad44b755846e254f51f3e01767a5db",
+    "semantic_hash": "3aad44b755846e254f51f3e01767a5db"
+  },
+  "C:\\HVWork\\PRD_Manager\\graphify\\graph.json": {
+    "mtime": 1779177291.3329828,
+    "ast_hash": "b45bbd7bf5d7d1093c1add51523c9c4c",
+    "semantic_hash": "b45bbd7bf5d7d1093c1add51523c9c4c"
+  },
+  "C:\\HVWork\\PRD_Manager\\lib\\require-admin.js": {
+    "mtime": 1779356901.884391,
+    "ast_hash": "1da200b0c0febda8c4efb8f5b6edb577",
+    "semantic_hash": "1da200b0c0febda8c4efb8f5b6edb577"
+  },
+  "C:\\HVWork\\PRD_Manager\\lib\\snapshot-store.js": {
+    "mtime": 1779356912.0346527,
+    "ast_hash": "79bdd326afd23c15e88a5ae95c762b0f",
+    "semantic_hash": "79bdd326afd23c15e88a5ae95c762b0f"
+  },
+  "C:\\HVWork\\PRD_Manager\\lib\\sprint-store.js": {
+    "mtime": 1779531382.0893462,
+    "ast_hash": "609c3c9f7b615a0ff3322910dbd4596f",
+    "semantic_hash": "609c3c9f7b615a0ff3322910dbd4596f"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\dashboard.js": {
+    "mtime": 1779528105.595343,
+    "ast_hash": "b3be427a3fcfd6166fe91d6277cce941",
+    "semantic_hash": "b3be427a3fcfd6166fe91d6277cce941"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\api\\auth\\logout.js": {
+    "mtime": 1779350032.9252212,
+    "ast_hash": "0362a727243427611e410da522207f80",
+    "semantic_hash": "0362a727243427611e410da522207f80"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\api\\dashboard\\index.js": {
+    "mtime": 1779695889.1363263,
+    "ast_hash": "77f88c875b25099f9b6a0a173c051b04",
+    "semantic_hash": "77f88c875b25099f9b6a0a173c051b04"
+  },
+  "C:\\HVWork\\PRD_Manager\\pages\\api\\projects\\[slug]\\sprint.js": {
+    "mtime": 1779531395.9733205,
+    "ast_hash": "15667aa9523b2eede594eb4fc84a710a",
+    "semantic_hash": "15667aa9523b2eede594eb4fc84a710a"
+  },
+  "C:\\HVWork\\PRD_Manager\\prds\\aipm\\meta.json": {
+    "mtime": 1779174530.4557352,
+    "ast_hash": "5a72c6c303a9388063ef6884e5b37c36",
+    "semantic_hash": "5a72c6c303a9388063ef6884e5b37c36"
+  },
+  "C:\\HVWork\\PRD_Manager\\prds\\aipm\\versions\\1.0.0.json": {
+    "mtime": 1779174530.4557352,
+    "ast_hash": "f6a0a42a7d8d84150ed3c95ddc6267ef",
+    "semantic_hash": "f6a0a42a7d8d84150ed3c95ddc6267ef"
+  },
+  "C:\\HVWork\\PRD_Manager\\prds\\sanatan-sansaar\\meta.json": {
+    "mtime": 1779177550.4522924,
+    "ast_hash": "488c15cb6faa8233361c3363de6c4c16",
+    "semantic_hash": "488c15cb6faa8233361c3363de6c4c16"
+  },
+  "C:\\HVWork\\PRD_Manager\\prds\\sanatan-sansaar\\tasks.json": {
+    "mtime": 1779187606.3316226,
+    "ast_hash": "136a47d03238ed5d1f2b133f1d9d4dfd",
+    "semantic_hash": "136a47d03238ed5d1f2b133f1d9d4dfd"
+  },
+  "C:\\HVWork\\PRD_Manager\\prds\\sanatan-sansaar\\versions\\1.0.0-tasks.json": {
+    "mtime": 1779186692.609573,
+    "ast_hash": "faa022910cd7a14eec672deaa44b38ba",
+    "semantic_hash": "faa022910cd7a14eec672deaa44b38ba"
+  },
+  "C:\\HVWork\\PRD_Manager\\prds\\sanatan-sansaar\\versions\\1.0.0.json": {
+    "mtime": 1779177714.1395817,
+    "ast_hash": "69eed8f571318b7f93b3dbd27cb8fc17",
+    "semantic_hash": "69eed8f571318b7f93b3dbd27cb8fc17"
+  },
+  "C:\\HVWork\\PRD_Manager\\public\\graphify\\graph.json": {
+    "mtime": 1779177291.3329828,
+    "ast_hash": "b45bbd7bf5d7d1093c1add51523c9c4c",
+    "semantic_hash": "b45bbd7bf5d7d1093c1add51523c9c4c"
+  },
+  "C:\\HVWork\\PRD_Manager\\README.md": {
+    "mtime": 1779528564.5875132,
+    "ast_hash": "cfa10e157ab8af135b9b6f6c36357fdf",
+    "semantic_hash": "cfa10e157ab8af135b9b6f6c36357fdf"
+  }
+}

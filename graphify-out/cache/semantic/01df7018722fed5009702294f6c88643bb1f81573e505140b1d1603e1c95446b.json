@@ -1,0 +1,1 @@
+{"nodes": [{"id": "req_pyyaml", "label": "PyYAML>=6.0 Dependency", "file_type": "document", "source_file": "requirements.txt", "source_location": "Line 1", "source_url": null, "captured_at": null, "author": null, "contributor": null}], "edges": [], "hyperedges": []}

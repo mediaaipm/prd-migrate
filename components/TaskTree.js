@@ -1,0 +1,414 @@
+import { useState, useEffect } from 'react'
+import { apiFetch } from '../lib/api-fetch'
+
+const STATUS_CYCLE = ['todo', 'in-progress', 'done']
+const STATUS_LABEL = { 'todo': 'To Do', 'in-progress': 'In Progress', 'done': 'Done' }
+const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626' }
+const PRIORITY_LABEL = { low: 'Low', medium: 'Med', high: 'High' }
+
+function buildTree(tasks) {
+  const byId = {}
+  const roots = []
+  tasks.forEach(t => { byId[t.id] = { ...t, children: [] } })
+  tasks.forEach(t => {
+    if (t.parentId && byId[t.parentId]) byId[t.parentId].children.push(byId[t.id])
+    else roots.push(byId[t.id])
+  })
+  function sort(nodes) {
+    nodes.sort((a, b) => a.order - b.order)
+    nodes.forEach(n => sort(n.children))
+  }
+  sort(roots)
+  return roots
+}
+
+function blankForm() {
+  return { title: '', description: '', status: 'todo', priority: 'medium', assignees: [], startDate: '', dueDate: '', numberOverride: '' }
+}
+
+function TaskForm({ initial, onSave, onCancel, label, assignees = [] }) {
+  const [form, setForm] = useState(initial || blankForm())
+  const f = (k) => e => setForm(p => ({ ...p, [k]: e.target.value }))
+
+  function toggleAssignee(name) {
+    setForm(p => ({
+      ...p,
+      assignees: p.assignees.includes(name)
+        ? p.assignees.filter(a => a !== name)
+        : [...p.assignees, name]
+    }))
+  }
+
+  return (
+    <div className="task-form">
+      <div className="task-form-row">
+        <input className="form-input" placeholder="Task title *" value={form.title} onChange={f('title')} autoFocus required />
+        <input className="form-input task-num-input" placeholder="# override (e.g. 1.2.3)" value={form.numberOverride} onChange={f('numberOverride')} title="Custom number (leave blank for auto)" />
+      </div>
+      <textarea className="form-input task-desc-input" placeholder="Description (optional)" value={form.description} onChange={f('description')} rows={2} />
+      <div className="task-form-row">
+        <select className="form-input" value={form.status} onChange={f('status')}>
+          <option value="todo">To Do</option>
+          <option value="in-progress">In Progress</option>
+          <option value="done">Done</option>
+        </select>
+        <select className="form-input" value={form.priority} onChange={f('priority')}>
+          <option value="low">Low priority</option>
+          <option value="medium">Medium priority</option>
+          <option value="high">High priority</option>
+        </select>
+      </div>
+      {assignees.length > 0 && (
+        <div className="task-assignees-selector">
+          <span className="task-assignees-label">Assignees:</span>
+          <div className="task-assignees-list">
+            {assignees.map(a => (
+              <label key={a.name} className={`task-assignee-chip ${form.assignees.includes(a.name) ? 'selected' : ''}`}>
+                <input type="checkbox" checked={form.assignees.includes(a.name)} onChange={() => toggleAssignee(a.name)} />
+                {a.name}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+      <div className="task-form-row">
+        <input className="form-input" type="date" title="Start date" value={form.startDate} onChange={f('startDate')} />
+        <input className="form-input" type="date" title="Due date" value={form.dueDate} onChange={f('dueDate')} />
+        <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
+          <button className="btn-ghost" type="button" onClick={onCancel} style={{ fontSize: 12 }}>Cancel</button>
+          <button className="btn-primary" type="button" onClick={() => form.title.trim() && onSave(form)} style={{ fontSize: 12 }} disabled={!form.title.trim()}>
+            {label || 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], currentUser }) {
+  const [expanded, setExpanded] = useState(true)
+  const [editing, setEditing] = useState(false)
+  const [addingChild, setAddingChild] = useState(false)
+  const [showUpdates, setShowUpdates] = useState(false)
+  const [updateText, setUpdateText] = useState('')
+  const [updateAuthor, setUpdateAuthor] = useState('')
+  const [savingUpdate, setSavingUpdate] = useState(false)
+  const [localStatus, setLocalStatus] = useState(node.status)
+
+  useEffect(() => { setLocalStatus(node.status) }, [node.status])
+
+  const nodeAssignees = Array.isArray(node.assignees) ? node.assignees : (node.assignee ? [node.assignee] : [])
+
+  const hasChildren = node.children && node.children.length > 0
+
+  async function cycleStatus() {
+    const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(localStatus) + 1) % STATUS_CYCLE.length]
+    setLocalStatus(next)
+    apiFetch(`${apiBase}/${node.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: next }),
+    })
+  }
+
+  async function handleSaveEdit(form) {
+    await apiFetch(`${apiBase}/${node.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: form.title,
+        description: form.description,
+        status: form.status,
+        priority: form.priority,
+        assignees: form.assignees || [],
+        startDate: form.startDate || null,
+        dueDate: form.dueDate || null,
+        numberOverride: form.numberOverride || null,
+      }),
+    })
+    setEditing(false)
+    onRefresh()
+  }
+
+  async function handleAddUpdate() {
+    if (!updateText.trim()) return
+    setSavingUpdate(true)
+    const existing = Array.isArray(node.updates) ? node.updates : []
+    const newUpdate = {
+      id: `upd-${Date.now()}`,
+      text: updateText.trim(),
+      author: updateAuthor.trim() || null,
+      createdAt: new Date().toISOString(),
+    }
+    await apiFetch(`${apiBase}/${node.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ updates: [...existing, newUpdate] }),
+    })
+    setUpdateText('')
+    setSavingUpdate(false)
+    onRefresh()
+  }
+
+  async function handleDelete() {
+    const childCount = countDescendants(node)
+    const msg = childCount > 0
+      ? `Delete "${node.title}" and its ${childCount} sub-task(s)?`
+      : `Delete "${node.title}"?`
+    if (!confirm(msg)) return
+    await apiFetch(`${apiBase}/${node.id}`, { method: 'DELETE' })
+    onRefresh()
+  }
+
+  async function handleAddChild(form) {
+    await apiFetch(apiBase, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...form, parentId: node.id, numberOverride: form.numberOverride || null }),
+    })
+    setAddingChild(false)
+    setExpanded(true)
+    onRefresh()
+  }
+
+  async function handleMove(direction) {
+    await apiFetch(`${apiBase}/${node.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ direction }),
+    })
+    onRefresh()
+  }
+
+  const statusClass = localStatus === 'done' ? 'task-status done' : localStatus === 'in-progress' ? 'task-status in-progress' : 'task-status todo'
+
+  return (
+    <div className="task-node" style={{ '--depth': depth }}>
+      <div className={`task-row ${localStatus === 'done' ? 'task-row-done' : ''}`}>
+        <div className="task-row-left">
+          <button
+            className="task-expand-btn"
+            onClick={() => setExpanded(v => !v)}
+            style={{ visibility: hasChildren ? 'visible' : 'hidden' }}
+            title={expanded ? 'Collapse' : 'Expand'}
+          >
+            {expanded ? '▼' : '▶'}
+          </button>
+          <span className="task-number" title={node.autoNumber !== node.number ? `Auto: ${node.autoNumber}` : 'Auto-numbered'}>
+            {node.number}
+          </span>
+          <button className={statusClass} onClick={cycleStatus} title={`Status: ${STATUS_LABEL[localStatus]} — click to cycle`}>
+            {localStatus === 'done' ? '✓' : localStatus === 'in-progress' ? '◑' : '○'}
+          </button>
+          <span className="task-title" style={{ textDecoration: localStatus === 'done' ? 'line-through' : 'none', opacity: localStatus === 'done' ? 0.55 : 1 }}>
+            {node.title}
+          </span>
+          {node.startDate && <span className="task-meta-chip task-start" title="Start date">▶ {node.startDate}</span>}
+          {node.dueDate && <span className="task-meta-chip task-due" title="Due date">⏎ {node.dueDate}</span>}
+          {node.description && <span className="task-meta-chip task-desc" title={node.description}>{node.description.length > 40 ? node.description.slice(0, 40) + '…' : node.description}</span>}
+          {node.priority && node.priority !== 'medium' && (
+            <span className="task-priority-dot" style={{ background: PRIORITY_COLOR[node.priority] }} title={`${PRIORITY_LABEL[node.priority]} priority`} />
+          )}
+          {nodeAssignees.map((a, i) => {
+            const label = typeof a === 'object' ? a.name : a
+            return <span key={label ?? i} className="task-meta-chip task-assignee-badge">{label}</span>
+          })}
+          {node.updates && node.updates.length > 0 && (
+            <span className="task-meta-chip task-updates-badge" title={`${node.updates.length} update(s)`}>
+              {node.updates.length} update{node.updates.length !== 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+        <div className="task-row-actions">
+          <button className="task-action-btn" onClick={() => handleMove('up')} title="Move up">↑</button>
+          <button className="task-action-btn" onClick={() => handleMove('down')} title="Move down">↓</button>
+          <button className="task-action-btn" onClick={() => { setAddingChild(v => !v); setEditing(false) }} title="Add sub-task">+ sub</button>
+          <button className="task-action-btn" onClick={() => { setEditing(v => !v); setAddingChild(false); setShowUpdates(false) }} title="Edit task">Edit</button>
+          <button className={`task-action-btn ${showUpdates ? 'active' : ''}`} onClick={() => { setShowUpdates(v => !v); setEditing(false); setAddingChild(false) }} title="Updates">Updates</button>
+          {currentUser?.isAdmin && (
+            <button className="task-action-btn danger" onClick={handleDelete} title="Delete task">✕</button>
+          )}
+        </div>
+      </div>
+
+      {editing && (
+        <div className="task-inline-form">
+          <TaskForm
+            initial={{
+              title: node.title,
+              description: node.description || '',
+              status: localStatus,
+              priority: node.priority || 'medium',
+              assignees: nodeAssignees,
+              startDate: node.startDate || '',
+              dueDate: node.dueDate || '',
+              numberOverride: node.numberOverride || '',
+            }}
+            onSave={handleSaveEdit}
+            onCancel={() => setEditing(false)}
+            label="Update"
+            assignees={assignees}
+          />
+        </div>
+      )}
+
+      {showUpdates && (
+        <div className="task-updates-panel">
+          <div className="task-updates-list">
+            {(!node.updates || node.updates.length === 0) ? (
+              <div className="task-updates-empty">No updates yet.</div>
+            ) : (
+              [...node.updates].reverse().map(u => (
+                <div key={u.id} className="task-update-item">
+                  <div className="task-update-meta">
+                    {u.author && <span className="task-update-author">{u.author}</span>}
+                    <span className="task-update-time">{new Date(u.createdAt).toLocaleString()}</span>
+                  </div>
+                  <div className="task-update-text">{u.text}</div>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="task-update-form">
+            <input
+              className="form-input"
+              placeholder="Your name (optional)"
+              value={updateAuthor}
+              onChange={e => setUpdateAuthor(e.target.value)}
+              style={{ maxWidth: 160, fontSize: 12 }}
+            />
+            <input
+              className="form-input"
+              placeholder="Add an update…"
+              value={updateText}
+              onChange={e => setUpdateText(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleAddUpdate()}
+              style={{ flex: 1, fontSize: 12 }}
+            />
+            <button
+              className="btn-primary"
+              onClick={handleAddUpdate}
+              disabled={!updateText.trim() || savingUpdate}
+              style={{ fontSize: 12, padding: '5px 12px', whiteSpace: 'nowrap' }}
+            >
+              Post
+            </button>
+          </div>
+        </div>
+      )}
+
+      {addingChild && (
+        <div className="task-inline-form">
+          <TaskForm onSave={handleAddChild} onCancel={() => setAddingChild(false)} label="Add Sub-task" assignees={assignees} />
+        </div>
+      )}
+
+      {expanded && hasChildren && (
+        <div className="task-children">
+          {node.children.map(child => (
+            <TaskNode key={child.id} node={child} apiBase={apiBase} onRefresh={onRefresh} depth={depth + 1} assignees={assignees} currentUser={currentUser} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function countDescendants(node) {
+  let count = 0
+  function walk(n) { n.children?.forEach(c => { count++; walk(c) }) }
+  walk(node)
+  return count
+}
+
+export default function TaskTree({ tasks, apiBase, onRefresh, currentUser }) {
+  const [addingRoot, setAddingRoot] = useState(false)
+  const [assignees, setAssignees] = useState([])
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    fetch('/api/assignees').then(r => r.ok ? r.json() : []).then(setAssignees).catch(() => {})
+  }, [])
+
+  const tree = buildTree(tasks || [])
+
+  const q = search.toLowerCase()
+  const filtered = q
+    ? (tasks || []).filter(t => {
+        const taskAssignees = Array.isArray(t.assignees) ? t.assignees : (t.assignee ? [t.assignee] : [])
+        return (
+          t.title.toLowerCase().includes(q) ||
+          (t.description || '').toLowerCase().includes(q) ||
+          taskAssignees.some(a => a.toLowerCase().includes(q)) ||
+          (t.number || '').toString().includes(q) ||
+          (t.autoNumber || '').toString().includes(q) ||
+          (t.numberOverride || '').toString().includes(q)
+        )
+      })
+    : null
+
+  async function handleAddRoot(form) {
+    await apiFetch(apiBase, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...form, parentId: null, numberOverride: form.numberOverride || null }),
+    })
+    setAddingRoot(false)
+    onRefresh()
+  }
+
+  return (
+    <div className="task-tree">
+      <div className="task-tree-toolbar">
+        <button className="btn-primary" style={{ fontSize: 12, padding: '5px 12px' }} onClick={() => setAddingRoot(v => !v)}>
+          {addingRoot ? 'Cancel' : '+ Add Task'}
+        </button>
+        {tasks.length > 0 && (
+          <div className="search-bar" style={{ marginBottom: 0, flex: 1, maxWidth: 320 }}>
+            <input
+              className="form-input search-input"
+              placeholder="Search tasks…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{ fontSize: 12, padding: '5px 28px 5px 10px' }}
+            />
+            {search && (
+              <button className="btn-ghost search-clear" onClick={() => setSearch('')} title="Clear">&#x2715;</button>
+            )}
+          </div>
+        )}
+        {tasks.length > 0 && (
+          <span className="task-count-label">
+            {filtered ? `${filtered.length} of ${tasks.length}` : `${tasks.length} task${tasks.length !== 1 ? 's' : ''}`}
+          </span>
+        )}
+      </div>
+
+      {addingRoot && (
+        <div className="task-inline-form" style={{ marginTop: 8 }}>
+          <TaskForm onSave={handleAddRoot} onCancel={() => setAddingRoot(false)} label="Add Task" assignees={assignees} />
+        </div>
+      )}
+
+      {filtered ? (
+        filtered.length === 0 ? (
+          <div className="empty-state-sm" style={{ padding: '24px 16px' }}>No tasks match &ldquo;{search}&rdquo;.</div>
+        ) : (
+          <div className="task-list">
+            {filtered.map(t => (
+              <TaskNode key={t.id} node={{ ...t, children: [] }} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} />
+            ))}
+          </div>
+        )
+      ) : tree.length === 0 && !addingRoot ? (
+        <div className="empty-state-sm" style={{ padding: '24px 16px' }}>No tasks yet. Click "+ Add Task" to get started.</div>
+      ) : (
+        <div className="task-list">
+          {tree.map(node => (
+            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}

@@ -1,0 +1,163 @@
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import Nav from '../components/Nav'
+import { apiFetch } from '../lib/api-fetch'
+
+export default function Home({ currentUser }) {
+  const [projects, setProjects] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [creating, setCreating] = useState(false)
+  const [form, setForm] = useState({ name: '', description: '' })
+  const [showForm, setShowForm] = useState(false)
+  const [search, setSearch] = useState('')
+
+  useEffect(() => { fetchProjects() }, [])
+
+  async function fetchProjects() {
+    setLoading(true)
+    try {
+      const res = await apiFetch('/api/projects')
+      if (res.ok) setProjects(await res.json())
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleDeleteProject(slug, name) {
+    if (!confirm(`Delete project "${name}" and all its data? This cannot be undone.`)) return
+    const res = await apiFetch(`/api/projects/${slug}`, { method: 'DELETE' })
+    if (res.ok) setProjects(prev => prev.filter(p => p.slug !== slug))
+  }
+
+  async function handleCreate(e) {
+    e.preventDefault()
+    if (!form.name.trim()) return
+    setCreating(true)
+    try {
+      const res = await apiFetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      if (res.ok) {
+        setShowForm(false)
+        setForm({ name: '', description: '' })
+        fetchProjects()
+      }
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  const q = search.toLowerCase()
+  const filtered = projects.filter(p => !q || p.name.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q))
+
+  return (
+    <>
+      <Nav />
+      <main className="page">
+        <div className="page-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <h1>Projects</h1>
+            <p>Select a project to view and edit its PRDs.</p>
+          </div>
+          <button className="btn-primary" onClick={() => setShowForm(v => !v)}>
+            {showForm ? 'Cancel' : '+ New Project'}
+          </button>
+        </div>
+
+        {showForm && (
+          <form className="new-project-form" onSubmit={handleCreate}>
+            <div className="form-row">
+              <input
+                className="form-input"
+                placeholder="Project name"
+                value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                required
+                autoFocus
+              />
+              <input
+                className="form-input"
+                placeholder="Description (optional)"
+                value={form.description}
+                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              />
+              <button className="btn-primary" type="submit" disabled={creating || !form.name.trim()}>
+                {creating ? 'Creating…' : 'Create'}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {!loading && projects.length > 0 && (
+          <div className="search-bar">
+            <input
+              className="form-input search-input"
+              placeholder="Search projects…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            {search && (
+              <button className="btn-ghost search-clear" onClick={() => setSearch('')} title="Clear">&#x2715;</button>
+            )}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="project-grid">
+            {[0, 1, 2].map(i => (
+              <div key={i} className="project-card" style={{ gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="skeleton" style={{ width: 14, height: 14, borderRadius: 3, flexShrink: 0 }} />
+                  <span className="skeleton" style={{ width: '55%', height: 15 }} />
+                </div>
+                <span className="skeleton" style={{ width: '78%', height: 12 }} />
+                <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                  <span className="skeleton" style={{ width: 54, height: 20, borderRadius: 20 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : projects.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">&#128196;</div>
+            <p>No projects yet. Create your first project to get started.</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">&#128269;</div>
+            <p>No projects match &ldquo;{search}&rdquo;.</p>
+          </div>
+        ) : (
+          <div className="project-grid">
+            {filtered.map(p => (
+              <div key={p.slug} className="project-card" style={{ position: 'relative' }}>
+                {currentUser?.isAdmin && (
+                  <button
+                    onClick={e => { e.preventDefault(); handleDeleteProject(p.slug, p.name) }}
+                    style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 14, lineHeight: 1, padding: '2px 6px' }}
+                    title="Delete project"
+                  >&#x2715;</button>
+                )}
+                <Link href={`/projects/${p.slug}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+                  <div className="project-card-header">
+                    <span className="project-icon">&#9670;</span>
+                    <span className="project-name">{p.name}</span>
+                  </div>
+                  {p.description && <p className="project-desc">{p.description}</p>}
+                  <div className="project-meta">
+                    <span className="meta-badge">v{p.latestVersion || '—'}</span>
+                    {p.pendingProposals > 0 && (
+                      <span className="meta-badge pending">{p.pendingProposals} pending</span>
+                    )}
+                  </div>
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
+    </>
+  )
+}

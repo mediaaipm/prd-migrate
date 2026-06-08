@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>PRD Knowledge Graph</title>
+  <link href="https://unpkg.com/vis-network/styles/vis-network.css" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f1a; color: #cdd6f4; }
+
+    #app { display: flex; height: 100vh; }
+
+    /* sidebar */
+    #sidebar {
+      width: 280px; min-width: 280px;
+      background: #1e1e2e;
+      border-right: 1px solid #313244;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    #sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid #313244;
+      flex-shrink: 0;
+    }
+    #sidebar-header h1 { font-size: 15px; font-weight: 700; color: #cdd6f4; display: flex; align-items: center; gap: 8px; }
+    #sidebar-header h1 span { color: #7c3aed; }
+    #stats { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .stat-chip {
+      font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500;
+    }
+    .stat-chip.project { background: rgba(124,58,237,.25); color: #c4b5fd; }
+    .stat-chip.version { background: rgba(56,189,248,.2); color: #7dd3fc; }
+    .stat-chip.proposal { background: rgba(234,179,8,.18); color: #fcd34d; }
+    .stat-chip.prd { background: rgba(148,163,184,.15); color: #94a3b8; }
+    .stat-chip.edge { background: rgba(100,116,139,.15); color: #64748b; }
+
+    /* legend */
+    #legend { padding: 12px 16px; border-bottom: 1px solid #313244; flex-shrink: 0; }
+    #legend h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: #6c7086; margin-bottom: 8px; }
+    .legend-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; color: #a6adc8; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+    /* detail panel */
+    #detail { flex: 1; overflow-y: auto; padding: 16px; }
+    #detail h2 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: #6c7086; margin-bottom: 12px; }
+    #detail-content { font-size: 13px; color: #a6adc8; line-height: 1.6; }
+    .detail-field { margin-bottom: 8px; }
+    .detail-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #6c7086; margin-bottom: 2px; }
+    .detail-value { color: #cdd6f4; }
+    .detail-badge {
+      display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; margin-top: 2px;
+    }
+    .badge-project { background: rgba(124,58,237,.25); color: #c4b5fd; }
+    .badge-version { background: rgba(56,189,248,.2); color: #7dd3fc; }
+    .badge-pending { background: rgba(234,179,8,.18); color: #fcd34d; }
+    .badge-promoted { background: rgba(34,197,94,.18); color: #86efac; }
+    .badge-prd { background: rgba(148,163,184,.15); color: #94a3b8; }
+
+    /* network canvas */
+    #network { flex: 1; }
+
+    /* controls */
+    #controls {
+      position: fixed; bottom: 16px; right: 16px;
+      display: flex; gap: 8px;
+    }
+    .ctrl-btn {
+      background: #1e1e2e; border: 1px solid #313244; color: #cdd6f4;
+      padding: 7px 12px; border-radius: 8px; font-size: 12px; cursor: pointer;
+      transition: background .15s;
+    }
+    .ctrl-btn:hover { background: #313244; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <h1><span>&#9670;</span> PRD Knowledge Graph</h1>
+      <div id="stats"></div>
+    </div>
+    <div id="legend">
+      <h2>Legend</h2>
+      <div class="legend-row"><div class="legend-dot" style="background:#7c3aed"></div> Project</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#38bdf8"></div> Version</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#f59e0b"></div> Proposal (pending)</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#22c55e"></div> Proposal (promoted)</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#94a3b8"></div> Legacy PRD</div>
+    </div>
+    <div id="detail">
+      <h2>Node Details</h2>
+      <div id="detail-content" style="color:#6c7086;font-size:12px">Click a node to see details.</div>
+    </div>
+  </div>
+
+  <div id="network"></div>
+</div>
+
+<div id="controls">
+  <button class="ctrl-btn" onclick="network.fit()">Fit</button>
+  <button class="ctrl-btn" onclick="network.setOptions({physics:{enabled:true}});setTimeout(()=>network.setOptions({physics:{enabled:false}}),3000)">Relayout</button>
+</div>
+
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<script>
+const TYPE_STYLE = {
+  'project':           { color: { background: '#7c3aed', border: '#6d28d9', highlight: { background: '#8b5cf6', border: '#7c3aed' } }, shape: 'dot', size: 18, font: { color: '#fff', size: 13, bold: true } },
+  'version':           { color: { background: '#38bdf8', border: '#0ea5e9', highlight: { background: '#7dd3fc', border: '#38bdf8' } }, shape: 'dot', size: 12, font: { color: '#fff', size: 11 } },
+  'proposal:pending':  { color: { background: '#f59e0b', border: '#d97706', highlight: { background: '#fcd34d', border: '#f59e0b' } }, shape: 'diamond', size: 14, font: { color: '#fff', size: 11 } },
+  'proposal:promoted': { color: { background: '#22c55e', border: '#16a34a', highlight: { background: '#86efac', border: '#22c55e' } }, shape: 'diamond', size: 14, font: { color: '#fff', size: 11 } },
+  'prd':               { color: { background: '#475569', border: '#64748b', highlight: { background: '#94a3b8', border: '#475569' } }, shape: 'dot', size: 14, font: { color: '#fff', size: 12 } },
+};
+
+const EDGE_STYLE = {
+  'has_version':  { color: '#7c3aed', dashes: false, width: 1.5 },
+  'has_proposal': { color: '#f59e0b', dashes: [4,4], width: 1 },
+  'promoted_to':  { color: '#22c55e', dashes: false, width: 1.5 },
+  'depends_on':   { color: '#64748b', dashes: false, width: 1 },
+};
+
+let network;
+
+fetch('graph.json').then(r => r.json()).then(data => {
+  // stats
+  const m = data.meta || {};
+  const statsEl = document.getElementById('stats');
+  [
+    ['project', m.projects || 0, 'Projects'],
+    ['version', m.versions || 0, 'Versions'],
+    ['proposal', m.proposals || 0, 'Proposals'],
+    ['prd', m.prds || 0, 'Legacy PRDs'],
+    ['edge', (data.edges || []).length, 'Edges'],
+  ].forEach(([cls, count, label]) => {
+    if (count === 0) return;
+    const chip = document.createElement('span');
+    chip.className = `stat-chip ${cls}`;
+    chip.textContent = `${count} ${label}`;
+    statsEl.appendChild(chip);
+  });
+
+  const nodes = new vis.DataSet(data.nodes.map(n => {
+    const style = TYPE_STYLE[n.type] || TYPE_STYLE['prd'];
+    return { id: n.id, label: n.label, title: n.id, ...style, _raw: n };
+  }));
+
+  const edges = new vis.DataSet((data.edges || []).map((e, i) => {
+    const style = EDGE_STYLE[e.type] || {};
+    return { id: i, from: e.from, to: e.to, label: e.type, arrows: { to: { enabled: true, scaleFactor: 0.6 } }, font: { size: 9, color: '#6c7086', align: 'middle' }, ...style };
+  }));
+
+  const container = document.getElementById('network');
+  network = new vis.Network(container, { nodes, edges }, {
+    physics: {
+      enabled: true,
+      solver: 'forceAtlas2Based',
+      forceAtlas2Based: { gravitationalConstant: -60, centralGravity: 0.005, springLength: 100, springConstant: 0.08 },
+      stabilization: { iterations: 200 },
+    },
+    edges: { smooth: { type: 'curvedCW', roundness: 0.1 } },
+    interaction: { hover: true, tooltipDelay: 150 },
+  });
+
+  network.on('stabilizationIterationsDone', () => network.setOptions({ physics: { enabled: false } }));
+
+  network.on('click', params => {
+    if (!params.nodes.length) return;
+    const node = nodes.get(params.nodes[0]);
+    const raw = node._raw;
+    const detail = document.getElementById('detail-content');
+
+    const badgeClass = {
+      'project': 'badge-project',
+      'version': 'badge-version',
+      'proposal:pending': 'badge-pending',
+      'proposal:promoted': 'badge-promoted',
+      'prd': 'badge-prd',
+    }[raw.type] || 'badge-prd';
+
+    const typeLabel = {
+      'project': 'Project',
+      'version': 'Version',
+      'proposal:pending': 'Proposal · Pending',
+      'proposal:promoted': 'Proposal · Promoted',
+      'prd': 'Legacy PRD',
+    }[raw.type] || raw.type;
+
+    let html = `
+      <div class="detail-field">
+        <div class="detail-label">Name</div>
+        <div class="detail-value">${raw.label}</div>
+      </div>
+      <div class="detail-field">
+        <div class="detail-label">Type</div>
+        <span class="detail-badge ${badgeClass}">${typeLabel}</span>
+      </div>`;
+
+    const meta = raw.meta || {};
+    for (const [k, v] of Object.entries(meta)) {
+      if (!v) continue;
+      html += `<div class="detail-field"><div class="detail-label">${k}</div><div class="detail-value">${v}</div></div>`;
+    }
+
+    detail.innerHTML = html;
+  });
+
+}).catch(err => {
+  document.getElementById('network').innerHTML = `<div style="padding:40px;color:#f38ba8">Error loading graph.json:<br><pre>${err}</pre></div>`;
+});
+</script>
+</body>
+</html>

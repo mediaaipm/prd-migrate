@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Graphify - Graph Viewer</title>
+    <link href="https://unpkg.com/vis-network/styles/vis-network.css" rel="stylesheet" />
+    <style>
+      html,body,#network{ height:100%; margin:0; padding:0 }
+      #network{ width:100%; height:100vh; border:1px solid #ddd }
+    </style>
+  </head>
+  <body>
+    <div id="network"></div>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <script>
+      fetch('graph.json').then(r=>r.json()).then(data=>{
+        const nodes = data.nodes.map(n=>({id:n.id, label:n.label}));
+        const edges = data.edges.map(e=>({from:e.from, to:e.to, label:e.type}));
+        const container = document.getElementById('network');
+        const visData = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
+        const options = { physics: { stabilization: true }, edges: { arrows: { to: { enabled: true } } } };
+        new vis.Network(container, visData, options);
+      }).catch(err=>{
+        document.body.innerHTML = '<pre>Error loading graph.json: '+err+'</pre>';
+      });
+    </script>
+  </body>
+</html>
