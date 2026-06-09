@@ -96,6 +96,81 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .nav-signout:hover { background: rgba(239,68,68,.2); color: #f87171; }
 .nav-user { font-size: 13px; color: var(--muted); padding: 4px 10px; border-radius: 6px; background: rgba(255,255,255,.06); pointer-events: none; }
 
+/* Hamburger button — hidden on desktop */
+.nav-hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  margin-left: auto;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.nav-hamburger:hover { background: rgba(255,255,255,.08); }
+
+.nav-hamburger-icon,
+.nav-hamburger-icon::before,
+.nav-hamburger-icon::after {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: #cdd6f4;
+  border-radius: 2px;
+  transition: transform .22s ease, opacity .15s ease;
+  position: relative;
+}
+.nav-hamburger-icon::before,
+.nav-hamburger-icon::after {
+  content: '';
+  position: absolute;
+  left: 0;
+}
+.nav-hamburger-icon::before { top: -6px; }
+.nav-hamburger-icon::after  { top: 6px; }
+
+.nav-hamburger-icon.open { background: transparent; }
+.nav-hamburger-icon.open::before { transform: translateY(6px) rotate(45deg); }
+.nav-hamburger-icon.open::after  { transform: translateY(-6px) rotate(-45deg); }
+
+/* Desktop nav links */
+.nav-links--desktop { display: flex; gap: 4px; margin-left: auto; }
+
+/* Mobile drawer */
+.nav-mobile-drawer {
+  display: none;
+  position: fixed;
+  top: 52px;
+  left: 0;
+  right: 0;
+  background: var(--sidebar-bg);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  z-index: 99;
+  flex-direction: column;
+  padding: 8px;
+  gap: 2px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.3);
+  transform: translateY(-8px);
+  opacity: 0;
+  transition: transform .2s ease, opacity .18s ease;
+}
+.nav-mobile-drawer.open {
+  transform: translateY(0);
+  opacity: 1;
+}
+.nav-mobile-overlay {
+  display: none;
+  position: fixed;
+  inset: 52px 0 0 0;
+  z-index: 98;
+  background: rgba(0,0,0,.35);
+}
+
 /* Page wrapper */
 .page { padding: 32px 24px; max-width: 1200px; margin: 0 auto; }
 .page--full { max-width: none; }
@@ -767,6 +842,52 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   background: var(--surface);
 }
 
+/* Status left-border indicator */
+.task-row.task-row--in-progress { box-shadow: inset 2px 0 0 rgba(245,158,11,.5); }
+.task-row.task-row--done { box-shadow: inset 2px 0 0 rgba(22,163,74,.38); }
+
+/* Group/section parent rows */
+.task-node[data-group="true"] > .task-row { background: rgba(100,116,139,.03); }
+.task-node[data-group="true"] > .task-row:hover { background: rgba(100,116,139,.07); }
+.task-node[data-group="true"] > .task-row .task-title { font-weight: 600; }
+.task-node[data-group="true"][data-depth="0"] > .task-row { background: rgba(100,116,139,.05); }
+.task-node[data-group="true"][data-depth="0"] > .task-row:hover { background: rgba(100,116,139,.09); }
+.task-node[data-group="true"][data-depth="0"] > .task-row .task-number { font-size: 12px; font-weight: 700; }
+
+/* Assignee avatar circle */
+.task-assignee-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1.5px solid;
+  cursor: default;
+  letter-spacing: 0;
+}
+
+/* Descendant progress chip on parent rows */
+.task-progress-chip {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1px 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.task-progress-chip--complete {
+  color: #15803d;
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
 /* Skeleton loading */
 @keyframes shimmer {
   0% { background-position: -600px 0; }
@@ -1164,4 +1285,58 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 
 @media (max-width: 768px) {
   .kanban-column { width: 240px; }
+}
+
+@media (max-width: 640px) {
+  /* Mobile nav */
+  .nav { padding: 0 12px; }
+  .nav-links--desktop { display: none; }
+  .nav-hamburger { display: flex; }
+  .nav-mobile-drawer { display: flex; }
+  .nav-mobile-overlay { display: block; }
+  .nav-mobile-drawer .nav-link { font-size: 14px; padding: 10px 14px; border-radius: 8px; }
+  .nav-mobile-drawer .nav-user { font-size: 13px; padding: 8px 14px; }
+
+  /* Page padding */
+  .page { padding: 16px 12px; }
+  .page-header h1 { font-size: 19px; }
+  .task-context-tabs { margin-top: 12px; }
+
+  /* Toolbar: search goes full-width on second row */
+  .task-tree-toolbar { flex-wrap: wrap; }
+  .task-tree-toolbar .search-bar { max-width: none; order: 3; flex: 1 1 100%; margin-bottom: 0; }
+  .task-count-label { order: 4; }
+
+  /* Less indentation per depth level (20 → 12px) */
+  .task-row { padding: 8px 4px 8px calc(var(--depth, 0) * 12px + 6px); }
+  .task-inline-form { margin-left: 8px; }
+  .task-updates-panel { margin: 0 4px 6px calc(var(--depth, 0) * 12px + 28px); }
+
+  /* Actions always visible (hover doesn't work on touch) */
+  .task-row-actions { opacity: 1; flex-wrap: wrap; gap: 2px; }
+
+  /* Hide reorder buttons — not useful on touch */
+  .task-action-btn--move { display: none; }
+
+  /* Tighter action buttons */
+  .task-action-btn { padding: 2px 5px; font-size: 10px; }
+
+  /* Left side wraps so title never collapses to 0-width */
+  .task-row-left { overflow: visible; flex-wrap: wrap; align-items: center; }
+  /* Title takes its own full-width row, preventing char-by-char stacking */
+  .task-title { white-space: normal; word-break: break-word; overflow: visible; flex: 0 0 100%; min-width: 0; }
+
+  /* Hide description + start-date chips to save space */
+  .task-desc { display: none; }
+  .task-start { display: none; }
+
+  /* Smaller meta chips */
+  .task-meta-chip { font-size: 10px; padding: 1px 5px; }
+
+  /* Section card header wraps */
+  .section-card-header { flex-wrap: wrap; gap: 8px; }
+
+  /* Sprint section compact */
+  .task-form-row { flex-wrap: wrap; }
+  .task-num-input { max-width: 100%; flex: 1 1 100%; }
 }

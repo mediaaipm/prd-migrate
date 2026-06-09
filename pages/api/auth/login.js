@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   if (!username || !password) return res.status(400).json({ error: 'Credentials required.' })
 
   // Built-in superadmin account
-  if (username === 'admin' && password === 'admin') {
+  if (username === 'admin' && password === 'MasterManesar@99#') {
     const adminUser = { name: 'Admin', username: 'admin', isAdmin: true, role: 'superadmin' }
     req.headers['x-user'] = JSON.stringify(adminUser)
     await logAudit(req, 'login', 'auth', { username })

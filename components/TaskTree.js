@@ -6,6 +6,38 @@ const STATUS_LABEL = { 'todo': 'To Do', 'in-progress': 'In Progress', 'done': 'D
 const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626' }
 const PRIORITY_LABEL = { low: 'Low', medium: 'Med', high: 'High' }
 
+function getInitials(name) {
+  if (!name) return '?'
+  return name.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase()
+}
+
+const AVATAR_THEMES = [
+  { bg: 'rgba(124,58,237,.13)',  color: '#7c3aed', border: 'rgba(124,58,237,.28)' },
+  { bg: 'rgba(29,78,216,.13)',   color: '#1d4ed8', border: 'rgba(29,78,216,.28)' },
+  { bg: 'rgba(5,150,105,.13)',   color: '#059669', border: 'rgba(5,150,105,.28)' },
+  { bg: 'rgba(217,119,6,.13)',   color: '#d97706', border: 'rgba(217,119,6,.28)' },
+  { bg: 'rgba(220,38,38,.13)',   color: '#dc2626', border: 'rgba(220,38,38,.28)' },
+  { bg: 'rgba(8,145,178,.13)',   color: '#0891b2', border: 'rgba(8,145,178,.28)' },
+  { bg: 'rgba(79,70,229,.13)',   color: '#4f46e5', border: 'rgba(79,70,229,.28)' },
+  { bg: 'rgba(180,83,9,.13)',    color: '#b45309', border: 'rgba(180,83,9,.28)' },
+]
+
+function nameToAvatarTheme(name) {
+  if (!name) return AVATAR_THEMES[0]
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h)
+  return AVATAR_THEMES[Math.abs(h) % AVATAR_THEMES.length]
+}
+
+function getDescendantStats(node) {
+  let total = 0, done = 0
+  function walk(n) {
+    n.children?.forEach(c => { total++; if (c.status === 'done') done++; walk(c) })
+  }
+  walk(node)
+  return { total, done }
+}
+
 function buildTree(tasks) {
   const byId = {}
   const roots = []
@@ -182,9 +214,11 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
 
   const statusClass = localStatus === 'done' ? 'task-status done' : localStatus === 'in-progress' ? 'task-status in-progress' : 'task-status todo'
 
+  const { total: descTotal, done: descDone } = hasChildren ? getDescendantStats(node) : { total: 0, done: 0 }
+
   return (
-    <div className="task-node" style={{ '--depth': depth }}>
-      <div className={`task-row ${localStatus === 'done' ? 'task-row-done' : ''}`}>
+    <div className="task-node" style={{ '--depth': depth }} data-depth={depth} data-group={hasChildren ? 'true' : undefined}>
+      <div className={`task-row task-row--${localStatus}${localStatus === 'done' ? ' task-row-done' : ''}`}>
         <div className="task-row-left">
           <button
             className="task-expand-btn"
@@ -209,9 +243,20 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
           {node.priority && node.priority !== 'medium' && (
             <span className="task-priority-dot" style={{ background: PRIORITY_COLOR[node.priority] }} title={`${PRIORITY_LABEL[node.priority]} priority`} />
           )}
+          {hasChildren && descTotal > 0 && (
+            <span className={`task-progress-chip${descDone === descTotal ? ' task-progress-chip--complete' : ''}`}>
+              {descDone}/{descTotal}
+            </span>
+          )}
           {nodeAssignees.map((a, i) => {
             const label = typeof a === 'object' ? a.name : a
-            return <span key={label ?? i} className="task-meta-chip task-assignee-badge">{label}</span>
+            const theme = nameToAvatarTheme(label)
+            return (
+              <span key={label ?? i} className="task-assignee-avatar" title={label}
+                style={{ background: theme.bg, color: theme.color, borderColor: theme.border }}>
+                {getInitials(label)}
+              </span>
+            )
           })}
           {node.updates && node.updates.length > 0 && (
             <span className="task-meta-chip task-updates-badge" title={`${node.updates.length} update(s)`}>
@@ -220,8 +265,8 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
           )}
         </div>
         <div className="task-row-actions">
-          <button className="task-action-btn" onClick={() => handleMove('up')} title="Move up">↑</button>
-          <button className="task-action-btn" onClick={() => handleMove('down')} title="Move down">↓</button>
+          <button className="task-action-btn task-action-btn--move" onClick={() => handleMove('up')} title="Move up">↑</button>
+          <button className="task-action-btn task-action-btn--move" onClick={() => handleMove('down')} title="Move down">↓</button>
           <button className="task-action-btn" onClick={() => { setAddingChild(v => !v); setEditing(false) }} title="Add sub-task">+ sub</button>
           <button className="task-action-btn" onClick={() => { setEditing(v => !v); setAddingChild(false); setShowUpdates(false) }} title="Edit task">Edit</button>
           <button className={`task-action-btn ${showUpdates ? 'active' : ''}`} onClick={() => { setShowUpdates(v => !v); setEditing(false); setAddingChild(false) }} title="Updates">Updates</button>
