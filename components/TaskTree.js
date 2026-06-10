@@ -370,6 +370,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser }) {
   const [addingRoot, setAddingRoot] = useState(false)
   const [assignees, setAssignees] = useState([])
   const [search, setSearch] = useState('')
+  const [filterPerson, setFilterPerson] = useState('')
 
   useEffect(() => {
     fetch('/api/assignees').then(r => r.ok ? r.json() : []).then(setAssignees).catch(() => {})
@@ -378,10 +379,12 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser }) {
   const tree = buildTree(tasks || [])
 
   const q = search.toLowerCase()
-  const filtered = q
+  const pq = filterPerson.toLowerCase().trim()
+  const isFiltering = q || pq
+  const filtered = isFiltering
     ? (tasks || []).filter(t => {
         const taskAssignees = Array.isArray(t.assignees) ? t.assignees : (t.assignee ? [t.assignee] : [])
-        return (
+        const matchesSearch = !q || (
           t.title.toLowerCase().includes(q) ||
           (t.description || '').toLowerCase().includes(q) ||
           taskAssignees.some(a => a.toLowerCase().includes(q)) ||
@@ -389,6 +392,8 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser }) {
           (t.autoNumber || '').toString().includes(q) ||
           (t.numberOverride || '').toString().includes(q)
         )
+        const matchesPerson = !pq || taskAssignees.some(a => a.toLowerCase().includes(pq))
+        return matchesSearch && matchesPerson
       })
     : null
 
@@ -422,6 +427,24 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser }) {
             )}
           </div>
         )}
+        {tasks.length > 0 && assignees.length > 0 && (
+          <div className="search-bar" style={{ marginBottom: 0, minWidth: 150, maxWidth: 200 }}>
+            <input
+              className="form-input search-input"
+              list="tt-assignee-list"
+              placeholder="Filter by person…"
+              value={filterPerson}
+              onChange={e => setFilterPerson(e.target.value)}
+              style={{ fontSize: 12, padding: '5px 28px 5px 10px' }}
+            />
+            {filterPerson && (
+              <button className="btn-ghost search-clear" onClick={() => setFilterPerson('')} title="Clear">&#x2715;</button>
+            )}
+            <datalist id="tt-assignee-list">
+              {assignees.map(a => <option key={a.name} value={a.name} />)}
+            </datalist>
+          </div>
+        )}
         {tasks.length > 0 && (
           <span className="task-count-label">
             {filtered ? `${filtered.length} of ${tasks.length}` : `${tasks.length} task${tasks.length !== 1 ? 's' : ''}`}
@@ -437,7 +460,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser }) {
 
       {filtered ? (
         filtered.length === 0 ? (
-          <div className="empty-state-sm" style={{ padding: '24px 16px' }}>No tasks match &ldquo;{search}&rdquo;.</div>
+          <div className="empty-state-sm" style={{ padding: '24px 16px' }}>No tasks match the current filters.</div>
         ) : (
           <div className="task-list">
             {filtered.map(t => (

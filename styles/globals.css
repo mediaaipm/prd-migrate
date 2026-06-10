@@ -428,6 +428,10 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   font-weight: 500;
 }
 .meta-badge.pending { background: rgba(234,179,8,.12); color: #854d0e; }
+.project-status--on-hold { background: rgba(234,179,8,.12); color: #92400e; }
+.project-status--archived { background: rgba(100,116,139,.12); color: #475569; }
+.project-priority--high { background: rgba(220,38,38,.1); color: #dc2626; }
+.project-priority--low { background: rgba(100,116,139,.1); color: #64748b; }
 
 /* Forms */
 .new-project-form {
@@ -451,6 +455,17 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   color: var(--text);
 }
 .form-input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+/* Filter bar */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.filter-bar .search-bar { margin-bottom: 0; max-width: none; }
+.filter-select { flex: 0 1 auto; min-width: 130px; max-width: 160px; }
 
 /* Search bar */
 .search-bar {
@@ -926,6 +941,19 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .diff-mode-btn { background: transparent; border: none; border-radius: 0; padding: 5px 14px; font-size: 12px; color: var(--muted); cursor: pointer; }
 .diff-mode-btn.active { background: var(--accent); color: #fff; }
 
+/* Kanban filter bar */
+.kanban-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.kanban-filter-bar .search-bar { margin-bottom: 0; max-width: none; }
+.kanban-filter-bar .filter-select { flex: 0 1 auto; min-width: 120px; max-width: 150px; }
+
 /* Kanban board */
 .kanban-board-wrapper {
   overflow: auto;
@@ -1018,6 +1046,60 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   border-radius: 0;
+}
+
+.kanban-add-subtask-btn {
+  font-size: 11px;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  text-align: left;
+  border-radius: 4px;
+  transition: color .12s, background .12s;
+}
+.kanban-add-subtask-btn:hover { color: var(--accent); background: rgba(124,58,237,.07); }
+.kanban-add-subtask-btn--nested { font-size: 10px; }
+
+.kanban-add-subtask-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.kanban-add-subtask-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.kanban-subtask-indent-arrow {
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.kanban-add-subtask-input {
+  flex: 1;
+  font-size: 11px !important;
+  padding: 3px 6px !important;
+  min-width: 0;
+}
+
+.kanban-add-subtask-priority {
+  font-size: 10px !important;
+  padding: 2px 4px !important;
+  width: 52px !important;
+  flex-shrink: 0;
+}
+
+.kanban-add-subtask-remove {
+  font-size: 10px;
+  padding: 2px 5px;
+  color: #ef4444 !important;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 .kanban-cards {
@@ -1281,6 +1363,127 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 
 .kanban-modal .task-form {
   padding: 16px 18px 18px;
+}
+
+/* Column drag states */
+.kanban-column--col-drag-over {
+  border-color: #8b5cf6;
+  background: rgba(139,92,246,.05);
+}
+.kanban-column--col-dragging {
+  opacity: .45;
+  transform: scale(.98);
+}
+
+/* Column header drag handle */
+.kanban-col-drag-handle {
+  color: var(--muted);
+  font-size: 14px;
+  cursor: grab;
+  opacity: 0;
+  transition: opacity .12s;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.kanban-column-header:hover .kanban-col-drag-handle { opacity: 1; }
+
+/* Column label (clickable to rename) */
+.kanban-col-label {
+  cursor: pointer;
+}
+.kanban-col-label:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+/* Inline rename input */
+.kanban-col-rename-input {
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  padding: 1px 6px;
+  width: 120px;
+  outline: none;
+}
+
+/* Header action buttons (add + delete) */
+.kanban-col-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Delete column button — only show on header hover */
+.kanban-col-delete-btn {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--muted);
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity .12s, color .12s, border-color .12s;
+}
+.kanban-column-header:hover .kanban-col-delete-btn { opacity: 1; }
+.kanban-col-delete-btn:hover { color: #ef4444; border-color: #ef4444; background: #fef2f2; }
+
+/* Color picker row */
+.kanban-col-color-picker {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  padding: 6px 12px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.kanban-col-color-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform .1s, border-color .1s;
+}
+.kanban-col-color-swatch:hover { transform: scale(1.2); }
+.kanban-col-color-swatch.active { border-color: var(--text); transform: scale(1.15); }
+
+/* Add column button */
+.kanban-add-col-btn {
+  align-self: flex-start;
+  flex-shrink: 0;
+  background: none;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color .15s, color .15s, background .15s;
+  min-height: 200px;
+  width: 200px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 20px;
+}
+.kanban-add-col-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(124,58,237,.03); }
+
+/* Add column panel (form state) */
+.kanban-add-col-panel {
+  min-height: 160px;
+  width: 240px;
 }
 
 @media (max-width: 768px) {

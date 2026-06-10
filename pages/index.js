@@ -10,8 +10,16 @@ export default function Home({ currentUser }) {
   const [form, setForm] = useState({ name: '', description: '' })
   const [showForm, setShowForm] = useState(false)
   const [search, setSearch] = useState('')
+  const [filterStatus, setFilterStatus] = useState('')
+  const [filterPriority, setFilterPriority] = useState('')
+  const [sortDate, setSortDate] = useState('')
+  const [filterPerson, setFilterPerson] = useState('')
+  const [allAssignees, setAllAssignees] = useState([])
 
   useEffect(() => { fetchProjects() }, [])
+  useEffect(() => {
+    fetch('/api/assignees').then(r => r.ok ? r.json() : []).then(setAllAssignees).catch(() => {})
+  }, [])
 
   async function fetchProjects() {
     setLoading(true)
@@ -50,7 +58,20 @@ export default function Home({ currentUser }) {
   }
 
   const q = search.toLowerCase()
-  const filtered = projects.filter(p => !q || p.name.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q))
+  const pq = filterPerson.toLowerCase().trim()
+  let filtered = projects.filter(p => {
+    const members = Array.isArray(p.members) ? p.members : []
+    return (
+      (!q || p.name.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q)) &&
+      (!filterStatus || (p.status || 'active') === filterStatus) &&
+      (!filterPriority || (p.priority || 'medium') === filterPriority) &&
+      (!pq || members.some(m => m.toLowerCase().includes(pq)))
+    )
+  })
+  if (sortDate === 'oldest') filtered = [...filtered].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+  else if (sortDate === 'newest') filtered = [...filtered].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+
+  const hasFilters = search || filterStatus || filterPriority || sortDate || filterPerson
 
   return (
     <>
@@ -91,15 +112,56 @@ export default function Home({ currentUser }) {
         )}
 
         {!loading && projects.length > 0 && (
-          <div className="search-bar">
-            <input
-              className="form-input search-input"
-              placeholder="Search projects…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-            {search && (
-              <button className="btn-ghost search-clear" onClick={() => setSearch('')} title="Clear">&#x2715;</button>
+          <div className="filter-bar">
+            <div className="search-bar" style={{ flex: 1, minWidth: 160 }}>
+              <input
+                className="form-input search-input"
+                placeholder="Search projects…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              {search && (
+                <button className="btn-ghost search-clear" onClick={() => setSearch('')} title="Clear">&#x2715;</button>
+              )}
+            </div>
+            <select className="form-input filter-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+              <option value="">All statuses</option>
+              <option value="active">Active</option>
+              <option value="on-hold">On Hold</option>
+              <option value="archived">Archived</option>
+            </select>
+            <select className="form-input filter-select" value={filterPriority} onChange={e => setFilterPriority(e.target.value)}>
+              <option value="">All priorities</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+            <select className="form-input filter-select" value={sortDate} onChange={e => setSortDate(e.target.value)}>
+              <option value="">Date: Default</option>
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+            {allAssignees.length > 0 && (
+              <div className="search-bar" style={{ marginBottom: 0, minWidth: 150, maxWidth: 190 }}>
+                <input
+                  className="form-input search-input"
+                  list="proj-assignee-list"
+                  placeholder="Filter by person…"
+                  value={filterPerson}
+                  onChange={e => setFilterPerson(e.target.value)}
+                />
+                {filterPerson && (
+                  <button className="btn-ghost search-clear" onClick={() => setFilterPerson('')} title="Clear">&#x2715;</button>
+                )}
+                <datalist id="proj-assignee-list">
+                  {allAssignees.map(a => <option key={a.name} value={a.name} />)}
+                </datalist>
+              </div>
+            )}
+            {hasFilters && (
+              <button className="btn-ghost" style={{ whiteSpace: 'nowrap', fontSize: 12 }} onClick={() => { setSearch(''); setFilterStatus(''); setFilterPriority(''); setSortDate(''); setFilterPerson('') }}>
+                Clear filters
+              </button>
             )}
           </div>
         )}
@@ -127,7 +189,7 @@ export default function Home({ currentUser }) {
         ) : filtered.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">&#128269;</div>
-            <p>No projects match &ldquo;{search}&rdquo;.</p>
+            <p>No projects match the current filters.</p>
           </div>
         ) : (
           <div className="project-grid">
@@ -150,6 +212,12 @@ export default function Home({ currentUser }) {
                     <span className="meta-badge">v{p.latestVersion || '—'}</span>
                     {p.pendingProposals > 0 && (
                       <span className="meta-badge pending">{p.pendingProposals} pending</span>
+                    )}
+                    {p.status && p.status !== 'active' && (
+                      <span className={`meta-badge project-status-badge project-status--${p.status}`}>{p.status === 'on-hold' ? 'On Hold' : p.status.charAt(0).toUpperCase() + p.status.slice(1)}</span>
+                    )}
+                    {p.priority && p.priority !== 'medium' && (
+                      <span className={`meta-badge project-priority-badge project-priority--${p.priority}`}>{p.priority.charAt(0).toUpperCase() + p.priority.slice(1)}</span>
                     )}
                   </div>
                 </Link>

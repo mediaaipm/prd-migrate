@@ -631,7 +631,7 @@ export default function TasksPage({ currentUser }) {
             </div>
           </div>
           {loading ? <TaskSkeleton /> : viewMode === 'kanban' ? (
-            <KanbanBoard tasks={tasks} apiBase={apiBase} onRefresh={loadTasks} currentUser={currentUser} />
+            <KanbanBoard key={apiBase} tasks={tasks} apiBase={apiBase} onRefresh={loadTasks} currentUser={currentUser} />
           ) : (
             <TaskTree tasks={tasks} apiBase={apiBase} onRefresh={loadTasks} currentUser={currentUser} />
           )}
