@@ -1,4 +1,4 @@
-const { getTask, updateTask, deleteTask, reorderTask } = require('../../../../../lib/task-store');
+const { getTask, updateTask, deleteTask, reorderTask, moveTask } = require('../../../../../lib/task-store');
 const { logAudit } = require('../../../../../lib/audit-log');
 const { requirePermission, requireProjectAccess } = require('../../../../../lib/require-permission');
 
@@ -31,7 +31,13 @@ export default async function handler(req, res) {
   }
   if (req.method === 'PATCH') {
     if (!requirePermission('task:update')(req, res)) return;
-    const { direction } = req.body || {};
+    const { direction, action, targetId, position } = req.body || {};
+    if (action === 'move') {
+      const tasks = await moveTask(slug, v, taskId, targetId, position);
+      if (!tasks) return res.status(404).json({ error: 'Not found' });
+      await logAudit(req, 'move_task', 'task', { slug, version: v, taskId, targetId, position });
+      return res.status(200).json(tasks);
+    }
     const tasks = await reorderTask(slug, v, taskId, direction);
     if (!tasks) return res.status(404).json({ error: 'Not found' });
     await logAudit(req, 'reorder_task', 'task', { slug, version: v, taskId, direction });

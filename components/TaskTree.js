@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { apiFetch } from '../lib/api-fetch'
 
 const STATUS_CYCLE = ['todo', 'in-progress', 'done']
@@ -117,7 +117,7 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [] }) {
   )
 }
 
-function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], currentUser }) {
+function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], currentUser, dnd }) {
   const [expanded, setExpanded] = useState(true)
   const [editing, setEditing] = useState(false)
   const [addingChild, setAddingChild] = useState(false)
@@ -216,10 +216,20 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
 
   const { total: descTotal, done: descDone } = hasChildren ? getDescendantStats(node) : { total: 0, done: 0 }
 
+  const dropZone = dnd?.dropTarget?.id === node.id ? dnd.dropTarget.zone : null
+
   return (
     <div className="task-node" style={{ '--depth': depth }} data-depth={depth} data-group={hasChildren ? 'true' : undefined}>
-      <div className={`task-row task-row--${localStatus}${localStatus === 'done' ? ' task-row-done' : ''}`}>
+      <div
+        className={`task-row task-row--${localStatus}${localStatus === 'done' ? ' task-row-done' : ''}${dropZone ? ` task-row--drop-${dropZone}` : ''}`}
+        draggable={!!dnd}
+        onDragStart={dnd ? e => { e.dataTransfer.effectAllowed = 'move'; dnd.onDragStart(node.id) } : undefined}
+        onDragOver={dnd ? e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; const r = e.currentTarget.getBoundingClientRect(); const rel = (e.clientY - r.top) / r.height; dnd.onDragOver(node.id, rel < 0.28 ? 'before' : rel > 0.72 ? 'after' : 'child') } : undefined}
+        onDrop={dnd ? e => { e.preventDefault(); dnd.onDrop(node.id) } : undefined}
+        onDragEnd={dnd ? dnd.onDragEnd : undefined}
+      >
         <div className="task-row-left">
+          {dnd && <span className="task-drag-handle" title="Drag to reorder or nest">⠿</span>}
           <button
             className="task-expand-btn"
             onClick={() => setExpanded(v => !v)}
@@ -351,7 +361,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
       {expanded && hasChildren && (
         <div className="task-children">
           {node.children.map(child => (
-            <TaskNode key={child.id} node={child} apiBase={apiBase} onRefresh={onRefresh} depth={depth + 1} assignees={assignees} currentUser={currentUser} />
+            <TaskNode key={child.id} node={child} apiBase={apiBase} onRefresh={onRefresh} depth={depth + 1} assignees={assignees} currentUser={currentUser} dnd={dnd} />
           ))}
         </div>
       )}
@@ -371,6 +381,30 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser }) {
   const [assignees, setAssignees] = useState([])
   const [search, setSearch] = useState('')
   const [filterPerson, setFilterPerson] = useState('')
+  const draggedId = useRef(null)
+  const [dropTarget, setDropTarget] = useState(null)
+
+  const dnd = {
+    dropTarget,
+    onDragStart(nodeId) { draggedId.current = nodeId },
+    onDragOver(nodeId, zone) {
+      if (draggedId.current === nodeId) return
+      setDropTarget(prev => prev?.id === nodeId && prev?.zone === zone ? prev : { id: nodeId, zone })
+    },
+    onDrop(nodeId) {
+      const sourceId = draggedId.current
+      const zone = dropTarget?.zone
+      draggedId.current = null
+      setDropTarget(null)
+      if (!sourceId || sourceId === nodeId || !zone) return
+      apiFetch(`${apiBase}/${sourceId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'move', targetId: nodeId, position: zone }),
+      }).then(() => onRefresh())
+    },
+    onDragEnd() { draggedId.current = null; setDropTarget(null) },
+  }
 
   useEffect(() => {
     fetch('/api/assignees').then(r => r.ok ? r.json() : []).then(setAssignees).catch(() => {})
@@ -473,7 +507,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser }) {
       ) : (
         <div className="task-list">
           {tree.map(node => (
-            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} />
+            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={dnd} />
           ))}
         </div>
       )}

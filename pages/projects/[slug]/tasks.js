@@ -506,6 +506,13 @@ export default function TasksPage({ currentUser }) {
   const [viewMode, setViewMode] = useState('list')
   const [sprintKey, setSprintKey] = useState(0)
   const [sprintRefreshTrigger, setSprintRefreshTrigger] = useState(0)
+  const [showExportMenu, setShowExportMenu] = useState(false)
+  const [showImport, setShowImport] = useState(false)
+  const [importFormat, setImportFormat] = useState('csv')
+  const [importFile, setImportFile] = useState(null)
+  const [importing, setImporting] = useState(false)
+  const [importError, setImportError] = useState('')
+  const [importSuccess, setImportSuccess] = useState('')
 
   const apiBase = slug
     ? version
@@ -538,6 +545,59 @@ export default function TasksPage({ currentUser }) {
     if (!router.isReady) return
     loadTasks()
   }, [router.isReady, loadTasks])
+
+  async function handleExport(format) {
+    setShowExportMenu(false)
+    const params = new URLSearchParams({ format })
+    if (version) params.set('version', version)
+    const res = await apiFetch(`/api/projects/${slug}/export?${params}`)
+    if (!res.ok) return
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = format === 'json' ? `${slug}-prd.json` : `${slug}-tasks${version ? `-v${version}` : ''}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  async function handleImport(e) {
+    e.preventDefault()
+    if (!importFile) return
+    setImporting(true)
+    setImportError('')
+    setImportSuccess('')
+    try {
+      const content = await importFile.text()
+      let body
+      if (importFormat === 'csv') {
+        body = { format: 'csv', content }
+      } else {
+        try { body = { format: 'json', data: JSON.parse(content) } }
+        catch { setImportError('Invalid JSON file'); setImporting(false); return }
+      }
+      const params = new URLSearchParams()
+      if (version) params.set('version', version)
+      const res = await apiFetch(`/api/projects/${slug}/import?${params}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        setImportError(err.error || 'Import failed')
+      } else {
+        const result = await res.json()
+        setImportSuccess(`Imported ${result.created} task${result.created !== 1 ? 's' : ''} successfully`)
+        setImportFile(null)
+        loadTasks()
+      }
+    } finally {
+      setImporting(false)
+    }
+  }
 
   const contextLabel = version ? `v${version} Tasks` : 'Project Tasks'
 
@@ -573,7 +633,42 @@ export default function TasksPage({ currentUser }) {
             <h1>{contextLabel}</h1>
             {version && <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>Tasks scoped to version {version}</p>}
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowExportMenu(p => !p)}
+                className="btn-ghost"
+                style={{ fontSize: 13, padding: '6px 14px' }}
+              >
+                Export ▾
+              </button>
+              {showExportMenu && (
+                <div
+                  style={{
+                    position: 'absolute', top: '100%', right: 0, marginTop: 4,
+                    background: '#fff', border: '1px solid var(--border)', borderRadius: 8,
+                    boxShadow: '0 4px 16px rgba(0,0,0,.1)', zIndex: 200, minWidth: 160, overflow: 'hidden',
+                  }}
+                  onMouseLeave={() => setShowExportMenu(false)}
+                >
+                  <button
+                    onClick={() => handleExport('json')}
+                    style={{ display: 'block', width: '100%', padding: '9px 16px', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--text)' }}
+                  >
+                    Download JSON
+                  </button>
+                  <button
+                    onClick={() => handleExport('csv')}
+                    style={{ display: 'block', width: '100%', padding: '9px 16px', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--text)' }}
+                  >
+                    Download CSV
+                  </button>
+                </div>
+              )}
+            </div>
+            <button onClick={() => { setShowImport(true); setImportError(''); setImportSuccess(''); setImportFile(null) }} className="btn-ghost" style={{ fontSize: 13, padding: '6px 14px' }}>
+              Import
+            </button>
             <Link href={`/projects/${slug}/dashboard`} className="btn-ghost" style={{ fontSize: 13, padding: '6px 14px', textDecoration: 'none' }}>
               Dashboard
             </Link>
@@ -636,6 +731,66 @@ export default function TasksPage({ currentUser }) {
             <TaskTree tasks={tasks} apiBase={apiBase} onRefresh={loadTasks} currentUser={currentUser} />
           )}
         </div>
+
+        {showImport && (
+          <div
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+            onClick={e => { if (e.target === e.currentTarget) setShowImport(false) }}
+          >
+            <div style={{ background: '#fff', borderRadius: 14, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(0,0,0,.18)' }}>
+              <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h2 style={{ fontSize: 16, fontWeight: 800, margin: 0 }}>Import Tasks</h2>
+                <button onClick={() => setShowImport(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#94a3b8', lineHeight: 1 }}>×</button>
+              </div>
+              <form onSubmit={handleImport} style={{ padding: '20px 22px' }}>
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', display: 'block', marginBottom: 8 }}>Format</label>
+                  <div style={{ display: 'flex', gap: 16 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
+                      <input type="radio" value="csv" checked={importFormat === 'csv'} onChange={() => setImportFormat('csv')} />
+                      CSV
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
+                      <input type="radio" value="json" checked={importFormat === 'json'} onChange={() => setImportFormat('json')} />
+                      JSON
+                    </label>
+                  </div>
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', display: 'block', marginBottom: 8 }}>File</label>
+                  <input
+                    type="file"
+                    accept={importFormat === 'csv' ? '.csv,text/csv' : '.json,application/json'}
+                    onChange={e => { setImportFile(e.target.files?.[0] || null); setImportError(''); setImportSuccess('') }}
+                    style={{ fontSize: 13 }}
+                  />
+                </div>
+                {importFormat === 'csv' && (
+                  <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 14, lineHeight: 1.5 }}>
+                    Required header: <code>title</code>. Optional: <code>status</code>, <code>priority</code>, <code>assignees</code> (semicolon-separated), <code>startDate</code>, <code>dueDate</code>, <code>description</code>
+                  </p>
+                )}
+                {importFormat === 'json' && (
+                  <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 14, lineHeight: 1.5 }}>
+                    Accepts the JSON export format or a plain array of task objects.
+                  </p>
+                )}
+                {importError && <p style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{importError}</p>}
+                {importSuccess && <p style={{ color: '#15803d', fontSize: 13, marginBottom: 12 }}>{importSuccess}</p>}
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                  <button type="button" onClick={() => setShowImport(false)} className="btn-ghost" style={{ fontSize: 13, padding: '7px 16px' }}>Cancel</button>
+                  <button
+                    type="submit"
+                    disabled={!importFile || importing}
+                    style={{ fontSize: 13, padding: '7px 16px', borderRadius: 8, border: 'none', background: '#6366f1', color: '#fff', fontWeight: 600, cursor: importFile && !importing ? 'pointer' : 'not-allowed', opacity: importFile && !importing ? 1 : 0.6 }}
+                  >
+                    {importing ? 'Importing…' : 'Import'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </main>
     </>
   )
