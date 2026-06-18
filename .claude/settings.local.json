@@ -136,7 +136,17 @@
       "Bash(Get-ChildItem -Hidden \"c:\\\\HVWork\\\\gitlab\\\\PRD_Manager\")",
       "Bash(Select-Object Name)",
       "Bash(git -C \"c:\\\\HVWork\\\\gitlab\\\\PRD_Manager\" log --oneline -5)",
-      "Bash(xargs grep -l \"export\\\\|download\\\\|csv\\\\|pdf\\\\|blob\")"
+      "Bash(xargs grep -l \"export\\\\|download\\\\|csv\\\\|pdf\\\\|blob\")",
+      "Bash(awk -F= '{print $1\"=\"\\(\\(length\\($2\\)>0\\)?\"<len=\"length\\($2\\)\">\":\"<EMPTY>\"\\)}' .env.local)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(lsof -ti:3000)",
+      "Bash(xargs kill -9)",
+      "Bash(grep -v -E \"^UPSTASH_REDIS_REST_\\(URL|TOKEN\\)=$\" .env.local)",
+      "Bash(awk -F= '{print $1}' .env.local)",
+      "Bash(grep -v '^#\\\\|^$')",
+      "Bash(grep -vE '^UPSTASH_REDIS_REST_\\(URL|TOKEN\\)=\"\"$' .env.local)",
+      "Bash(awk -F= 'NF && !/^#/{print $1}' .env.local)",
+      "Bash(git check-ignore *)"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects"
