@@ -5,6 +5,7 @@ import Nav from '../../../components/Nav'
 import { apiFetch } from '../../../lib/api-fetch'
 import TaskTree from '../../../components/TaskTree'
 import KanbanBoard from '../../../components/KanbanBoard'
+import CalendarView from '../../../components/CalendarView'
 
 // ─── Active Sprint ────────────────────────────────────────────────────────────
 
@@ -504,6 +505,7 @@ export default function TasksPage({ currentUser }) {
   const [loading, setLoading] = useState(true)
   const [versions, setVersions] = useState([])
   const [viewMode, setViewMode] = useState('list')
+  const [showArchived, setShowArchived] = useState(false)
   const [sprintKey, setSprintKey] = useState(0)
   const [sprintRefreshTrigger, setSprintRefreshTrigger] = useState(0)
   const [showExportMenu, setShowExportMenu] = useState(false)
@@ -597,6 +599,23 @@ export default function TasksPage({ currentUser }) {
     } finally {
       setImporting(false)
     }
+  }
+
+  const archivedTasks = tasks.filter(t => t.archived)
+
+  async function restoreTask(id) {
+    await apiFetch(`${apiBase}/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ archived: false, archivedAt: null }),
+    })
+    loadTasks()
+  }
+
+  async function permaDeleteTask(id) {
+    if (!confirm('Permanently delete this card and its sub-tasks? This cannot be undone.')) return
+    await apiFetch(`${apiBase}/${id}`, { method: 'DELETE' })
+    loadTasks()
   }
 
   const contextLabel = version ? `v${version} Tasks` : 'Project Tasks'
@@ -722,15 +741,49 @@ export default function TasksPage({ currentUser }) {
                   onClick={() => setViewMode('kanban')}
                   title="Kanban board"
                 >Kanban</button>
+                <button
+                  className={`kanban-view-btn${viewMode === 'calendar' ? ' active' : ''}`}
+                  onClick={() => setViewMode('calendar')}
+                  title="Calendar view"
+                >Calendar</button>
               </div>
             </div>
           </div>
           {loading ? <TaskSkeleton /> : viewMode === 'kanban' ? (
-            <KanbanBoard key={apiBase} tasks={tasks} apiBase={apiBase} onRefresh={loadTasks} currentUser={currentUser} />
+            <KanbanBoard key={apiBase} tasks={tasks} apiBase={apiBase} slug={slug} onRefresh={loadTasks} currentUser={currentUser} />
+          ) : viewMode === 'calendar' ? (
+            <CalendarView tasks={tasks} apiBase={apiBase} onRefresh={loadTasks} />
           ) : (
             <TaskTree tasks={tasks} apiBase={apiBase} onRefresh={loadTasks} currentUser={currentUser} />
           )}
         </div>
+
+        {archivedTasks.length > 0 && (
+          <div className="section-card" style={{ marginTop: 12 }}>
+            <div className="section-card-header">
+              <button
+                onClick={() => setShowArchived(v => !v)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6, padding: 0 }}
+              >
+                {showArchived ? '▾' : '▸'} Archived ({archivedTasks.length})
+              </button>
+            </div>
+            {showArchived && (
+              <div className="archived-list">
+                {archivedTasks.map(t => (
+                  <div key={t.id} className="archived-row">
+                    {t.number && <span className="task-number" style={{ fontSize: 11 }}>{t.number}</span>}
+                    <span className="archived-title">{t.title}</span>
+                    <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => restoreTask(t.id)}>Restore</button>
+                    {currentUser?.isAdmin && (
+                      <button className="btn-ghost" style={{ fontSize: 12, color: '#dc2626' }} onClick={() => permaDeleteTask(t.id)}>Delete</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {showImport && (
           <div

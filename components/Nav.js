@@ -10,6 +10,8 @@ export default function Nav() {
   const projectSlug = query.slug || (pathname.match(/^\/projects\/([^/]+)/) || [])[1]
   const [currentUser, setCurrentUser] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [notifs, setNotifs] = useState([])
+  const [showNotifs, setShowNotifs] = useState(false)
 
   useEffect(() => {
     try {
@@ -20,8 +22,39 @@ export default function Nav() {
     } catch {}
   }, [])
 
+  // Poll notifications (no websockets — matches the app's stateless model).
+  useEffect(() => {
+    let alive = true
+    function load() {
+      apiFetch('/api/notifications')
+        .then(r => r.ok ? r.json() : [])
+        .then(d => { if (alive) setNotifs(Array.isArray(d) ? d : []) })
+        .catch(() => {})
+    }
+    load()
+    const t = setInterval(load, 60000)
+    return () => { alive = false; clearInterval(t) }
+  }, [])
+
+  const unread = notifs.filter(n => !n.read).length
+
+  async function openNotif(n) {
+    setShowNotifs(false)
+    if (!n.read) {
+      setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))
+      apiFetch(`/api/notifications/${n.id}`, { method: 'PATCH' }).catch(() => {})
+    }
+    if (n.link) router.push(n.link)
+  }
+
+  async function markAllRead() {
+    setNotifs(prev => prev.map(x => ({ ...x, read: true })))
+    apiFetch('/api/notifications', { method: 'POST' }).catch(() => {})
+  }
+
   useEffect(() => {
     setMenuOpen(false)
+    setShowNotifs(false)
   }, [pathname])
 
   async function handleSignOut() {
@@ -41,6 +74,32 @@ export default function Nav() {
       )}
       <a href="/graphify/graph.html" target="_blank" rel="noreferrer" className="nav-link">Graph</a>
       <Link href="/admin" className={`nav-link${pathname === '/admin' ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>Admin</Link>
+      <div className="nav-notif">
+        <button className="nav-notif-bell" onClick={() => setShowNotifs(v => !v)} title="Notifications" aria-label="Notifications">
+          🔔
+          {unread > 0 && <span className="nav-notif-badge">{unread > 9 ? '9+' : unread}</span>}
+        </button>
+        {showNotifs && (
+          <div className="nav-notif-dropdown">
+            <div className="nav-notif-head">
+              <span>Notifications</span>
+              {unread > 0 && <button className="btn-ghost" style={{ fontSize: 11 }} onClick={markAllRead}>Mark all read</button>}
+            </div>
+            <div className="nav-notif-list">
+              {notifs.length === 0 ? (
+                <div className="nav-notif-empty">No notifications</div>
+              ) : (
+                notifs.map(n => (
+                  <button key={n.id} className={`nav-notif-item${n.read ? '' : ' unread'}`} onClick={() => openNotif(n)}>
+                    <div className="nav-notif-text">{n.text}</div>
+                    <div className="nav-notif-time">{new Date(n.createdAt).toLocaleString()}</div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
       {currentUser && (
         <span className="nav-user" title={currentUser.username}>
           {currentUser.name || currentUser.username}

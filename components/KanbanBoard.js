@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { apiFetch } from '../lib/api-fetch'
+import AssigneeInput from './AssigneeInput'
 
 const DEFAULT_COLUMNS = [
   { status: 'backlog',     label: 'Backlog',      color: '#94a3b8' },
@@ -17,6 +18,8 @@ const COL_COLORS = [
 const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626' }
 const PRIORITY_LABEL = { low: 'Low', medium: 'Med', high: 'High' }
 
+const MAX_ATTACH_BYTES = 1024 * 1024 // 1MB cap per file (stored inline as data URL in Redis)
+
 function isOverdue(dueDate) {
   if (!dueDate) return false
   return new Date(dueDate) < new Date()
@@ -25,6 +28,31 @@ function isOverdue(dueDate) {
 function formatDate(d) {
   if (!d) return null
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+// Resolve @mentions in comment text against the assignee pool. Matches username,
+// first name, or full name with spaces removed (all case-insensitive).
+function parseMentions(text, people) {
+  if (!text) return []
+  const tokens = (text.match(/@[\w.\-]+/g) || []).map(t => t.slice(1).toLowerCase())
+  if (!tokens.length) return []
+  const hits = new Set()
+  for (const p of (people || [])) {
+    const uname = (p.username || '').toLowerCase()
+    const first = (p.name || '').split(' ')[0].toLowerCase()
+    const full = (p.name || '').toLowerCase().replace(/\s+/g, '')
+    if (tokens.some(t => t && (t === uname || t === first || t === full))) hits.add(p.name)
+  }
+  return [...hits]
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
 }
 
 function toEditForm(task) {
@@ -36,6 +64,10 @@ function toEditForm(task) {
     assignees: task.assignees || [],
     startDate: task.startDate ? task.startDate.slice(0, 10) : '',
     dueDate: task.dueDate ? task.dueDate.slice(0, 10) : '',
+    labelIds: Array.isArray(task.labelIds) ? task.labelIds : [],
+    attachments: Array.isArray(task.attachments) ? task.attachments : [],
+    cover: task.cover || null,
+    updates: Array.isArray(task.updates) ? task.updates : [],
   }
 }
 
@@ -56,7 +88,7 @@ function slugify(label, existingStatuses) {
   return `${base}-${i}`
 }
 
-export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
+export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUser }) {
   const storageKey = `kanban-cols:${apiBase}`
 
   const [columns, setColumns] = useState(() => {
@@ -74,11 +106,15 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
 
   const [draggingId, setDraggingId] = useState(null)
   const [dragOverStatus, setDragOverStatus] = useState(null)
+  const [dragOverCard, setDragOverCard] = useState(null) // { id, pos: 'before' | 'after' }
   const [addingFor, setAddingFor] = useState(null)
   const [addForm, setAddForm] = useState(null)
+  const [quickAddFor, setQuickAddFor] = useState(null)
+  const [quickAddTitle, setQuickAddTitle] = useState('')
   const [editingTask, setEditingTask] = useState(null)
   const [editForm, setEditForm] = useState(null)
   const [assignees, setAssignees] = useState([])
+  const [labels, setLabels] = useState([])
   const [saving, setSaving] = useState(false)
   const [animatingOut, setAnimatingOut] = useState(new Set())
   const [kbSearch, setKbSearch] = useState('')
@@ -86,6 +122,14 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
   const [kbStatus, setKbStatus] = useState('')
   const [kbDate, setKbDate] = useState('')
   const [kbPerson, setKbPerson] = useState('')
+  const [kbLabel, setKbLabel] = useState('')
+
+  // Comments
+  const [commentText, setCommentText] = useState('')
+
+  // Label manager
+  const [showLabelMgr, setShowLabelMgr] = useState(false)
+  const [newLabel, setNewLabel] = useState({ name: '', color: COL_COLORS[1] })
 
   // Column management
   const [addingCol, setAddingCol] = useState(false)
@@ -99,7 +143,12 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
   const boardWrapperRef = useRef(null)
   const panState = useRef({ isPanning: false, startX: 0, startY: 0, scrollLeft: 0, scrollTop: 0 })
 
-  const taskById = Object.fromEntries(tasks.map(t => [t.id, t]))
+  const labelsApi = slug ? `/api/projects/${slug}/labels` : null
+  const labelById = Object.fromEntries(labels.map(l => [l.id, l]))
+
+  // Archived cards never show on the board.
+  const boardTasks = tasks.filter(t => !t.archived)
+  const taskById = Object.fromEntries(boardTasks.map(t => [t.id, t]))
 
   const STATUS_CYCLE = Object.fromEntries(
     columns.map((col, i) => [col.status, columns[(i + 1) % columns.length].status])
@@ -110,6 +159,7 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
     if (sq && !t.title.toLowerCase().includes(sq)) return false
     if (kbPriority && (t.priority || 'medium') !== kbPriority) return false
     if (kbStatus && t.status !== kbStatus) return false
+    if (kbLabel && !(Array.isArray(t.labelIds) && t.labelIds.includes(kbLabel))) return false
     if (kbPerson) {
       const pq = kbPerson.toLowerCase().trim()
       const ta = Array.isArray(t.assignees) ? t.assignees : []
@@ -132,9 +182,8 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
     return true
   }
 
-  const hasKbFilters = kbSearch || kbPriority || kbStatus || kbDate || kbPerson
-  const visibleTasks = hasKbFilters ? tasks.filter(matchesFilters) : tasks
-  const visibleIds = new Set(visibleTasks.map(t => t.id))
+  const hasKbFilters = kbSearch || kbPriority || kbStatus || kbDate || kbPerson || kbLabel
+  const visibleTasks = hasKbFilters ? boardTasks.filter(matchesFilters) : boardTasks
 
   function onBoardMouseDown(e) {
     if (e.target.closest('.kanban-card') || e.target.closest('.kanban-subtask-row') ||
@@ -179,6 +228,38 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
       .catch(() => {})
   }, [])
 
+  function loadLabels() {
+    if (!labelsApi) return
+    fetch(labelsApi).then(r => r.ok ? r.json() : []).then(setLabels).catch(() => {})
+  }
+  useEffect(() => { loadLabels() }, [labelsApi]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // --- Label management ---
+  async function createLabel() {
+    if (!newLabel.name.trim() || !labelsApi) return
+    await apiFetch(labelsApi, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newLabel),
+    })
+    setNewLabel({ name: '', color: COL_COLORS[1] })
+    loadLabels()
+  }
+  async function updateLabel(id, updates) {
+    if (!labelsApi) return
+    await apiFetch(`${labelsApi}?id=${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    })
+    loadLabels()
+  }
+  async function deleteLabel(id) {
+    if (!labelsApi) return
+    await apiFetch(`${labelsApi}?id=${id}`, { method: 'DELETE' })
+    loadLabels()
+  }
+
   function startAdding(status) {
     setAddingFor(status)
     setAddForm({ title: '', status, priority: 'medium', children: [] })
@@ -208,6 +289,18 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
     setSaving(false)
     setAddingFor(null)
     setAddForm(null)
+    onRefresh()
+  }
+
+  // Quick-add (Trello-style inline card composer)
+  async function quickAdd(status) {
+    if (!quickAddTitle.trim()) return
+    await apiFetch(apiBase, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: quickAddTitle.trim(), status, priority: 'medium' }),
+    })
+    setQuickAddTitle('')
     onRefresh()
   }
 
@@ -251,11 +344,13 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
   function openEdit(task) {
     setEditingTask(task)
     setEditForm(toEditForm(task))
+    setCommentText('')
   }
 
   function closeEdit() {
     setEditingTask(null)
     setEditForm(null)
+    setCommentText('')
   }
 
   async function saveEdit() {
@@ -271,8 +366,78 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
     onRefresh()
   }
 
+  async function archiveTask() {
+    if (!editingTask) return
+    setSaving(true)
+    await apiFetch(`${apiBase}/${editingTask.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ archived: true, archivedAt: new Date().toISOString() }),
+    })
+    setSaving(false)
+    closeEdit()
+    onRefresh()
+  }
+
+  async function postComment() {
+    if (!commentText.trim() || !editingTask) return
+    const newUpdate = {
+      id: `upd-${Date.now()}`,
+      text: commentText.trim(),
+      author: currentUser?.name || currentUser?.username || null,
+      mentions: parseMentions(commentText, assignees),
+      createdAt: new Date().toISOString(),
+    }
+    const nextUpdates = [...(editForm.updates || []), newUpdate]
+    setEditForm(p => ({ ...p, updates: nextUpdates }))
+    setCommentText('')
+    await apiFetch(`${apiBase}/${editingTask.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ updates: nextUpdates }),
+    })
+    onRefresh()
+  }
+
+  // --- Attachments / cover ---
+  async function addAttachments(fileList) {
+    const files = Array.from(fileList || [])
+    if (!files.length) return
+    const added = []
+    for (const f of files) {
+      if (f.size > MAX_ATTACH_BYTES) {
+        alert(`"${f.name}" is too large (max ${Math.round(MAX_ATTACH_BYTES / 1024)}KB).`)
+        continue
+      }
+      const dataUrl = await readFileAsDataUrl(f)
+      added.push({
+        id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        name: f.name,
+        type: f.type,
+        size: f.size,
+        dataUrl,
+        uploadedBy: currentUser?.name || null,
+        uploadedAt: new Date().toISOString(),
+      })
+    }
+    if (added.length) setEditForm(p => ({ ...p, attachments: [...(p.attachments || []), ...added] }))
+  }
+  function removeAttachment(id) {
+    setEditForm(p => ({
+      ...p,
+      attachments: (p.attachments || []).filter(a => a.id !== id),
+      cover: p.cover && p.cover.attId === id ? null : p.cover,
+    }))
+  }
+  function setCover(att) {
+    setEditForm(p => ({ ...p, cover: { dataUrl: att.dataUrl, attId: att.id } }))
+  }
+  function clearCover() {
+    setEditForm(p => ({ ...p, cover: null }))
+  }
+
   async function updateStatus(taskId, newStatus) {
-    const task = tasks.find(t => t.id === taskId)
+    const task = boardTasks.find(t => t.id === taskId)
     if (!task || task.status === newStatus) return
     setAnimatingOut(prev => new Set([...prev, taskId]))
     await Promise.all([
@@ -284,6 +449,16 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
       new Promise(r => setTimeout(r, 180)),
     ])
     setAnimatingOut(prev => { const s = new Set(prev); s.delete(taskId); return s })
+    onRefresh()
+  }
+
+  async function reorderColumn(status, orderedIds) {
+    const draggedId = orderedIds[0] // any id in this column works as the path param
+    await apiFetch(`${apiBase}/${draggedId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'boardReorder', status, orderedIds }),
+    })
     onRefresh()
   }
 
@@ -308,12 +483,52 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
     if (draggingId) updateStatus(draggingId, status)
     setDraggingId(null)
     setDragOverStatus(null)
+    setDragOverCard(null)
     dragTypeRef.current = null
+  }
+
+  // Within-column card drop target
+  function onCardDragOver(e, task) {
+    if (dragTypeRef.current !== 'task' || draggingId === task.id) return
+    e.preventDefault()
+    e.stopPropagation()
+    e.dataTransfer.dropEffect = 'move'
+    const r = e.currentTarget.getBoundingClientRect()
+    const pos = (e.clientY - r.top) / r.height < 0.5 ? 'before' : 'after'
+    setDragOverCard(prev => (prev?.id === task.id && prev?.pos === pos) ? prev : { id: task.id, pos })
+  }
+
+  function onCardDrop(e, targetTask, colStatus) {
+    if (dragTypeRef.current !== 'task') return
+    e.preventDefault()
+    e.stopPropagation()
+    const dragged = taskById[draggingId]
+    const pos = dragOverCard?.pos
+    setDragOverCard(null)
+    setDragOverStatus(null)
+    const id = draggingId
+    setDraggingId(null)
+    dragTypeRef.current = null
+    if (!dragged || dragged.id === targetTask.id) return
+    if (dragged.status !== colStatus) {
+      // cross-column drop on a card → move to that column (appended)
+      updateStatus(id, colStatus)
+      return
+    }
+    const ids = getColTasks(colStatus).map(t => t.id)
+    const from = ids.indexOf(id)
+    if (from !== -1) ids.splice(from, 1)
+    let idx = ids.indexOf(targetTask.id)
+    if (idx === -1) idx = ids.length
+    if (pos === 'after') idx += 1
+    ids.splice(idx, 0, id)
+    reorderColumn(colStatus, ids)
   }
 
   function onDragEnd() {
     setDraggingId(null)
     setDragOverStatus(null)
+    setDragOverCard(null)
     setDraggingColStatus(null)
     setDragOverColStatus(null)
     dragTypeRef.current = null
@@ -380,7 +595,7 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
   }
 
   function deleteColumn(status) {
-    const taskCount = tasks.filter(t => t.status === status).length
+    const taskCount = boardTasks.filter(t => t.status === status).length
     if (taskCount > 0) {
       alert(`Cannot delete: ${taskCount} task${taskCount !== 1 ? 's' : ''} in this column. Move them first.`)
       return
@@ -388,21 +603,25 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
     setColumns(prev => prev.filter(c => c.status !== status))
   }
 
-  function toggleEditAssignee(name) {
+  function toggleEditLabel(id) {
     setEditForm(p => ({
       ...p,
-      assignees: p.assignees.includes(name)
-        ? p.assignees.filter(a => a !== name)
-        : [...p.assignees, name],
+      labelIds: p.labelIds.includes(id)
+        ? p.labelIds.filter(l => l !== id)
+        : [...p.labelIds, id],
     }))
   }
 
+  function sortBoard(arr) {
+    return arr.sort((a, b) => (a.boardOrder ?? a.order) - (b.boardOrder ?? b.order))
+  }
+
   function getColTasks(status) {
-    return visibleTasks.filter(t => !t.parentId && t.status === status).sort((a, b) => a.order - b.order)
+    return sortBoard(visibleTasks.filter(t => !t.parentId && t.status === status))
   }
 
   function getChildrenOf(taskId) {
-    return tasks.filter(t => t.parentId === taskId).sort((a, b) => a.order - b.order)
+    return boardTasks.filter(t => t.parentId === taskId).sort((a, b) => a.order - b.order)
   }
 
   function getChildrenInCol(taskId, colStatus) {
@@ -413,6 +632,20 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
     return visibleTasks
       .filter(t => t.parentId && t.status === colStatus && taskById[t.parentId]?.status !== colStatus)
       .sort((a, b) => a.order - b.order)
+  }
+
+  function renderCardLabels(task) {
+    const ids = Array.isArray(task.labelIds) ? task.labelIds : []
+    if (!ids.length) return null
+    return (
+      <div className="kanban-card-labels">
+        {ids.map(id => {
+          const l = labelById[id]
+          if (!l) return null
+          return <span key={id} className="kanban-label-chip" style={{ background: l.color }} title={l.name}>{l.name}</span>
+        })}
+      </div>
+    )
   }
 
   return (
@@ -439,6 +672,12 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
           <option value="">All statuses</option>
           {columns.map(c => <option key={c.status} value={c.status}>{c.label}</option>)}
         </select>
+        {labels.length > 0 && (
+          <select className="form-input filter-select" value={kbLabel} onChange={e => setKbLabel(e.target.value)}>
+            <option value="">All labels</option>
+            {labels.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+          </select>
+        )}
         <select className="form-input filter-select" value={kbDate} onChange={e => setKbDate(e.target.value)}>
           <option value="">All dates</option>
           <option value="overdue">Overdue</option>
@@ -464,8 +703,13 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
             </datalist>
           </div>
         )}
+        {labelsApi && (
+          <button className="btn-ghost" style={{ whiteSpace: 'nowrap', fontSize: 12 }} onClick={() => setShowLabelMgr(true)}>
+            🏷 Labels
+          </button>
+        )}
         {hasKbFilters && (
-          <button className="btn-ghost" style={{ whiteSpace: 'nowrap', fontSize: 12 }} onClick={() => { setKbSearch(''); setKbPriority(''); setKbStatus(''); setKbDate(''); setKbPerson('') }}>
+          <button className="btn-ghost" style={{ whiteSpace: 'nowrap', fontSize: 12 }} onClick={() => { setKbSearch(''); setKbPriority(''); setKbStatus(''); setKbDate(''); setKbPerson(''); setKbLabel('') }}>
             Clear filters
           </button>
         )}
@@ -544,7 +788,7 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
                     )}
                     <span className="kanban-column-count">
                       {visibleTasks.filter(t => t.status === col.status).length}
-                      {hasKbFilters ? `/${tasks.filter(t => t.status === col.status).length}` : ''}
+                      {hasKbFilters ? `/${boardTasks.filter(t => t.status === col.status).length}` : ''}
                     </span>
                   </div>
                   <div className="kanban-col-header-actions" onClick={e => e.stopPropagation()}>
@@ -625,14 +869,21 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
                     const sameColChildren = getChildrenInCol(task.id, col.status)
                     const doneChildren = allChildren.filter(c => c.status === 'done').length
                     const overdue = isOverdue(task.dueDate)
+                    const dropClass = dragOverCard?.id === task.id ? ` kanban-card--drop-${dragOverCard.pos}` : ''
                     return (
                       <div key={task.id} className={`kanban-card-group${animatingOut.has(task.id) ? ' kanban-card-group--leaving' : ''}`}>
                         <div
-                          className={`kanban-card${draggingId === task.id ? ' kanban-card--dragging' : ''}`}
+                          className={`kanban-card${draggingId === task.id ? ' kanban-card--dragging' : ''}${dropClass}`}
                           draggable
                           onDragStart={e => onDragStart(e, task.id)}
+                          onDragOver={e => onCardDragOver(e, task)}
+                          onDrop={e => onCardDrop(e, task, col.status)}
                           onDragEnd={onDragEnd}
                         >
+                          {task.cover?.dataUrl && (
+                            <div className="kanban-card-cover" style={{ backgroundImage: `url(${task.cover.dataUrl})` }} />
+                          )}
+                          {renderCardLabels(task)}
                           <div className="kanban-card-header">
                             {task.number && <span className="task-number" style={{ fontSize: 10 }}>{task.number}</span>}
                             <button
@@ -664,6 +915,12 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
                               <span className="task-meta-chip kanban-progress-chip">
                                 {doneChildren}/{allChildren.length} sub
                               </span>
+                            )}
+                            {task.updates?.length > 0 && (
+                              <span className="task-meta-chip" title={`${task.updates.length} comment(s)`}>💬 {task.updates.length}</span>
+                            )}
+                            {task.attachments?.length > 0 && (
+                              <span className="task-meta-chip" title={`${task.attachments.length} attachment(s)`}>📎 {task.attachments.length}</span>
                             )}
                             {task.assignees?.map(a => (
                               <span key={a} className="kanban-assignee-avatar" title={a}>
@@ -798,8 +1055,32 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
                     )
                   })}
 
-                  {tasks.filter(t => t.status === col.status).length === 0 && addingFor !== col.status && (
+                  {visibleTasks.filter(t => t.status === col.status).length === 0 && addingFor !== col.status && quickAddFor !== col.status && (
                     <div className="kanban-empty">No tasks</div>
+                  )}
+
+                  {/* Quick-add card composer */}
+                  {quickAddFor === col.status ? (
+                    <div className="kanban-quick-add">
+                      <textarea
+                        className="form-input"
+                        placeholder="Enter a title…"
+                        value={quickAddTitle}
+                        autoFocus
+                        rows={2}
+                        onChange={e => setQuickAddTitle(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); quickAdd(col.status) }
+                          if (e.key === 'Escape') { setQuickAddFor(null); setQuickAddTitle('') }
+                        }}
+                      />
+                      <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                        <button className="btn-primary" style={{ fontSize: 12, padding: '4px 12px' }} onClick={() => quickAdd(col.status)} disabled={!quickAddTitle.trim()}>Add card</button>
+                        <button className="btn-ghost" style={{ fontSize: 12, padding: '4px 10px' }} onClick={() => { setQuickAddFor(null); setQuickAddTitle('') }}>✕</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button className="kanban-quick-add-btn" onClick={() => { setQuickAddFor(col.status); setQuickAddTitle('') }}>+ Add a card</button>
                   )}
                 </div>
               </div>
@@ -851,6 +1132,49 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
         </div>
       </div>
 
+      {/* Label manager modal */}
+      {showLabelMgr && (
+        <div className="kanban-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowLabelMgr(false) }}>
+          <div className="kanban-modal" style={{ maxWidth: 420 }}>
+            <div className="kanban-modal-header">
+              <span>Manage Labels</span>
+              <button className="kanban-modal-close" onClick={() => setShowLabelMgr(false)}>✕</button>
+            </div>
+            <div className="task-form">
+              <div className="kanban-label-mgr-list">
+                {labels.length === 0 && <div className="kanban-empty" style={{ margin: 0 }}>No labels yet.</div>}
+                {labels.map(l => (
+                  <div key={l.id} className="kanban-label-mgr-row">
+                    <span className="kanban-label-chip" style={{ background: l.color }}>{l.name}</span>
+                    <div className="kanban-col-color-picker" style={{ flex: 1 }}>
+                      {COL_COLORS.map(c => (
+                        <button key={c} className={`kanban-col-color-swatch${l.color === c ? ' active' : ''}`} style={{ background: c }} onClick={() => updateLabel(l.id, { color: c })} title={c} />
+                      ))}
+                    </div>
+                    <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => deleteLabel(l.id)} title="Delete label">✕</button>
+                  </div>
+                ))}
+              </div>
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginTop: 4 }}>
+                <input
+                  className="form-input"
+                  placeholder="New label name"
+                  value={newLabel.name}
+                  onChange={e => setNewLabel(p => ({ ...p, name: e.target.value }))}
+                  onKeyDown={e => { if (e.key === 'Enter') createLabel() }}
+                />
+                <div className="kanban-col-color-picker" style={{ marginTop: 8 }}>
+                  {COL_COLORS.map(c => (
+                    <button key={c} className={`kanban-col-color-swatch${newLabel.color === c ? ' active' : ''}`} style={{ background: c }} onClick={() => setNewLabel(p => ({ ...p, color: c }))} title={c} />
+                  ))}
+                </div>
+                <button className="btn-primary" style={{ fontSize: 12, marginTop: 8 }} onClick={createLabel} disabled={!newLabel.name.trim()}>+ Add label</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {editingTask && editForm && (
         <div
           className="kanban-modal-overlay"
@@ -876,6 +1200,27 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
                 onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))}
                 rows={2}
               />
+
+              {/* Labels */}
+              {labels.length > 0 && (
+                <div className="task-assignees-selector">
+                  <span className="task-assignees-label">Labels:</span>
+                  <div className="task-assignees-list">
+                    {labels.map(l => (
+                      <button
+                        key={l.id}
+                        type="button"
+                        className="kanban-label-chip kanban-label-chip--toggle"
+                        style={{ background: editForm.labelIds.includes(l.id) ? l.color : 'transparent', color: editForm.labelIds.includes(l.id) ? '#fff' : l.color, borderColor: l.color }}
+                        onClick={() => toggleEditLabel(l.id)}
+                      >
+                        {editForm.labelIds.includes(l.id) ? '✓ ' : ''}{l.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="task-form-row">
                 <select className="form-input" value={editForm.status} onChange={e => setEditForm(p => ({ ...p, status: e.target.value }))}>
                   {columns.map(c => (
@@ -888,26 +1233,11 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
                   <option value="high">High priority</option>
                 </select>
               </div>
-              {assignees.length > 0 && (
-                <div className="task-assignees-selector">
-                  <span className="task-assignees-label">Assignees:</span>
-                  <div className="task-assignees-list">
-                    {assignees.map(a => (
-                      <label
-                        key={a.name}
-                        className={`task-assignee-chip ${editForm.assignees.includes(a.name) ? 'selected' : ''}`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={editForm.assignees.includes(a.name)}
-                          onChange={() => toggleEditAssignee(a.name)}
-                        />
-                        {a.name}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <AssigneeInput
+                value={editForm.assignees}
+                options={assignees}
+                onChange={next => setEditForm(p => ({ ...p, assignees: next }))}
+              />
               <div className="task-form-row">
                 <input
                   className="form-input"
@@ -924,13 +1254,76 @@ export default function KanbanBoard({ tasks, apiBase, onRefresh }) {
                   onChange={e => setEditForm(p => ({ ...p, dueDate: e.target.value }))}
                 />
               </div>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-                <button className="btn-ghost" onClick={closeEdit}>Cancel</button>
-                <button
-                  className="btn-primary"
-                  onClick={saveEdit}
-                  disabled={saving || !editForm.title.trim()}
-                >Save</button>
+
+              {/* Attachments + cover */}
+              <div className="kanban-attach-section">
+                <div className="task-assignees-label" style={{ marginBottom: 6 }}>Attachments:</div>
+                {(editForm.attachments || []).length > 0 && (
+                  <div className="kanban-attach-list">
+                    {editForm.attachments.map(att => {
+                      const isImg = (att.type || '').startsWith('image/')
+                      const isCover = editForm.cover?.attId === att.id
+                      return (
+                        <div key={att.id} className="kanban-attach-item">
+                          {isImg
+                            ? <img src={att.dataUrl} alt={att.name} className="kanban-attach-thumb" />
+                            : <span className="kanban-attach-file">📄</span>}
+                          <a href={att.dataUrl} download={att.name} className="kanban-attach-name" title={att.name}>{att.name}</a>
+                          {isImg && (
+                            <button type="button" className="btn-ghost" style={{ fontSize: 11 }} onClick={() => isCover ? clearCover() : setCover(att)}>
+                              {isCover ? 'Unset cover' : 'Set cover'}
+                            </button>
+                          )}
+                          <button type="button" className="btn-ghost" style={{ fontSize: 11 }} onClick={() => removeAttachment(att.id)} title="Remove">✕</button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+                <input type="file" multiple onChange={e => { addAttachments(e.target.files); e.target.value = '' }} style={{ fontSize: 12 }} />
+              </div>
+
+              {/* Comments / activity */}
+              <div className="kanban-comments-section">
+                <div className="task-assignees-label" style={{ marginBottom: 6 }}>Comments:</div>
+                <div className="task-updates-list">
+                  {(!editForm.updates || editForm.updates.length === 0) ? (
+                    <div className="task-updates-empty">No comments yet.</div>
+                  ) : (
+                    [...editForm.updates].reverse().map(u => (
+                      <div key={u.id} className="task-update-item">
+                        <div className="task-update-meta">
+                          {u.author && <span className="task-update-author">{u.author}</span>}
+                          <span className="task-update-time">{new Date(u.createdAt).toLocaleString()}</span>
+                        </div>
+                        <div className="task-update-text">{u.text}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className="task-update-form">
+                  <input
+                    className="form-input"
+                    placeholder="Comment… use @name to mention"
+                    value={commentText}
+                    onChange={e => setCommentText(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); postComment() } }}
+                    style={{ flex: 1, fontSize: 12 }}
+                  />
+                  <button className="btn-primary" onClick={postComment} disabled={!commentText.trim()} style={{ fontSize: 12, padding: '5px 12px', whiteSpace: 'nowrap' }}>Post</button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                <button className="btn-ghost" style={{ color: '#dc2626' }} onClick={archiveTask} disabled={saving} title="Archive this card">Archive</button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn-ghost" onClick={closeEdit}>Cancel</button>
+                  <button
+                    className="btn-primary"
+                    onClick={saveEdit}
+                    disabled={saving || !editForm.title.trim()}
+                  >Save</button>
+                </div>
               </div>
             </div>
           </div>

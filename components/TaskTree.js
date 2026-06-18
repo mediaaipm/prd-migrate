@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { apiFetch } from '../lib/api-fetch'
+import AssigneeInput from './AssigneeInput'
 
 const STATUS_CYCLE = ['todo', 'in-progress', 'done']
 const STATUS_LABEL = { 'todo': 'To Do', 'in-progress': 'In Progress', 'done': 'Done' }
@@ -62,15 +63,6 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [] }) {
   const [form, setForm] = useState(initial || blankForm())
   const f = (k) => e => setForm(p => ({ ...p, [k]: e.target.value }))
 
-  function toggleAssignee(name) {
-    setForm(p => ({
-      ...p,
-      assignees: p.assignees.includes(name)
-        ? p.assignees.filter(a => a !== name)
-        : [...p.assignees, name]
-    }))
-  }
-
   return (
     <div className="task-form">
       <div className="task-form-row">
@@ -90,19 +82,11 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [] }) {
           <option value="high">High priority</option>
         </select>
       </div>
-      {assignees.length > 0 && (
-        <div className="task-assignees-selector">
-          <span className="task-assignees-label">Assignees:</span>
-          <div className="task-assignees-list">
-            {assignees.map(a => (
-              <label key={a.name} className={`task-assignee-chip ${form.assignees.includes(a.name) ? 'selected' : ''}`}>
-                <input type="checkbox" checked={form.assignees.includes(a.name)} onChange={() => toggleAssignee(a.name)} />
-                {a.name}
-              </label>
-            ))}
-          </div>
-        </div>
-      )}
+      <AssigneeInput
+        value={form.assignees}
+        options={assignees}
+        onChange={next => setForm(p => ({ ...p, assignees: next }))}
+      />
       <div className="task-form-row">
         <input className="form-input" type="date" title="Start date" value={form.startDate} onChange={f('startDate')} />
         <input className="form-input" type="date" title="Due date" value={form.dueDate} onChange={f('dueDate')} />
@@ -410,13 +394,14 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser }) {
     fetch('/api/assignees').then(r => r.ok ? r.json() : []).then(setAssignees).catch(() => {})
   }, [])
 
-  const tree = buildTree(tasks || [])
+  const liveTasks = (tasks || []).filter(t => !t.archived)
+  const tree = buildTree(liveTasks)
 
   const q = search.toLowerCase()
   const pq = filterPerson.toLowerCase().trim()
   const isFiltering = q || pq
   const filtered = isFiltering
-    ? (tasks || []).filter(t => {
+    ? liveTasks.filter(t => {
         const taskAssignees = Array.isArray(t.assignees) ? t.assignees : (t.assignee ? [t.assignee] : [])
         const matchesSearch = !q || (
           t.title.toLowerCase().includes(q) ||
@@ -447,7 +432,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser }) {
         <button className="btn-primary" style={{ fontSize: 12, padding: '5px 12px' }} onClick={() => setAddingRoot(v => !v)}>
           {addingRoot ? 'Cancel' : '+ Add Task'}
         </button>
-        {tasks.length > 0 && (
+        {liveTasks.length > 0 && (
           <div className="search-bar" style={{ marginBottom: 0, flex: 1, maxWidth: 320 }}>
             <input
               className="form-input search-input"
@@ -461,7 +446,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser }) {
             )}
           </div>
         )}
-        {tasks.length > 0 && assignees.length > 0 && (
+        {liveTasks.length > 0 && assignees.length > 0 && (
           <div className="search-bar" style={{ marginBottom: 0, minWidth: 150, maxWidth: 200 }}>
             <input
               className="form-input search-input"
@@ -479,9 +464,9 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser }) {
             </datalist>
           </div>
         )}
-        {tasks.length > 0 && (
+        {liveTasks.length > 0 && (
           <span className="task-count-label">
-            {filtered ? `${filtered.length} of ${tasks.length}` : `${tasks.length} task${tasks.length !== 1 ? 's' : ''}`}
+            {filtered ? `${filtered.length} of ${liveTasks.length}` : `${liveTasks.length} task${liveTasks.length !== 1 ? 's' : ''}`}
           </span>
         )}
       </div>

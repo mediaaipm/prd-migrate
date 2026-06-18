@@ -1,5 +1,6 @@
-const { getTask, updateTask, deleteTask, reorderTask, moveTask } = require('../../../../../../../lib/task-store');
-const { logAudit } = require('../../../../../../../lib/audit-log');
+const { getTask, updateTask, deleteTask, reorderTask, moveTask, reorderBoard } = require('../../../../../../../lib/task-store');
+const { logAudit, getAuditUser } = require('../../../../../../../lib/audit-log');
+const { notifyTaskChange } = require('../../../../../../../lib/notification-store');
 const { requireAdmin } = require('../../../../../../../lib/require-admin');
 const { requireProjectAccess } = require('../../../../../../../lib/require-permission');
 
@@ -14,9 +15,11 @@ export default async function handler(req, res) {
   }
   if (req.method === 'PUT') {
     const updates = req.body || {};
+    const before = await getTask(slug, version, taskId);
+    if (!before) return res.status(404).json({ error: 'Not found' });
     const task = await updateTask(slug, version, taskId, updates);
-    if (!task) return res.status(404).json({ error: 'Not found' });
     await logAudit(req, 'update_task', 'task', { slug, version, taskId, fields: Object.keys(updates) });
+    await notifyTaskChange(getAuditUser(req)?.name, { slug, version, before, updates });
     return res.status(200).json(task);
   }
   if (req.method === 'DELETE') {
@@ -26,7 +29,12 @@ export default async function handler(req, res) {
     return res.status(200).json({ deleted: count });
   }
   if (req.method === 'PATCH') {
-    const { direction, action, targetId, position } = req.body || {};
+    const { direction, action, targetId, position, status, orderedIds } = req.body || {};
+    if (action === 'boardReorder') {
+      const tasks = await reorderBoard(slug, version, status, Array.isArray(orderedIds) ? orderedIds : []);
+      await logAudit(req, 'board_reorder', 'task', { slug, version, status, count: (orderedIds || []).length });
+      return res.status(200).json(tasks);
+    }
     if (action === 'move') {
       const tasks = await moveTask(slug, version, taskId, targetId, position);
       if (!tasks) return res.status(404).json({ error: 'Not found' });

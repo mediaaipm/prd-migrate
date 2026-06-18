@@ -1,5 +1,6 @@
-const { getTask, updateTask, deleteTask, reorderTask, moveTask } = require('../../../../../lib/task-store');
-const { logAudit } = require('../../../../../lib/audit-log');
+const { getTask, updateTask, deleteTask, reorderTask, moveTask, reorderBoard } = require('../../../../../lib/task-store');
+const { logAudit, getAuditUser } = require('../../../../../lib/audit-log');
+const { notifyTaskChange } = require('../../../../../lib/notification-store');
 const { requirePermission, requireProjectAccess } = require('../../../../../lib/require-permission');
 
 export default async function handler(req, res) {
@@ -21,6 +22,7 @@ export default async function handler(req, res) {
     const details = { slug, version: v, taskId, fields: Object.keys(updates) };
     if ('status' in updates) { details.statusFrom = before.status; details.statusTo = updates.status; }
     await logAudit(req, 'update_task', 'task', details);
+    await notifyTaskChange(getAuditUser(req)?.name, { slug, version: v, before, updates });
     return res.status(200).json(task);
   }
   if (req.method === 'DELETE') {
@@ -31,7 +33,12 @@ export default async function handler(req, res) {
   }
   if (req.method === 'PATCH') {
     if (!requirePermission('task:update')(req, res)) return;
-    const { direction, action, targetId, position } = req.body || {};
+    const { direction, action, targetId, position, status, orderedIds } = req.body || {};
+    if (action === 'boardReorder') {
+      const tasks = await reorderBoard(slug, v, status, Array.isArray(orderedIds) ? orderedIds : []);
+      await logAudit(req, 'board_reorder', 'task', { slug, version: v, status, count: (orderedIds || []).length });
+      return res.status(200).json(tasks);
+    }
     if (action === 'move') {
       const tasks = await moveTask(slug, v, taskId, targetId, position);
       if (!tasks) return res.status(404).json({ error: 'Not found' });
