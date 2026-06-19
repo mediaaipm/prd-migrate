@@ -522,14 +522,18 @@ export default function TasksPage({ currentUser }) {
       : `/api/projects/${slug}/tasks`
     : null
 
-  const loadTasks = useCallback(() => {
+  const loadTasks = useCallback((opts = {}) => {
     if (!apiBase) return
-    setLoading(true)
+    // Skeleton only on initial load. Background refreshes (status change, drag,
+    // reorder) keep the board mounted to avoid a whole-page flicker.
+    if (!opts.background) setLoading(true)
     fetch(apiBase)
       .then(r => r.ok ? r.json() : [])
       .then(data => { setTasks(data); setLoading(false); setSprintRefreshTrigger(n => n + 1) })
       .catch(() => setLoading(false))
   }, [apiBase])
+
+  const refreshTasks = useCallback(() => loadTasks({ background: true }), [loadTasks])
 
   useEffect(() => {
     if (!router.isReady || !slug) return
@@ -750,11 +754,11 @@ export default function TasksPage({ currentUser }) {
             </div>
           </div>
           {loading ? <TaskSkeleton /> : viewMode === 'kanban' ? (
-            <KanbanBoard key={apiBase} tasks={tasks} apiBase={apiBase} slug={slug} onRefresh={loadTasks} currentUser={currentUser} />
+            <KanbanBoard key={apiBase} tasks={tasks} apiBase={apiBase} slug={slug} onRefresh={refreshTasks} currentUser={currentUser} />
           ) : viewMode === 'calendar' ? (
-            <CalendarView tasks={tasks} apiBase={apiBase} onRefresh={loadTasks} />
+            <CalendarView tasks={tasks} apiBase={apiBase} onRefresh={refreshTasks} />
           ) : (
-            <TaskTree tasks={tasks} apiBase={apiBase} onRefresh={loadTasks} currentUser={currentUser} />
+            <TaskTree tasks={tasks} apiBase={apiBase} onRefresh={refreshTasks} currentUser={currentUser} />
           )}
         </div>
 

@@ -1266,9 +1266,11 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                       return (
                         <div key={att.id} className="kanban-attach-item">
                           {isImg
-                            ? <img src={att.dataUrl} alt={att.name} className="kanban-attach-thumb" />
+                            ? <a href={att.dataUrl} target="_blank" rel="noopener noreferrer" title="View"><img src={att.dataUrl} alt={att.name} className="kanban-attach-thumb" /></a>
                             : <span className="kanban-attach-file">📄</span>}
-                          <a href={att.dataUrl} download={att.name} className="kanban-attach-name" title={att.name}>{att.name}</a>
+                          <a href={att.dataUrl} target="_blank" rel="noopener noreferrer" className="kanban-attach-name" title={att.name}>{att.name}</a>
+                          <a href={att.dataUrl} target="_blank" rel="noopener noreferrer" className="btn-ghost" style={{ fontSize: 11 }} title="View">View</a>
+                          <a href={att.dataUrl} download={att.name} className="btn-ghost" style={{ fontSize: 11 }} title="Download">Download</a>
                           {isImg && (
                             <button type="button" className="btn-ghost" style={{ fontSize: 11 }} onClick={() => isCover ? clearCover() : setCover(att)}>
                               {isCover ? 'Unset cover' : 'Set cover'}
