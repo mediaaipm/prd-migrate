@@ -146,7 +146,17 @@
       "Bash(grep -v '^#\\\\|^$')",
       "Bash(grep -vE '^UPSTASH_REDIS_REST_\\(URL|TOKEN\\)=\"\"$' .env.local)",
       "Bash(awk -F= 'NF && !/^#/{print $1}' .env.local)",
-      "Bash(git check-ignore *)"
+      "Bash(git check-ignore *)",
+      "Bash(cat .gitlab-ci.yml)",
+      "Bash(cat vercel.json)",
+      "Bash(echo \"exit was: $?\")",
+      "Bash(cat .vercel/project.json)",
+      "Bash(glab auth *)",
+      "Bash(security find-internet-password *)",
+      "Bash(graphify query *)",
+      "Bash(npx --no-install esbuild components/TaskTree.js --loader=jsx --bundle --external:react --external:../lib/api-fetch --external:./AssigneeInput --format=esm)",
+      "Bash(rm -f graphify-out/.graphify_old.json graphify-out/.graphify_incremental.json)",
+      "Bash(graphify export *)"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects"

@@ -1459,6 +1459,46 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   padding: 16px 18px 18px;
 }
 
+/* Task detail view (tree title click) */
+.task-title--clickable { cursor: pointer; }
+.task-title--clickable:hover { text-decoration: underline; }
+
+.task-detail {
+  padding: 16px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.task-detail-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+.task-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.task-detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.task-detail-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted);
+}
+.task-detail-static { width: fit-content; cursor: default; }
+.task-detail-desc { white-space: pre-wrap; }
+.task-detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
 /* Column drag states */
 .kanban-column--col-drag-over {
   border-color: #8b5cf6;

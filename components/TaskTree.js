@@ -110,6 +110,8 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
   const [updateAuthor, setUpdateAuthor] = useState('')
   const [savingUpdate, setSavingUpdate] = useState(false)
   const [localStatus, setLocalStatus] = useState(node.status)
+  const [showDetail, setShowDetail] = useState(false)
+  const [detailEditing, setDetailEditing] = useState(false)
 
   useEffect(() => { setLocalStatus(node.status) }, [node.status])
 
@@ -228,7 +230,12 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
           <button className={statusClass} onClick={cycleStatus} title={`Status: ${STATUS_LABEL[localStatus]} — click to cycle`}>
             {localStatus === 'done' ? '✓' : localStatus === 'in-progress' ? '◑' : '○'}
           </button>
-          <span className="task-title" style={{ textDecoration: localStatus === 'done' ? 'line-through' : 'none', opacity: localStatus === 'done' ? 0.55 : 1 }}>
+          <span
+            className="task-title task-title--clickable"
+            onClick={() => { setShowDetail(true); setDetailEditing(false) }}
+            title="Click for details"
+            style={{ textDecoration: localStatus === 'done' ? 'line-through' : 'none', opacity: localStatus === 'done' ? 0.55 : 1 }}
+          >
             {node.title}
           </span>
           {node.startDate && <span className="task-meta-chip task-start" title="Start date">▶ {node.startDate}</span>}
@@ -339,6 +346,56 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
       {addingChild && (
         <div className="task-inline-form">
           <TaskForm onSave={handleAddChild} onCancel={() => setAddingChild(false)} label="Add Sub-task" assignees={assignees} />
+        </div>
+      )}
+
+      {showDetail && (
+        <div className="kanban-modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowDetail(false); setDetailEditing(false) } }}>
+          <div className="kanban-modal">
+            <div className="kanban-modal-header">
+              <span>{detailEditing ? 'Edit Task' : `Task ${node.number}`}</span>
+              <button className="kanban-modal-close" onClick={() => { setShowDetail(false); setDetailEditing(false) }}>✕</button>
+            </div>
+            {detailEditing ? (
+              <TaskForm
+                initial={{
+                  title: node.title,
+                  description: node.description || '',
+                  status: localStatus,
+                  priority: node.priority || 'medium',
+                  assignees: nodeAssignees,
+                  startDate: node.startDate || '',
+                  dueDate: node.dueDate || '',
+                  numberOverride: node.numberOverride || '',
+                }}
+                onSave={async form => { await handleSaveEdit(form); setDetailEditing(false) }}
+                onCancel={() => setDetailEditing(false)}
+                label="Update"
+                assignees={assignees}
+              />
+            ) : (
+              <div className="task-detail">
+                <div className="task-detail-title">{node.title}</div>
+                <div className="task-detail-grid">
+                  <div className="task-detail-field"><span className="task-detail-label">Status</span><span className={statusClass + ' task-detail-static'}>{STATUS_LABEL[localStatus] || localStatus}</span></div>
+                  <div className="task-detail-field"><span className="task-detail-label">Priority</span><span>{PRIORITY_LABEL[node.priority] || node.priority || '—'}</span></div>
+                  <div className="task-detail-field"><span className="task-detail-label">Start</span><span>{node.startDate || '—'}</span></div>
+                  <div className="task-detail-field"><span className="task-detail-label">Due</span><span>{node.dueDate || '—'}</span></div>
+                </div>
+                <div className="task-detail-field">
+                  <span className="task-detail-label">Assignees</span>
+                  <span>{nodeAssignees.length ? nodeAssignees.map(a => typeof a === 'object' ? a.name : a).join(', ') : '—'}</span>
+                </div>
+                <div className="task-detail-field">
+                  <span className="task-detail-label">Description</span>
+                  <span className="task-detail-desc">{node.description || '—'}</span>
+                </div>
+                <div className="task-detail-actions">
+                  <button className="btn-primary" style={{ fontSize: 12 }} onClick={() => setDetailEditing(true)}>Edit</button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
