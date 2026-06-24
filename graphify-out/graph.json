@@ -1,14 +1,59 @@
 {
   "directed": false,
   "multigraph": false,
-  "graph": {},
+  "graph": {
+    "hyperedges": [
+      {
+        "id": "task_view_modes_flow",
+        "label": "Three task views render the same task data",
+        "nodes": [
+          "components_kanbanboard_kanbanboard",
+          "components_calendarview_calendarview",
+          "components_tasktree_tasktree",
+          "concept_task_entity"
+        ],
+        "relation": "participate_in",
+        "confidence": "INFERRED",
+        "confidence_score": 0.85,
+        "source_file": "components/KanbanBoard.js"
+      },
+      {
+        "id": "task_mutation_via_apifetch",
+        "label": "Task views mutate tasks through apiFetch wrapper",
+        "nodes": [
+          "components_kanbanboard_updatestatus",
+          "components_calendarview_reschedule",
+          "components_tasktree_dnd",
+          "lib_api_fetch_apifetch"
+        ],
+        "relation": "participate_in",
+        "confidence": "INFERRED",
+        "confidence_score": 0.75,
+        "source_file": "lib/api-fetch.js"
+      },
+      {
+        "id": "shared_attachment_pattern",
+        "label": "Inline data-URL attachment + cover pattern across forms",
+        "nodes": [
+          "components_kanbanboard_kanbanboard",
+          "components_calendarview_daytaskform",
+          "components_tasktree_taskform",
+          "concept_attachment_cover"
+        ],
+        "relation": "implement",
+        "confidence": "INFERRED",
+        "confidence_score": 0.75,
+        "source_file": "components/CalendarView.js"
+      }
+    ]
+  },
   "nodes": [
     {
       "label": ".graphify_ast.json",
       "file_type": "code",
       "source_file": ".graphify_ast.json",
       "source_location": "L1",
-      "community": 29,
+      "community": 28,
       "norm_label": ".graphify_ast.json",
       "id": "graphify_ast_json"
     },
@@ -17,7 +62,7 @@
       "file_type": "code",
       "source_file": ".graphify_ast.json",
       "source_location": "L2",
-      "community": 29,
+      "community": 28,
       "norm_label": "nodes",
       "id": "prd_manager_graphify_ast_nodes"
     },
@@ -26,7 +71,7 @@
       "file_type": "code",
       "source_file": ".graphify_ast.json",
       "source_location": "L2146",
-      "community": 29,
+      "community": 28,
       "norm_label": "edges",
       "id": "prd_manager_graphify_ast_edges"
     },
@@ -35,7 +80,7 @@
       "file_type": "code",
       "source_file": ".graphify_ast.json",
       "source_location": "L8358",
-      "community": 29,
+      "community": 28,
       "norm_label": "input_tokens",
       "id": "prd_manager_graphify_ast_input_tokens"
     },
@@ -44,7 +89,7 @@
       "file_type": "code",
       "source_file": ".graphify_ast.json",
       "source_location": "L8359",
-      "community": 29,
+      "community": 28,
       "norm_label": "output_tokens",
       "id": "prd_manager_graphify_ast_output_tokens"
     },
@@ -53,7 +98,7 @@
       "file_type": "code",
       "source_file": ".graphify_detect.json",
       "source_location": "L1",
-      "community": 14,
+      "community": 13,
       "norm_label": ".graphify_detect.json",
       "id": "graphify_detect_json"
     },
@@ -62,7 +107,7 @@
       "file_type": "code",
       "source_file": ".graphify_detect.json",
       "source_location": "L1",
-      "community": 14,
+      "community": 13,
       "norm_label": "files",
       "id": "prd_manager_graphify_detect_files"
     },
@@ -71,7 +116,7 @@
       "file_type": "code",
       "source_file": ".graphify_detect.json",
       "source_location": "L1",
-      "community": 14,
+      "community": 13,
       "norm_label": "code",
       "id": "prd_manager_graphify_detect_files_code"
     },
@@ -80,7 +125,7 @@
       "file_type": "code",
       "source_file": ".graphify_detect.json",
       "source_location": "L1",
-      "community": 14,
+      "community": 13,
       "norm_label": "document",
       "id": "prd_manager_graphify_detect_files_document"
     },
@@ -89,7 +134,7 @@
       "file_type": "code",
       "source_file": ".graphify_detect.json",
       "source_location": "L1",
-      "community": 14,
+      "community": 13,
       "norm_label": "paper",
       "id": "prd_manager_graphify_detect_files_paper"
     },
@@ -98,7 +143,7 @@
       "file_type": "code",
       "source_file": ".graphify_detect.json",
       "source_location": "L1",
-      "community": 14,
+      "community": 13,
       "norm_label": "image",
       "id": "prd_manager_graphify_detect_files_image"
     },
@@ -107,7 +152,7 @@
       "file_type": "code",
       "source_file": ".graphify_detect.json",
       "source_location": "L1",
-      "community": 14,
+      "community": 13,
       "norm_label": "video",
       "id": "prd_manager_graphify_detect_files_video"
     },
@@ -116,7 +161,7 @@
       "file_type": "code",
       "source_file": ".graphify_detect.json",
       "source_location": "L1",
-      "community": 14,
+      "community": 13,
       "norm_label": "total_files",
       "id": "prd_manager_graphify_detect_total_files"
     },
@@ -125,7 +170,7 @@
       "file_type": "code",
       "source_file": ".graphify_detect.json",
       "source_location": "L1",
-      "community": 14,
+      "community": 13,
       "norm_label": "total_words",
       "id": "prd_manager_graphify_detect_total_words"
     },
@@ -134,7 +179,7 @@
       "file_type": "code",
       "source_file": ".graphify_detect.json",
       "source_location": "L1",
-      "community": 14,
+      "community": 13,
       "norm_label": "needs_graph",
       "id": "prd_manager_graphify_detect_needs_graph"
     },
@@ -143,7 +188,7 @@
       "file_type": "code",
       "source_file": ".graphify_detect.json",
       "source_location": "L1",
-      "community": 14,
+      "community": 13,
       "norm_label": "warning",
       "id": "prd_manager_graphify_detect_warning"
     },
@@ -152,7 +197,7 @@
       "file_type": "code",
       "source_file": ".graphify_detect.json",
       "source_location": "L1",
-      "community": 14,
+      "community": 13,
       "norm_label": "skipped_sensitive",
       "id": "prd_manager_graphify_detect_skipped_sensitive"
     },
@@ -161,7 +206,7 @@
       "file_type": "code",
       "source_file": ".graphify_detect.json",
       "source_location": "L1",
-      "community": 14,
+      "community": 13,
       "norm_label": "graphifyignore_patterns",
       "id": "prd_manager_graphify_detect_graphifyignore_patterns"
     },
@@ -170,7 +215,7 @@
       "file_type": "code",
       "source_file": ".graphify_detect.json",
       "source_location": "L1",
-      "community": 14,
+      "community": 13,
       "norm_label": "scan_root",
       "id": "prd_manager_graphify_detect_scan_root"
     },
@@ -179,7 +224,7 @@
       "file_type": "code",
       "source_file": "next.config.js",
       "source_location": "L1",
-      "community": 37,
+      "community": 36,
       "norm_label": "next.config.js",
       "id": "next_config_js"
     },
@@ -332,7 +377,7 @@
       "file_type": "code",
       "source_file": ".claude/settings.local.json",
       "source_location": "L1",
-      "community": 5,
+      "community": 16,
       "norm_label": "settings.local.json",
       "id": "claude_settings_local_json"
     },
@@ -341,7 +386,7 @@
       "file_type": "code",
       "source_file": ".claude/settings.local.json",
       "source_location": "L3",
-      "community": 5,
+      "community": 16,
       "norm_label": "allow",
       "id": "claude_settings_local_permissions_allow"
     },
@@ -350,7 +395,7 @@
       "file_type": "code",
       "source_file": ".claude/settings.local.json",
       "source_location": "L97",
-      "community": 5,
+      "community": 16,
       "norm_label": "additionaldirectories",
       "id": "claude_settings_local_permissions_additionaldirectories"
     },
@@ -359,7 +404,7 @@
       "file_type": "code",
       "source_file": "api/save_prd.js",
       "source_location": "L1",
-      "community": 28,
+      "community": 27,
       "norm_label": "save_prd.js",
       "id": "api_save_prd_js"
     },
@@ -368,7 +413,7 @@
       "file_type": "code",
       "source_file": "api/save_prd.js",
       "source_location": "L3",
-      "community": 28,
+      "community": 27,
       "norm_label": "handler()",
       "id": "api_save_prd_handler"
     },
@@ -377,7 +422,7 @@
       "file_type": "code",
       "source_file": "api/webhook.js",
       "source_location": "L1",
-      "community": 28,
+      "community": 27,
       "norm_label": "webhook.js",
       "id": "api_webhook_js"
     },
@@ -386,7 +431,7 @@
       "file_type": "code",
       "source_file": "api/webhook.js",
       "source_location": "L3",
-      "community": 28,
+      "community": 27,
       "norm_label": "handler()",
       "id": "api_webhook_handler"
     },
@@ -395,7 +440,7 @@
       "file_type": "code",
       "source_file": "components/DiffViewer.js",
       "source_location": "L4",
-      "community": 7,
+      "community": 15,
       "norm_label": "buildsplitcolumns()",
       "id": "components_diffviewer_buildsplitcolumns"
     },
@@ -404,7 +449,7 @@
       "file_type": "code",
       "source_file": "components/DiffViewer.js",
       "source_location": "L33",
-      "community": 7,
+      "community": 15,
       "norm_label": "buildunifiedlines()",
       "id": "components_diffviewer_buildunifiedlines"
     },
@@ -413,7 +458,7 @@
       "file_type": "code",
       "source_file": "components/DiffViewer.js",
       "source_location": "L43",
-      "community": 7,
+      "community": 15,
       "norm_label": "diffline()",
       "id": "components_diffviewer_diffline"
     },
@@ -422,7 +467,7 @@
       "file_type": "code",
       "source_file": "components/Editor.js",
       "source_location": "L1",
-      "community": 34,
+      "community": 4,
       "norm_label": "editor.js",
       "id": "components_editor_js"
     },
@@ -431,7 +476,7 @@
       "file_type": "code",
       "source_file": "components/Editor.js",
       "source_location": "L4",
-      "community": 34,
+      "community": 4,
       "norm_label": "rendermarkdown()",
       "id": "components_editor_rendermarkdown"
     },
@@ -440,7 +485,7 @@
       "file_type": "code",
       "source_file": "components/Editor.js",
       "source_location": "L23",
-      "community": 34,
+      "community": 4,
       "norm_label": "editor()",
       "id": "components_editor_editor"
     },
@@ -449,7 +494,7 @@
       "file_type": "code",
       "source_file": "components/KanbanBoard.js",
       "source_location": "L4",
-      "community": 15,
+      "community": 2,
       "norm_label": "columns",
       "id": "components_kanbanboard_columns"
     },
@@ -458,7 +503,7 @@
       "file_type": "code",
       "source_file": "components/KanbanBoard.js",
       "source_location": "L12",
-      "community": 15,
+      "community": 2,
       "norm_label": "priority_color",
       "id": "components_kanbanboard_priority_color"
     },
@@ -467,7 +512,7 @@
       "file_type": "code",
       "source_file": "components/KanbanBoard.js",
       "source_location": "L13",
-      "community": 15,
+      "community": 2,
       "norm_label": "priority_label",
       "id": "components_kanbanboard_priority_label"
     },
@@ -476,7 +521,7 @@
       "file_type": "code",
       "source_file": "components/KanbanBoard.js",
       "source_location": "L15",
-      "community": 15,
+      "community": 2,
       "norm_label": "isoverdue()",
       "id": "components_kanbanboard_isoverdue"
     },
@@ -485,7 +530,7 @@
       "file_type": "code",
       "source_file": "components/KanbanBoard.js",
       "source_location": "L20",
-      "community": 15,
+      "community": 2,
       "norm_label": "formatdate()",
       "id": "components_kanbanboard_formatdate"
     },
@@ -494,7 +539,7 @@
       "file_type": "code",
       "source_file": "components/KanbanBoard.js",
       "source_location": "L25",
-      "community": 15,
+      "community": 2,
       "norm_label": "toeditform()",
       "id": "components_kanbanboard_toeditform"
     },
@@ -503,7 +548,7 @@
       "file_type": "code",
       "source_file": "components/Nav.js",
       "source_location": "L1",
-      "community": 17,
+      "community": 4,
       "norm_label": "nav.js",
       "id": "components_nav_js"
     },
@@ -512,7 +557,7 @@
       "file_type": "code",
       "source_file": "components/Nav.js",
       "source_location": "L7",
-      "community": 17,
+      "community": 4,
       "norm_label": "nav()",
       "id": "components_nav_nav"
     },
@@ -521,7 +566,7 @@
       "file_type": "code",
       "source_file": "components/TaskTree.js",
       "source_location": "L1",
-      "community": 12,
+      "community": 2,
       "norm_label": "tasktree.js",
       "id": "components_tasktree_js"
     },
@@ -530,7 +575,7 @@
       "file_type": "code",
       "source_file": "components/TaskTree.js",
       "source_location": "L4",
-      "community": 12,
+      "community": 2,
       "norm_label": "status_cycle",
       "id": "components_tasktree_status_cycle"
     },
@@ -539,7 +584,7 @@
       "file_type": "code",
       "source_file": "components/TaskTree.js",
       "source_location": "L5",
-      "community": 12,
+      "community": 2,
       "norm_label": "status_label",
       "id": "components_tasktree_status_label"
     },
@@ -548,7 +593,7 @@
       "file_type": "code",
       "source_file": "components/TaskTree.js",
       "source_location": "L6",
-      "community": 12,
+      "community": 2,
       "norm_label": "priority_color",
       "id": "components_tasktree_priority_color"
     },
@@ -557,7 +602,7 @@
       "file_type": "code",
       "source_file": "components/TaskTree.js",
       "source_location": "L7",
-      "community": 12,
+      "community": 2,
       "norm_label": "priority_label",
       "id": "components_tasktree_priority_label"
     },
@@ -566,7 +611,7 @@
       "file_type": "code",
       "source_file": "components/TaskTree.js",
       "source_location": "L9",
-      "community": 12,
+      "community": 2,
       "norm_label": "buildtree()",
       "id": "components_tasktree_buildtree"
     },
@@ -575,7 +620,7 @@
       "file_type": "code",
       "source_file": "components/TaskTree.js",
       "source_location": "L25",
-      "community": 12,
+      "community": 2,
       "norm_label": "blankform()",
       "id": "components_tasktree_blankform"
     },
@@ -584,7 +629,7 @@
       "file_type": "code",
       "source_file": "components/TaskTree.js",
       "source_location": "L29",
-      "community": 12,
+      "community": 2,
       "norm_label": "taskform()",
       "id": "components_tasktree_taskform"
     },
@@ -593,7 +638,7 @@
       "file_type": "code",
       "source_file": "components/TaskTree.js",
       "source_location": "L88",
-      "community": 12,
+      "community": 2,
       "norm_label": "tasknode()",
       "id": "components_tasktree_tasknode"
     },
@@ -602,7 +647,7 @@
       "file_type": "code",
       "source_file": "components/TaskTree.js",
       "source_location": "L317",
-      "community": 12,
+      "community": 2,
       "norm_label": "countdescendants()",
       "id": "components_tasktree_countdescendants"
     },
@@ -611,7 +656,7 @@
       "file_type": "code",
       "source_file": "components/TaskTree.js",
       "source_location": "L324",
-      "community": 12,
+      "community": 2,
       "norm_label": "tasktree()",
       "id": "components_tasktree_tasktree"
     },
@@ -620,7 +665,7 @@
       "file_type": "code",
       "source_file": "graphify/graph.json",
       "source_location": "L1",
-      "community": 13,
+      "community": 12,
       "norm_label": "graph.json",
       "id": "graphify_graph_json"
     },
@@ -629,7 +674,7 @@
       "file_type": "code",
       "source_file": "graphify/graph.json",
       "source_location": "L2",
-      "community": 13,
+      "community": 12,
       "norm_label": "nodes",
       "id": "graphify_graph_json_graphify_graph_nodes"
     },
@@ -638,7 +683,7 @@
       "file_type": "code",
       "source_file": "graphify/graph.json",
       "source_location": "L65",
-      "community": 13,
+      "community": 12,
       "norm_label": "edges",
       "id": "graphify_graph_json_graphify_graph_edges"
     },
@@ -647,7 +692,7 @@
       "file_type": "code",
       "source_file": "graphify/graph.json",
       "source_location": "L87",
-      "community": 13,
+      "community": 12,
       "norm_label": "meta",
       "id": "graphify_graph_json_graphify_graph_meta"
     },
@@ -656,7 +701,7 @@
       "file_type": "code",
       "source_file": "graphify/graph.json",
       "source_location": "L88",
-      "community": 13,
+      "community": 12,
       "norm_label": "projects",
       "id": "graphify_graph_json_graphify_graph_meta_projects"
     },
@@ -665,7 +710,7 @@
       "file_type": "code",
       "source_file": "graphify/graph.json",
       "source_location": "L89",
-      "community": 13,
+      "community": 12,
       "norm_label": "versions",
       "id": "graphify_graph_json_graphify_graph_meta_versions"
     },
@@ -674,7 +719,7 @@
       "file_type": "code",
       "source_file": "graphify/graph.json",
       "source_location": "L90",
-      "community": 13,
+      "community": 12,
       "norm_label": "proposals",
       "id": "graphify_graph_json_graphify_graph_meta_proposals"
     },
@@ -683,7 +728,7 @@
       "file_type": "code",
       "source_file": "graphify/graph.json",
       "source_location": "L91",
-      "community": 13,
+      "community": 12,
       "norm_label": "prds",
       "id": "graphify_graph_json_graphify_graph_meta_prds"
     },
@@ -692,7 +737,7 @@
       "file_type": "code",
       "source_file": "lib/api-fetch.js",
       "source_location": "L1",
-      "community": 17,
+      "community": 4,
       "norm_label": "api-fetch.js",
       "id": "lib_api_fetch_js"
     },
@@ -701,7 +746,7 @@
       "file_type": "code",
       "source_file": "lib/api-fetch.js",
       "source_location": "L2",
-      "community": 16,
+      "community": 4,
       "norm_label": "apifetch()",
       "id": "lib_api_fetch_apifetch"
     },
@@ -710,7 +755,7 @@
       "file_type": "code",
       "source_file": "lib/audit-log.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 0,
       "norm_label": "audit-log.js",
       "id": "lib_audit_log_js"
     },
@@ -719,7 +764,7 @@
       "file_type": "code",
       "source_file": "lib/audit-log.js",
       "source_location": "L1",
-      "community": 10,
+      "community": 5,
       "norm_label": "{ kv }",
       "id": "lib_audit_log_kv"
     },
@@ -728,7 +773,7 @@
       "file_type": "code",
       "source_file": "lib/audit-log.js",
       "source_location": "L6",
-      "community": 3,
+      "community": 0,
       "norm_label": "getaudituser()",
       "id": "lib_audit_log_getaudituser"
     },
@@ -746,7 +791,7 @@
       "file_type": "code",
       "source_file": "lib/audit-log.js",
       "source_location": "L39",
-      "community": 4,
+      "community": 0,
       "norm_label": "getauditlogs()",
       "id": "lib_audit_log_getauditlogs"
     },
@@ -755,7 +800,7 @@
       "file_type": "code",
       "source_file": "lib/audit-log.js",
       "source_location": "L52",
-      "community": 4,
+      "community": 0,
       "norm_label": "clearauditlogs()",
       "id": "lib_audit_log_clearauditlogs"
     },
@@ -764,7 +809,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L1",
-      "community": 0,
+      "community": 3,
       "norm_label": "prd-store.js",
       "id": "lib_prd_store_js"
     },
@@ -773,7 +818,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L1",
-      "community": 0,
+      "community": 3,
       "norm_label": "{ kv }",
       "id": "lib_prd_store_kv"
     },
@@ -782,7 +827,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L3",
-      "community": 0,
+      "community": 3,
       "norm_label": "slugify()",
       "id": "lib_prd_store_slugify"
     },
@@ -791,7 +836,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L7",
-      "community": 0,
+      "community": 3,
       "norm_label": "bumpversion()",
       "id": "lib_prd_store_bumpversion"
     },
@@ -800,7 +845,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L16",
-      "community": 0,
+      "community": 3,
       "norm_label": "sortversionsdesc()",
       "id": "lib_prd_store_sortversionsdesc"
     },
@@ -809,7 +854,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L27",
-      "community": 0,
+      "community": 3,
       "norm_label": "latestfromversionstrings()",
       "id": "lib_prd_store_latestfromversionstrings"
     },
@@ -818,7 +863,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L41",
-      "community": 0,
+      "community": 3,
       "norm_label": "refreshprojectstats()",
       "id": "lib_prd_store_refreshprojectstats"
     },
@@ -827,7 +872,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L63",
-      "community": 9,
+      "community": 5,
       "norm_label": "listprojects()",
       "id": "lib_prd_store_listprojects"
     },
@@ -836,7 +881,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L73",
-      "community": 0,
+      "community": 3,
       "norm_label": "getproject()",
       "id": "lib_prd_store_getproject"
     },
@@ -845,7 +890,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L80",
-      "community": 0,
+      "community": 3,
       "norm_label": "createproject()",
       "id": "lib_prd_store_createproject"
     },
@@ -854,7 +899,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L103",
-      "community": 0,
+      "community": 3,
       "norm_label": "deleteproject()",
       "id": "lib_prd_store_deleteproject"
     },
@@ -863,7 +908,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L124",
-      "community": 0,
+      "community": 3,
       "norm_label": "listversions()",
       "id": "lib_prd_store_listversions"
     },
@@ -872,7 +917,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L131",
-      "community": 0,
+      "community": 3,
       "norm_label": "getversion()",
       "id": "lib_prd_store_getversion"
     },
@@ -881,7 +926,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L135",
-      "community": 0,
+      "community": 3,
       "norm_label": "saveversion()",
       "id": "lib_prd_store_saveversion"
     },
@@ -890,7 +935,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L142",
-      "community": 0,
+      "community": 3,
       "norm_label": "createversion()",
       "id": "lib_prd_store_createversion"
     },
@@ -899,7 +944,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L157",
-      "community": 0,
+      "community": 3,
       "norm_label": "listproposals()",
       "id": "lib_prd_store_listproposals"
     },
@@ -908,7 +953,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L164",
-      "community": 0,
+      "community": 3,
       "norm_label": "getproposal()",
       "id": "lib_prd_store_getproposal"
     },
@@ -917,7 +962,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L168",
-      "community": 0,
+      "community": 3,
       "norm_label": "createproposal()",
       "id": "lib_prd_store_createproposal"
     },
@@ -926,7 +971,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L189",
-      "community": 0,
+      "community": 3,
       "norm_label": "deleteproposal()",
       "id": "lib_prd_store_deleteproposal"
     },
@@ -935,7 +980,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L197",
-      "community": 0,
+      "community": 3,
       "norm_label": "updateproposal()",
       "id": "lib_prd_store_updateproposal"
     },
@@ -944,7 +989,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L206",
-      "community": 0,
+      "community": 3,
       "norm_label": "promoteproposal()",
       "id": "lib_prd_store_promoteproposal"
     },
@@ -962,7 +1007,7 @@
       "file_type": "code",
       "source_file": "lib/snapshot-store.js",
       "source_location": "L1",
-      "community": 10,
+      "community": 5,
       "norm_label": "snapshot-store.js",
       "id": "lib_snapshot_store_js"
     },
@@ -971,7 +1016,7 @@
       "file_type": "code",
       "source_file": "lib/snapshot-store.js",
       "source_location": "L1",
-      "community": 10,
+      "community": 5,
       "norm_label": "{ kv }",
       "id": "lib_snapshot_store_kv"
     },
@@ -980,7 +1025,7 @@
       "file_type": "code",
       "source_file": "lib/snapshot-store.js",
       "source_location": "L2",
-      "community": 10,
+      "community": 5,
       "norm_label": "{ listprojects, getproject }",
       "id": "lib_snapshot_store_listprojects_getproject"
     },
@@ -989,7 +1034,7 @@
       "file_type": "code",
       "source_file": "lib/snapshot-store.js",
       "source_location": "L3",
-      "community": 10,
+      "community": 5,
       "norm_label": "{ listtasks }",
       "id": "lib_snapshot_store_listtasks"
     },
@@ -998,7 +1043,7 @@
       "file_type": "code",
       "source_file": "lib/snapshot-store.js",
       "source_location": "L5",
-      "community": 10,
+      "community": 5,
       "norm_label": "createsnapshot()",
       "id": "lib_snapshot_store_createsnapshot"
     },
@@ -1007,7 +1052,7 @@
       "file_type": "code",
       "source_file": "lib/snapshot-store.js",
       "source_location": "L33",
-      "community": 10,
+      "community": 5,
       "norm_label": "listsnapshots()",
       "id": "lib_snapshot_store_listsnapshots"
     },
@@ -1016,7 +1061,7 @@
       "file_type": "code",
       "source_file": "lib/snapshot-store.js",
       "source_location": "L49",
-      "community": 10,
+      "community": 5,
       "norm_label": "getsnapshot()",
       "id": "lib_snapshot_store_getsnapshot"
     },
@@ -1025,7 +1070,7 @@
       "file_type": "code",
       "source_file": "lib/snapshot-store.js",
       "source_location": "L53",
-      "community": 10,
+      "community": 5,
       "norm_label": "deletesnapshot()",
       "id": "lib_snapshot_store_deletesnapshot"
     },
@@ -1034,7 +1079,7 @@
       "file_type": "code",
       "source_file": "lib/sprint-store.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 9,
       "norm_label": "sprint-store.js",
       "id": "lib_sprint_store_js"
     },
@@ -1043,7 +1088,7 @@
       "file_type": "code",
       "source_file": "lib/sprint-store.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 9,
       "norm_label": "{ kv }",
       "id": "lib_sprint_store_kv"
     },
@@ -1052,7 +1097,7 @@
       "file_type": "code",
       "source_file": "lib/sprint-store.js",
       "source_location": "L3",
-      "community": 4,
+      "community": 9,
       "norm_label": "sprintkey()",
       "id": "lib_sprint_store_sprintkey"
     },
@@ -1061,7 +1106,7 @@
       "file_type": "code",
       "source_file": "lib/sprint-store.js",
       "source_location": "L7",
-      "community": 4,
+      "community": 9,
       "norm_label": "getsprints()",
       "id": "lib_sprint_store_getsprints"
     },
@@ -1070,7 +1115,7 @@
       "file_type": "code",
       "source_file": "lib/sprint-store.js",
       "source_location": "L14",
-      "community": 4,
+      "community": 9,
       "norm_label": "savesprints()",
       "id": "lib_sprint_store_savesprints"
     },
@@ -1079,7 +1124,7 @@
       "file_type": "code",
       "source_file": "lib/sprint-store.js",
       "source_location": "L18",
-      "community": 4,
+      "community": 9,
       "norm_label": "savesprint()",
       "id": "lib_sprint_store_savesprint"
     },
@@ -1088,7 +1133,7 @@
       "file_type": "code",
       "source_file": "lib/sprint-store.js",
       "source_location": "L27",
-      "community": 4,
+      "community": 9,
       "norm_label": "deletesprint()",
       "id": "lib_sprint_store_deletesprint"
     },
@@ -1097,7 +1142,7 @@
       "file_type": "code",
       "source_file": "lib/task-store.js",
       "source_location": "L1",
-      "community": 3,
+      "community": 0,
       "norm_label": "task-store.js",
       "id": "lib_task_store_js"
     },
@@ -1106,7 +1151,7 @@
       "file_type": "code",
       "source_file": "lib/task-store.js",
       "source_location": "L1",
-      "community": 3,
+      "community": 0,
       "norm_label": "{ kv }",
       "id": "lib_task_store_kv"
     },
@@ -1115,7 +1160,7 @@
       "file_type": "code",
       "source_file": "lib/task-store.js",
       "source_location": "L3",
-      "community": 3,
+      "community": 0,
       "norm_label": "taskskey()",
       "id": "lib_task_store_taskskey"
     },
@@ -1124,7 +1169,7 @@
       "file_type": "code",
       "source_file": "lib/task-store.js",
       "source_location": "L7",
-      "community": 3,
+      "community": 0,
       "norm_label": "computenumbers()",
       "id": "lib_task_store_computenumbers"
     },
@@ -1133,7 +1178,7 @@
       "file_type": "code",
       "source_file": "lib/task-store.js",
       "source_location": "L38",
-      "community": 3,
+      "community": 0,
       "norm_label": "loadtasks()",
       "id": "lib_task_store_loadtasks"
     },
@@ -1142,7 +1187,7 @@
       "file_type": "code",
       "source_file": "lib/task-store.js",
       "source_location": "L43",
-      "community": 3,
+      "community": 0,
       "norm_label": "savetasks()",
       "id": "lib_task_store_savetasks"
     },
@@ -1151,7 +1196,7 @@
       "file_type": "code",
       "source_file": "lib/task-store.js",
       "source_location": "L47",
-      "community": 3,
+      "community": 0,
       "norm_label": "listtasks()",
       "id": "lib_task_store_listtasks"
     },
@@ -1160,7 +1205,7 @@
       "file_type": "code",
       "source_file": "lib/task-store.js",
       "source_location": "L52",
-      "community": 3,
+      "community": 0,
       "norm_label": "gettask()",
       "id": "lib_task_store_gettask"
     },
@@ -1169,7 +1214,7 @@
       "file_type": "code",
       "source_file": "lib/task-store.js",
       "source_location": "L57",
-      "community": 3,
+      "community": 0,
       "norm_label": "createtask()",
       "id": "lib_task_store_createtask"
     },
@@ -1178,7 +1223,7 @@
       "file_type": "code",
       "source_file": "lib/task-store.js",
       "source_location": "L87",
-      "community": 3,
+      "community": 0,
       "norm_label": "updatetask()",
       "id": "lib_task_store_updatetask"
     },
@@ -1187,7 +1232,7 @@
       "file_type": "code",
       "source_file": "lib/task-store.js",
       "source_location": "L96",
-      "community": 3,
+      "community": 0,
       "norm_label": "deletetask()",
       "id": "lib_task_store_deletetask"
     },
@@ -1196,7 +1241,7 @@
       "file_type": "code",
       "source_file": "lib/task-store.js",
       "source_location": "L115",
-      "community": 3,
+      "community": 0,
       "norm_label": "reordertask()",
       "id": "lib_task_store_reordertask"
     },
@@ -1205,7 +1250,7 @@
       "file_type": "code",
       "source_file": "pages/admin.js",
       "source_location": "L1",
-      "community": 22,
+      "community": 4,
       "norm_label": "admin.js",
       "id": "pages_admin_js"
     },
@@ -1214,7 +1259,7 @@
       "file_type": "code",
       "source_file": "pages/admin.js",
       "source_location": "L6",
-      "community": 22,
+      "community": 4,
       "norm_label": "action_labels",
       "id": "pages_admin_action_labels"
     },
@@ -1223,7 +1268,7 @@
       "file_type": "code",
       "source_file": "pages/admin.js",
       "source_location": "L32",
-      "community": 22,
+      "community": 4,
       "norm_label": "formattime()",
       "id": "pages_admin_formattime"
     },
@@ -1232,7 +1277,7 @@
       "file_type": "code",
       "source_file": "pages/admin.js",
       "source_location": "L40",
-      "community": 22,
+      "community": 4,
       "norm_label": "detailsummary()",
       "id": "pages_admin_detailsummary"
     },
@@ -1241,7 +1286,7 @@
       "file_type": "code",
       "source_file": "pages/admin.js",
       "source_location": "L206",
-      "community": 22,
+      "community": 4,
       "norm_label": "userrow()",
       "id": "pages_admin_userrow"
     },
@@ -1250,7 +1295,7 @@
       "file_type": "code",
       "source_file": "pages/admin.js",
       "source_location": "L316",
-      "community": 10,
+      "community": 5,
       "norm_label": "snapshots()",
       "id": "pages_admin_snapshots"
     },
@@ -1259,7 +1304,7 @@
       "file_type": "code",
       "source_file": "pages/admin.js",
       "source_location": "L461",
-      "community": 22,
+      "community": 4,
       "norm_label": "adminpage()",
       "id": "pages_admin_adminpage"
     },
@@ -1475,7 +1520,7 @@
       "file_type": "code",
       "source_file": "pages/editor.js",
       "source_location": "L1",
-      "community": 17,
+      "community": 4,
       "norm_label": "editor.js",
       "id": "pages_editor_js"
     },
@@ -1484,7 +1529,7 @@
       "file_type": "code",
       "source_file": "pages/editor.js",
       "source_location": "L7",
-      "community": 17,
+      "community": 4,
       "norm_label": "editor",
       "id": "pages_editor_editor"
     },
@@ -1493,7 +1538,7 @@
       "file_type": "code",
       "source_file": "pages/editor.js",
       "source_location": "L9",
-      "community": 17,
+      "community": 4,
       "norm_label": "page()",
       "id": "pages_editor_page"
     },
@@ -1502,7 +1547,7 @@
       "file_type": "code",
       "source_file": "pages/index.js",
       "source_location": "L1",
-      "community": 17,
+      "community": 4,
       "norm_label": "index.js",
       "id": "pages_index_js"
     },
@@ -1511,7 +1556,7 @@
       "file_type": "code",
       "source_file": "pages/index.js",
       "source_location": "L6",
-      "community": 17,
+      "community": 4,
       "norm_label": "home()",
       "id": "pages_index_home"
     },
@@ -1520,7 +1565,7 @@
       "file_type": "code",
       "source_file": "pages/_app.js",
       "source_location": "L1",
-      "community": 33,
+      "community": 32,
       "norm_label": "_app.js",
       "id": "pages_app_js"
     },
@@ -1529,7 +1574,7 @@
       "file_type": "code",
       "source_file": "pages/_app.js",
       "source_location": "L4",
-      "community": 33,
+      "community": 32,
       "norm_label": "loginscreen()",
       "id": "pages_app_loginscreen"
     },
@@ -1538,7 +1583,7 @@
       "file_type": "code",
       "source_file": "pages/_app.js",
       "source_location": "L77",
-      "community": 33,
+      "community": 32,
       "norm_label": "app()",
       "id": "pages_app_app"
     },
@@ -1583,7 +1628,7 @@
       "file_type": "code",
       "source_file": "pages/api/audit/index.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 0,
       "norm_label": "index.js",
       "id": "pages_api_audit_index_js"
     },
@@ -1592,7 +1637,7 @@
       "file_type": "code",
       "source_file": "pages/api/audit/index.js",
       "source_location": "L4",
-      "community": 4,
+      "community": 0,
       "norm_label": "handler()",
       "id": "audit_index_handler"
     },
@@ -1601,7 +1646,7 @@
       "file_type": "code",
       "source_file": "pages/api/auth/login.js",
       "source_location": "L1",
-      "community": 5,
+      "community": 16,
       "norm_label": "login.js",
       "id": "pages_api_auth_login_js"
     },
@@ -1610,7 +1655,7 @@
       "file_type": "code",
       "source_file": "pages/api/auth/login.js",
       "source_location": "L4",
-      "community": 5,
+      "community": 16,
       "norm_label": "handler()",
       "id": "auth_login_handler"
     },
@@ -1637,7 +1682,7 @@
       "file_type": "code",
       "source_file": "pages/api/dashboard/index.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 5,
       "norm_label": "index.js",
       "id": "pages_api_dashboard_index_js"
     },
@@ -1646,7 +1691,7 @@
       "file_type": "code",
       "source_file": "pages/api/dashboard/index.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 5,
       "norm_label": "{ kv }",
       "id": "dashboard_index_kv"
     },
@@ -1655,7 +1700,7 @@
       "file_type": "code",
       "source_file": "pages/api/dashboard/index.js",
       "source_location": "L2",
-      "community": 4,
+      "community": 5,
       "norm_label": "{ listprojects, listproposals }",
       "id": "dashboard_index_listprojects_listproposals"
     },
@@ -1664,7 +1709,7 @@
       "file_type": "code",
       "source_file": "pages/api/dashboard/index.js",
       "source_location": "L3",
-      "community": 4,
+      "community": 5,
       "norm_label": "{ getauditlogs }",
       "id": "dashboard_index_getauditlogs"
     },
@@ -1673,7 +1718,7 @@
       "file_type": "code",
       "source_file": "pages/api/dashboard/index.js",
       "source_location": "L4",
-      "community": 4,
+      "community": 5,
       "norm_label": "{ getsprints }",
       "id": "dashboard_index_getsprints"
     },
@@ -1682,7 +1727,7 @@
       "file_type": "code",
       "source_file": "pages/api/dashboard/index.js",
       "source_location": "L19",
-      "community": 4,
+      "community": 5,
       "norm_label": "handler()",
       "id": "dashboard_index_handler"
     },
@@ -1691,7 +1736,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/index.js",
       "source_location": "L1",
-      "community": 0,
+      "community": 5,
       "norm_label": "index.js",
       "id": "pages_api_projects_index_js"
     },
@@ -1700,7 +1745,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/index.js",
       "source_location": "L1",
-      "community": 0,
+      "community": 5,
       "norm_label": "{ listprojects, createproject }",
       "id": "projects_index_listprojects_createproject"
     },
@@ -1709,7 +1754,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/index.js",
       "source_location": "L2",
-      "community": 0,
+      "community": 5,
       "norm_label": "{ logaudit }",
       "id": "projects_index_logaudit"
     },
@@ -1718,7 +1763,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/index.js",
       "source_location": "L4",
-      "community": 0,
+      "community": 5,
       "norm_label": "handler()",
       "id": "projects_index_handler"
     },
@@ -1727,7 +1772,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug].js",
       "source_location": "L1",
-      "community": 0,
+      "community": 3,
       "norm_label": "[slug].js",
       "id": "pages_api_projects_slug_js"
     },
@@ -1736,7 +1781,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug].js",
       "source_location": "L1",
-      "community": 0,
+      "community": 3,
       "norm_label": "{ getproject, deleteproject }",
       "id": "projects_slug_getproject_deleteproject"
     },
@@ -1745,7 +1790,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug].js",
       "source_location": "L2",
-      "community": 0,
+      "community": 3,
       "norm_label": "{ logaudit }",
       "id": "projects_slug_logaudit"
     },
@@ -1799,7 +1844,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/sprint.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 9,
       "norm_label": "sprint.js",
       "id": "pages_api_projects_slug_sprint_js"
     },
@@ -1808,7 +1853,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/sprint.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 9,
       "norm_label": "{ getsprints, savesprint, deletesprint }",
       "id": "slug_sprint_getsprints_savesprint_deletesprint"
     },
@@ -1817,7 +1862,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/sprint.js",
       "source_location": "L2",
-      "community": 4,
+      "community": 9,
       "norm_label": "{ listtasks }",
       "id": "slug_sprint_listtasks"
     },
@@ -1826,7 +1871,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/sprint.js",
       "source_location": "L4",
-      "community": 4,
+      "community": 9,
       "norm_label": "hydrate()",
       "id": "slug_sprint_hydrate"
     },
@@ -1835,7 +1880,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/sprint.js",
       "source_location": "L9",
-      "community": 4,
+      "community": 9,
       "norm_label": "handler()",
       "id": "slug_sprint_handler"
     },
@@ -1844,7 +1889,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/proposals/index.js",
       "source_location": "L1",
-      "community": 0,
+      "community": 3,
       "norm_label": "index.js",
       "id": "pages_api_projects_slug_proposals_index_js"
     },
@@ -1853,7 +1898,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/proposals/index.js",
       "source_location": "L1",
-      "community": 0,
+      "community": 3,
       "norm_label": "{ listproposals, createproposal }",
       "id": "proposals_index_listproposals_createproposal"
     },
@@ -1862,7 +1907,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/proposals/index.js",
       "source_location": "L2",
-      "community": 0,
+      "community": 3,
       "norm_label": "{ logaudit }",
       "id": "proposals_index_logaudit"
     },
@@ -1871,7 +1916,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/proposals/index.js",
       "source_location": "L4",
-      "community": 0,
+      "community": 3,
       "norm_label": "handler()",
       "id": "proposals_index_handler"
     },
@@ -1952,7 +1997,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/tasks/index.js",
       "source_location": "L1",
-      "community": 3,
+      "community": 0,
       "norm_label": "index.js",
       "id": "pages_api_projects_slug_tasks_index_js"
     },
@@ -1961,7 +2006,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/tasks/[taskId].js",
       "source_location": "L1",
-      "community": 3,
+      "community": 0,
       "norm_label": "[taskid].js",
       "id": "pages_api_projects_slug_tasks_taskid_js"
     },
@@ -1970,7 +2015,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/tasks/[taskId].js",
       "source_location": "L2",
-      "community": 3,
+      "community": 0,
       "norm_label": "{ logaudit }",
       "id": "pages_api_projects_slug_tasks_taskid_js_tasks_taskid_logaudit"
     },
@@ -2015,7 +2060,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/versions/[version].js",
       "source_location": "L1",
-      "community": 0,
+      "community": 3,
       "norm_label": "[version].js",
       "id": "pages_api_projects_slug_versions_version_js"
     },
@@ -2024,7 +2069,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/versions/[version].js",
       "source_location": "L1",
-      "community": 0,
+      "community": 3,
       "norm_label": "{ getversion, saveversion }",
       "id": "versions_version_getversion_saveversion"
     },
@@ -2033,7 +2078,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/versions/[version].js",
       "source_location": "L2",
-      "community": 0,
+      "community": 3,
       "norm_label": "{ logaudit }",
       "id": "versions_version_logaudit"
     },
@@ -2042,7 +2087,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/versions/[version].js",
       "source_location": "L4",
-      "community": 0,
+      "community": 3,
       "norm_label": "handler()",
       "id": "versions_version_handler"
     },
@@ -2051,7 +2096,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/versions/[version]/tasks/index.js",
       "source_location": "L1",
-      "community": 3,
+      "community": 0,
       "norm_label": "index.js",
       "id": "pages_api_projects_slug_versions_version_tasks_index_js"
     },
@@ -2060,7 +2105,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/versions/[version]/tasks/index.js",
       "source_location": "L1",
-      "community": 3,
+      "community": 0,
       "norm_label": "{ listtasks, createtask }",
       "id": "pages_api_projects_slug_versions_version_tasks_index_js_tasks_index_listtasks_createtask"
     },
@@ -2069,7 +2114,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/versions/[version]/tasks/index.js",
       "source_location": "L2",
-      "community": 3,
+      "community": 0,
       "norm_label": "{ logaudit }",
       "id": "pages_api_projects_slug_versions_version_tasks_index_js_tasks_index_logaudit"
     },
@@ -2078,7 +2123,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/versions/[version]/tasks/index.js",
       "source_location": "L4",
-      "community": 3,
+      "community": 0,
       "norm_label": "handler()",
       "id": "pages_api_projects_slug_versions_version_tasks_index_js_tasks_index_handler"
     },
@@ -2087,7 +2132,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/versions/[version]/tasks/[taskId].js",
       "source_location": "L1",
-      "community": 3,
+      "community": 0,
       "norm_label": "[taskid].js",
       "id": "pages_api_projects_slug_versions_version_tasks_taskid_js"
     },
@@ -2096,7 +2141,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/versions/[version]/tasks/[taskId].js",
       "source_location": "L2",
-      "community": 3,
+      "community": 0,
       "norm_label": "{ logaudit }",
       "id": "pages_api_projects_slug_versions_version_tasks_taskid_js_tasks_taskid_logaudit"
     },
@@ -2105,7 +2150,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/versions/[version]/tasks/[taskId].js",
       "source_location": "L5",
-      "community": 3,
+      "community": 0,
       "norm_label": "handler()",
       "id": "pages_api_projects_slug_versions_version_tasks_taskid_js_tasks_taskid_handler"
     },
@@ -2114,7 +2159,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/diff.js",
       "source_location": "L1",
-      "community": 17,
+      "community": 4,
       "norm_label": "diff.js",
       "id": "pages_projects_slug_diff_js"
     },
@@ -2123,7 +2168,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/diff.js",
       "source_location": "L7",
-      "community": 7,
+      "community": 15,
       "norm_label": "diffviewer",
       "id": "slug_diff_diffviewer"
     },
@@ -2132,7 +2177,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/diff.js",
       "source_location": "L9",
-      "community": 17,
+      "community": 4,
       "norm_label": "diffpage()",
       "id": "slug_diff_diffpage"
     },
@@ -2141,7 +2186,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/index.js",
       "source_location": "L1",
-      "community": 16,
+      "community": 4,
       "norm_label": "index.js",
       "id": "pages_projects_slug_index_js"
     },
@@ -2150,7 +2195,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/index.js",
       "source_location": "L8",
-      "community": 16,
+      "community": 4,
       "norm_label": "router",
       "id": "slug_index_router"
     },
@@ -2159,7 +2204,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/index.js",
       "source_location": "L10",
-      "community": 16,
+      "community": 4,
       "norm_label": "[project, setproject]",
       "id": "slug_index_project_setproject"
     },
@@ -2168,7 +2213,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/index.js",
       "source_location": "L11",
-      "community": 16,
+      "community": 4,
       "norm_label": "[loading, setloading]",
       "id": "slug_index_loading_setloading"
     },
@@ -2177,7 +2222,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/index.js",
       "source_location": "L12",
-      "community": 16,
+      "community": 4,
       "norm_label": "[showproposal, setshowproposal]",
       "id": "slug_index_showproposal_setshowproposal"
     },
@@ -2186,7 +2231,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/index.js",
       "source_location": "L13",
-      "community": 16,
+      "community": 4,
       "norm_label": "[proposalform, setproposalform]",
       "id": "slug_index_proposalform_setproposalform"
     },
@@ -2195,7 +2240,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/index.js",
       "source_location": "L14",
-      "community": 16,
+      "community": 4,
       "norm_label": "[submitting, setsubmitting]",
       "id": "slug_index_submitting_setsubmitting"
     },
@@ -2204,7 +2249,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/index.js",
       "source_location": "L15",
-      "community": 16,
+      "community": 4,
       "norm_label": "[assignees, setassignees]",
       "id": "slug_index_assignees_setassignees"
     },
@@ -2213,7 +2258,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/index.js",
       "source_location": "L30",
-      "community": 16,
+      "community": 4,
       "norm_label": "handlenewproposal()",
       "id": "slug_index_handlenewproposal"
     },
@@ -2222,7 +2267,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/index.js",
       "source_location": "L50",
-      "community": 16,
+      "community": 4,
       "norm_label": "handledeleteproposal()",
       "id": "slug_index_handledeleteproposal"
     },
@@ -2231,7 +2276,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/index.js",
       "source_location": "L58",
-      "community": 16,
+      "community": 4,
       "norm_label": "handlepromote()",
       "id": "slug_index_handlepromote"
     },
@@ -2240,7 +2285,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/index.js",
       "source_location": "L119",
-      "community": 16,
+      "community": 4,
       "norm_label": "pendingproposals",
       "id": "slug_index_pendingproposals"
     },
@@ -2249,7 +2294,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/tasks.js",
       "source_location": "L1",
-      "community": 19,
+      "community": 4,
       "norm_label": "tasks.js",
       "id": "pages_projects_slug_tasks_js"
     },
@@ -2258,7 +2303,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/tasks.js",
       "source_location": "L10",
-      "community": 19,
+      "community": 4,
       "norm_label": "sprintprogressbar()",
       "id": "slug_tasks_sprintprogressbar"
     },
@@ -2267,7 +2312,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/tasks.js",
       "source_location": "L23",
-      "community": 19,
+      "community": 4,
       "norm_label": "sprinttaskchip()",
       "id": "slug_tasks_sprinttaskchip"
     },
@@ -2276,7 +2321,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/tasks.js",
       "source_location": "L48",
-      "community": 19,
+      "community": 4,
       "norm_label": "sprintchips()",
       "id": "slug_tasks_sprintchips"
     },
@@ -2285,7 +2330,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/tasks.js",
       "source_location": "L69",
-      "community": 19,
+      "community": 4,
       "norm_label": "formatsprintdate()",
       "id": "slug_tasks_formatsprintdate"
     },
@@ -2294,7 +2339,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/tasks.js",
       "source_location": "L74",
-      "community": 19,
+      "community": 4,
       "norm_label": "daysleft()",
       "id": "slug_tasks_daysleft"
     },
@@ -2303,7 +2348,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/tasks.js",
       "source_location": "L80",
-      "community": 19,
+      "community": 4,
       "norm_label": "sprintssection()",
       "id": "slug_tasks_sprintssection"
     },
@@ -2312,7 +2357,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/tasks.js",
       "source_location": "L483",
-      "community": 19,
+      "community": 4,
       "norm_label": "taskskeleton()",
       "id": "slug_tasks_taskskeleton"
     },
@@ -2321,7 +2366,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/tasks.js",
       "source_location": "L497",
-      "community": 19,
+      "community": 4,
       "norm_label": "taskspage()",
       "id": "slug_tasks_taskspage"
     },
@@ -2375,7 +2420,7 @@
       "file_type": "code",
       "source_file": "prds/aipm/versions/1.0.0.json",
       "source_location": "L1",
-      "community": 31,
+      "community": 30,
       "norm_label": "1.0.0.json",
       "id": "prds_aipm_versions_1_0_0_json"
     },
@@ -2384,7 +2429,7 @@
       "file_type": "code",
       "source_file": "prds/aipm/versions/1.0.0.json",
       "source_location": "L2",
-      "community": 31,
+      "community": 30,
       "norm_label": "version",
       "id": "prds_aipm_versions_1_0_0_json_versions_1_0_0_version"
     },
@@ -2393,7 +2438,7 @@
       "file_type": "code",
       "source_file": "prds/aipm/versions/1.0.0.json",
       "source_location": "L3",
-      "community": 31,
+      "community": 30,
       "norm_label": "createdat",
       "id": "prds_aipm_versions_1_0_0_json_versions_1_0_0_createdat"
     },
@@ -2402,7 +2447,7 @@
       "file_type": "code",
       "source_file": "prds/aipm/versions/1.0.0.json",
       "source_location": "L4",
-      "community": 31,
+      "community": 30,
       "norm_label": "content",
       "id": "prds_aipm_versions_1_0_0_json_versions_1_0_0_content"
     },
@@ -2411,7 +2456,7 @@
       "file_type": "code",
       "source_file": "prds/sanatan-sansaar/meta.json",
       "source_location": "L1",
-      "community": 25,
+      "community": 23,
       "norm_label": "meta.json",
       "id": "prds_sanatan_sansaar_meta_json"
     },
@@ -2420,7 +2465,7 @@
       "file_type": "code",
       "source_file": "prds/sanatan-sansaar/meta.json",
       "source_location": "L2",
-      "community": 25,
+      "community": 23,
       "norm_label": "id",
       "id": "sanatan_sansaar_meta_id"
     },
@@ -2429,7 +2474,7 @@
       "file_type": "code",
       "source_file": "prds/sanatan-sansaar/meta.json",
       "source_location": "L3",
-      "community": 25,
+      "community": 23,
       "norm_label": "name",
       "id": "sanatan_sansaar_meta_name"
     },
@@ -2438,7 +2483,7 @@
       "file_type": "code",
       "source_file": "prds/sanatan-sansaar/meta.json",
       "source_location": "L4",
-      "community": 25,
+      "community": 23,
       "norm_label": "description",
       "id": "sanatan_sansaar_meta_description"
     },
@@ -2447,7 +2492,7 @@
       "file_type": "code",
       "source_file": "prds/sanatan-sansaar/meta.json",
       "source_location": "L5",
-      "community": 25,
+      "community": 23,
       "norm_label": "createdat",
       "id": "sanatan_sansaar_meta_createdat"
     },
@@ -2456,7 +2501,7 @@
       "file_type": "code",
       "source_file": "prds/sanatan-sansaar/tasks.json",
       "source_location": "L1",
-      "community": 38,
+      "community": 37,
       "norm_label": "tasks.json",
       "id": "prds_sanatan_sansaar_tasks_json"
     },
@@ -2465,7 +2510,7 @@
       "file_type": "code",
       "source_file": "prds/sanatan-sansaar/versions/1.0.0-tasks.json",
       "source_location": "L1",
-      "community": 39,
+      "community": 38,
       "norm_label": "1.0.0-tasks.json",
       "id": "prds_sanatan_sansaar_versions_1_0_0_tasks_json"
     },
@@ -2519,7 +2564,7 @@
       "file_type": "code",
       "source_file": "public/graphify/graph.json",
       "source_location": "L1",
-      "community": 13,
+      "community": 12,
       "norm_label": "graph.json",
       "id": "public_graphify_graph_json"
     },
@@ -2528,7 +2573,7 @@
       "file_type": "code",
       "source_file": "public/graphify/graph.json",
       "source_location": "L2",
-      "community": 13,
+      "community": 12,
       "norm_label": "nodes",
       "id": "public_graphify_graph_json_graphify_graph_nodes"
     },
@@ -2537,7 +2582,7 @@
       "file_type": "code",
       "source_file": "public/graphify/graph.json",
       "source_location": "L65",
-      "community": 13,
+      "community": 12,
       "norm_label": "edges",
       "id": "public_graphify_graph_json_graphify_graph_edges"
     },
@@ -2546,7 +2591,7 @@
       "file_type": "code",
       "source_file": "public/graphify/graph.json",
       "source_location": "L87",
-      "community": 13,
+      "community": 12,
       "norm_label": "meta",
       "id": "public_graphify_graph_json_graphify_graph_meta"
     },
@@ -2555,7 +2600,7 @@
       "file_type": "code",
       "source_file": "public/graphify/graph.json",
       "source_location": "L88",
-      "community": 13,
+      "community": 12,
       "norm_label": "projects",
       "id": "public_graphify_graph_json_graphify_graph_meta_projects"
     },
@@ -2564,7 +2609,7 @@
       "file_type": "code",
       "source_file": "public/graphify/graph.json",
       "source_location": "L89",
-      "community": 13,
+      "community": 12,
       "norm_label": "versions",
       "id": "public_graphify_graph_json_graphify_graph_meta_versions"
     },
@@ -2573,7 +2618,7 @@
       "file_type": "code",
       "source_file": "public/graphify/graph.json",
       "source_location": "L90",
-      "community": 13,
+      "community": 12,
       "norm_label": "proposals",
       "id": "public_graphify_graph_json_graphify_graph_meta_proposals"
     },
@@ -2582,7 +2627,7 @@
       "file_type": "code",
       "source_file": "public/graphify/graph.json",
       "source_location": "L91",
-      "community": 13,
+      "community": 12,
       "norm_label": "prds",
       "id": "public_graphify_graph_json_graphify_graph_meta_prds"
     },
@@ -2591,7 +2636,7 @@
       "file_type": "code",
       "source_file": "scripts/generate_graph.py",
       "source_location": "L1",
-      "community": 27,
+      "community": 25,
       "norm_label": "generate_graph.py",
       "id": "scripts_generate_graph_py"
     },
@@ -2600,7 +2645,7 @@
       "file_type": "code",
       "source_file": "scripts/generate_graph.py",
       "source_location": "L24",
-      "community": 27,
+      "community": 25,
       "norm_label": "parse_frontmatter()",
       "id": "scripts_generate_graph_parse_frontmatter"
     },
@@ -2609,7 +2654,7 @@
       "file_type": "code",
       "source_file": "scripts/generate_graph.py",
       "source_location": "L54",
-      "community": 27,
+      "community": 25,
       "norm_label": "load_projects()",
       "id": "scripts_generate_graph_load_projects"
     },
@@ -2618,7 +2663,7 @@
       "file_type": "code",
       "source_file": "scripts/generate_graph.py",
       "source_location": "L136",
-      "community": 27,
+      "community": 25,
       "norm_label": "load_legacy_prds()",
       "id": "scripts_generate_graph_load_legacy_prds"
     },
@@ -2627,7 +2672,7 @@
       "file_type": "code",
       "source_file": "scripts/generate_graph.py",
       "source_location": "L186",
-      "community": 27,
+      "community": 25,
       "norm_label": "main()",
       "id": "scripts_generate_graph_main"
     },
@@ -2636,7 +2681,7 @@
       "file_type": "code",
       "source_file": "scripts/seed-kv.js",
       "source_location": "L1",
-      "community": 10,
+      "community": 5,
       "norm_label": "seed-kv.js",
       "id": "scripts_seed_kv_js"
     },
@@ -2645,7 +2690,7 @@
       "file_type": "code",
       "source_file": "scripts/seed-kv.js",
       "source_location": "L8",
-      "community": 10,
+      "community": 5,
       "norm_label": "fs",
       "id": "scripts_seed_kv_fs"
     },
@@ -2654,7 +2699,7 @@
       "file_type": "code",
       "source_file": "scripts/seed-kv.js",
       "source_location": "L9",
-      "community": 10,
+      "community": 5,
       "norm_label": "path",
       "id": "scripts_seed_kv_path"
     },
@@ -2663,7 +2708,7 @@
       "file_type": "code",
       "source_file": "scripts/seed-kv.js",
       "source_location": "L10",
-      "community": 10,
+      "community": 5,
       "norm_label": "{ kv }",
       "id": "scripts_seed_kv_kv"
     },
@@ -2672,7 +2717,7 @@
       "file_type": "code",
       "source_file": "scripts/seed-kv.js",
       "source_location": "L12",
-      "community": 10,
+      "community": 5,
       "norm_label": "data_dir",
       "id": "scripts_seed_kv_data_dir"
     },
@@ -2681,7 +2726,7 @@
       "file_type": "code",
       "source_file": "scripts/seed-kv.js",
       "source_location": "L14",
-      "community": 10,
+      "community": 5,
       "norm_label": "seed()",
       "id": "scripts_seed_kv_seed"
     },
@@ -2690,7 +2735,7 @@
       "file_type": "code",
       "source_file": "scripts/seed-tasks.js",
       "source_location": "L1",
-      "community": 23,
+      "community": 21,
       "norm_label": "seed-tasks.js",
       "id": "scripts_seed_tasks_js"
     },
@@ -2699,7 +2744,7 @@
       "file_type": "code",
       "source_file": "scripts/seed-tasks.js",
       "source_location": "L4",
-      "community": 23,
+      "community": 21,
       "norm_label": "fs",
       "id": "scripts_seed_tasks_fs"
     },
@@ -2708,7 +2753,7 @@
       "file_type": "code",
       "source_file": "scripts/seed-tasks.js",
       "source_location": "L5",
-      "community": 23,
+      "community": 21,
       "norm_label": "path",
       "id": "scripts_seed_tasks_path"
     },
@@ -2717,7 +2762,7 @@
       "file_type": "code",
       "source_file": "scripts/seed-tasks.js",
       "source_location": "L8",
-      "community": 23,
+      "community": 21,
       "norm_label": "outpath",
       "id": "scripts_seed_tasks_outpath"
     },
@@ -2726,7 +2771,7 @@
       "file_type": "code",
       "source_file": "scripts/seed-tasks.js",
       "source_location": "L11",
-      "community": 23,
+      "community": 21,
       "norm_label": "t()",
       "id": "scripts_seed_tasks_t"
     },
@@ -2735,7 +2780,7 @@
       "file_type": "code",
       "source_file": "scripts/seed-tasks.js",
       "source_location": "L29",
-      "community": 23,
+      "community": 21,
       "norm_label": "tasks",
       "id": "scripts_seed_tasks_tasks"
     },
@@ -2744,7 +2789,7 @@
       "file_type": "code",
       "source_file": "scripts/seed-tasks.js",
       "source_location": "L177",
-      "community": 23,
+      "community": 21,
       "norm_label": "dir",
       "id": "scripts_seed_tasks_dir"
     },
@@ -2757,7 +2802,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 40,
+      "community": 39,
       "norm_label": "next.js config",
       "id": "next_config_nextconfig"
     },
@@ -2770,7 +2815,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 41,
+      "community": 40,
       "norm_label": "prd manager ui package",
       "id": "package_prdmanagerui"
     },
@@ -2783,7 +2828,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 14,
       "norm_label": "vercel kv store",
       "id": "ext_vercel_kv"
     },
@@ -2796,7 +2841,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 35,
+      "community": 34,
       "norm_label": "diff npm library",
       "id": "ext_diff_lib"
     },
@@ -2822,7 +2867,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 28,
+      "community": 27,
       "norm_label": "github rest api",
       "id": "ext_github_api"
     },
@@ -2835,7 +2880,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 35,
+      "community": 34,
       "norm_label": "diffviewer component",
       "id": "components_diffviewer"
     },
@@ -2861,7 +2906,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "kanbanboard component",
       "id": "components_kanbanboard"
     },
@@ -2874,7 +2919,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "orphan subtask cross-column display",
       "id": "concept_kanban_orphan_subtask"
     },
@@ -2900,7 +2945,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "tasktree component",
       "id": "components_tasktree"
     },
@@ -2965,7 +3010,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 14,
       "norm_label": "snapshot store library",
       "id": "lib_snapshotstore"
     },
@@ -2978,7 +3023,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 14,
       "norm_label": "full-state snapshot capture",
       "id": "concept_snapshot_full_state"
     },
@@ -3017,7 +3062,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 14,
       "norm_label": "admin page",
       "id": "pages_admin"
     },
@@ -3446,7 +3491,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 14,
       "norm_label": "task api handler ([taskid].js)",
       "id": "api_taskid_handler"
     },
@@ -3459,7 +3504,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 14,
       "norm_label": "task store library",
       "id": "lib_taskstore"
     },
@@ -3472,7 +3517,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 14,
       "norm_label": "audit log library",
       "id": "lib_auditlog"
     },
@@ -3485,7 +3530,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 14,
       "norm_label": "require admin library",
       "id": "lib_requireadmin"
     },
@@ -3498,7 +3543,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 14,
       "norm_label": "gettask function",
       "id": "func_gettask"
     },
@@ -3511,7 +3556,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 14,
       "norm_label": "updatetask function",
       "id": "func_updatetask"
     },
@@ -3524,7 +3569,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 14,
       "norm_label": "deletetask function",
       "id": "func_deletetask"
     },
@@ -3537,7 +3582,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 14,
       "norm_label": "reordertask function",
       "id": "func_reordertask"
     },
@@ -3550,7 +3595,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 14,
       "norm_label": "logaudit function",
       "id": "func_logaudit"
     },
@@ -3563,7 +3608,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 14,
       "norm_label": "requireadmin function",
       "id": "func_requireadmin"
     },
@@ -3654,7 +3699,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "api fetch library",
       "id": "lib_apifetch"
     },
@@ -3797,7 +3842,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "aipm project metadata",
       "id": "prd_aipm_meta"
     },
@@ -3810,7 +3855,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "aipm prd v1.0.0",
       "id": "prd_aipm_v100"
     },
@@ -3823,7 +3868,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "sanatan sansaar project metadata",
       "id": "prd_sanatan_meta"
     },
@@ -3836,7 +3881,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "sanatan sansaar task list (122 tasks)",
       "id": "prd_sanatan_tasks"
     },
@@ -3849,7 +3894,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "sanatan backend domain",
       "id": "domain_sanatan_backend"
     },
@@ -3862,7 +3907,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "sanatan mobile user app domain",
       "id": "domain_sanatan_mobile_user"
     },
@@ -3875,7 +3920,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "sanatan mobile astrologer app domain",
       "id": "domain_sanatan_mobile_astrologer"
     },
@@ -3888,7 +3933,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "sanatan admin web domain",
       "id": "domain_sanatan_admin_web"
     },
@@ -3901,7 +3946,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "hierarchical task structure (parentid/order)",
       "id": "concept_task_hierarchy"
     },
@@ -3914,7 +3959,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "consultation state machine (pendinga\u2020\u2019accepteda\u2020\u2019confirmeda\u2020\u2019completed)",
       "id": "concept_consultation_state_machine"
     },
@@ -3927,7 +3972,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "agora integration (audio/video calls)",
       "id": "concept_agora_integration"
     },
@@ -3940,7 +3985,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "cometchat integration (chat)",
       "id": "concept_cometchat_integration"
     },
@@ -3953,7 +3998,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "wallet & billing engine",
       "id": "concept_wallet_billing"
     },
@@ -3966,7 +4011,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "commission cascade (boosta\u2020\u2019per-astrologera\u2020\u2019systema\u2020\u2019fallback)",
       "id": "concept_commission_cascade"
     },
@@ -3979,7 +4024,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "sanatan sansaar version tasks (1.0.0)",
       "id": "prd_sanatan_v100tasks"
     },
@@ -3992,7 +4037,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "sanatan sansaar prd v1.0.0",
       "id": "prd_sanatan_v100"
     },
@@ -4005,7 +4050,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "graph generator script (python)",
       "id": "script_generate_graph"
     },
@@ -4018,7 +4063,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "graph.json output",
       "id": "output_graph_json"
     },
@@ -4031,7 +4076,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "public/graphify output directory",
       "id": "output_public_graphify"
     },
@@ -4044,7 +4089,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "kv seed script",
       "id": "script_seed_kv"
     },
@@ -4057,7 +4102,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "kv key pattern (project:/version:/tasks:/proposal:)",
       "id": "kv_key_pattern"
     },
@@ -4070,7 +4115,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "task seed script",
       "id": "script_seed_tasks"
     },
@@ -4083,7 +4128,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "productgraph os prd",
       "id": "doc_prd_md"
     },
@@ -4096,7 +4141,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "productgraph os a\u20ac\u201d product intelligence graph",
       "id": "concept_productgraph_os"
     },
@@ -4109,7 +4154,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "github as database (no traditional db)",
       "id": "concept_git_as_database"
     },
@@ -4122,7 +4167,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "graphify graph engine",
       "id": "concept_graphify_engine"
     },
@@ -4135,7 +4180,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "graphify starter readme",
       "id": "doc_readme_graphify"
     },
@@ -4148,7 +4193,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 42,
+      "community": 41,
       "norm_label": "prd editor ui readme",
       "id": "doc_readme_ui"
     },
@@ -4174,7 +4219,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 43,
+      "community": 42,
       "norm_label": "pyyaml>=6.0 dependency",
       "id": "req_pyyaml"
     },
@@ -4187,7 +4232,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "github schema & prd file format",
       "id": "doc_github_schema"
     },
@@ -4200,7 +4245,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 2,
+      "community": 6,
       "norm_label": "yaml frontmatter prd format",
       "id": "concept_prd_frontmatter"
     },
@@ -4213,7 +4258,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "graph network canvas",
       "id": "graphify_graph_html_network"
     },
@@ -4226,7 +4271,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "vis network library",
       "id": "graphify_graph_html_vis_network"
     },
@@ -4239,7 +4284,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "graph.json data source",
       "id": "graphify_graph_html_graph_json"
     },
@@ -4252,7 +4297,7 @@
       "captured_at": null,
       "author": "platform-team",
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "authentication system",
       "id": "auth001_authentication_system"
     },
@@ -4265,7 +4310,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "single sign-on (sso)",
       "id": "auth001_sso"
     },
@@ -4278,7 +4323,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "token management",
       "id": "auth001_token_management"
     },
@@ -4291,7 +4336,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "login",
       "id": "auth001_login"
     },
@@ -4304,7 +4349,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "platform team",
       "id": "auth001_platform_team"
     },
@@ -4317,7 +4362,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "mobile app",
       "id": "auth001_mobile_app"
     },
@@ -4330,7 +4375,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "admin panel",
       "id": "auth001_admin_panel"
     },
@@ -4343,7 +4388,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "api-004",
       "id": "auth001_api004"
     },
@@ -4356,7 +4401,7 @@
       "captured_at": null,
       "author": "identity-team",
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "user profile service",
       "id": "user001_user_profile_service"
     },
@@ -4369,7 +4414,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "account management apis",
       "id": "user001_account_management_apis"
     },
@@ -4382,7 +4427,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "identity team",
       "id": "user001_identity_team"
     },
@@ -4395,7 +4440,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "web portal",
       "id": "user001_web_portal"
     },
@@ -4408,7 +4453,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "prd knowledge graph viewer",
       "id": "public_graphify_html_prd_knowledge_graph"
     },
@@ -4421,7 +4466,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "sidebar component",
       "id": "public_graphify_html_sidebar"
     },
@@ -4434,7 +4479,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "legend component",
       "id": "public_graphify_html_legend"
     },
@@ -4447,7 +4492,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "node detail panel",
       "id": "public_graphify_html_detail_panel"
     },
@@ -4460,7 +4505,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "stats chips component",
       "id": "public_graphify_html_stats"
     },
@@ -4473,7 +4518,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "network controls (fit/relayout)",
       "id": "public_graphify_html_controls"
     },
@@ -4486,7 +4531,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "node type: project",
       "id": "public_graphify_html_node_type_project"
     },
@@ -4499,7 +4544,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "node type: version",
       "id": "public_graphify_html_node_type_version"
     },
@@ -4512,7 +4557,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "node type: proposal",
       "id": "public_graphify_html_node_type_proposal"
     },
@@ -4525,7 +4570,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "node type: legacy prd",
       "id": "public_graphify_html_node_type_prd"
     },
@@ -4538,7 +4583,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "edge type: has_version",
       "id": "public_graphify_html_edge_type_has_version"
     },
@@ -4551,7 +4596,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "edge type: has_proposal",
       "id": "public_graphify_html_edge_type_has_proposal"
     },
@@ -4564,7 +4609,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "edge type: promoted_to",
       "id": "public_graphify_html_edge_type_promoted_to"
     },
@@ -4577,7 +4622,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "edge type: depends_on",
       "id": "public_graphify_html_edge_type_depends_on"
     },
@@ -4590,7 +4635,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 7,
       "norm_label": "vis network library (public)",
       "id": "public_graphify_html_vis_network"
     },
@@ -4603,7 +4648,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 10,
+      "community": 5,
       "norm_label": "vercel kv store pattern",
       "id": "prd_manager_kv_store_pattern"
     },
@@ -4616,7 +4661,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 0,
       "norm_label": "audit trail pattern",
       "id": "prd_manager_audit_trail_pattern"
     },
@@ -4655,7 +4700,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 3,
+      "community": 0,
       "norm_label": "task lifecycle management",
       "id": "prd_manager_task_lifecycle"
     },
@@ -4668,7 +4713,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 0,
+      "community": 3,
       "norm_label": "proposal lifecycle create to promote to version",
       "id": "prd_manager_proposal_lifecycle"
     },
@@ -4681,7 +4726,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 0,
+      "community": 3,
       "norm_label": "prd version management",
       "id": "prd_manager_version_management"
     },
@@ -4694,7 +4739,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 9,
       "norm_label": "sprint management",
       "id": "prd_manager_sprint_management"
     },
@@ -4707,7 +4752,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 4,
+      "community": 5,
       "norm_label": "gettasksforproject()",
       "id": "prd_manager_gettasksforproject"
     },
@@ -4716,7 +4761,7 @@
       "file_type": "code",
       "source_file": "vercel.json",
       "source_location": "L1",
-      "community": 36,
+      "community": 35,
       "norm_label": "vercel.json",
       "id": "vercel_json"
     },
@@ -4725,7 +4770,7 @@
       "file_type": "code",
       "source_file": "vercel.json",
       "source_location": "L2",
-      "community": 36,
+      "community": 35,
       "norm_label": "crons",
       "id": "prd_manager_vercel_crons"
     },
@@ -4734,7 +4779,7 @@
       "file_type": "code",
       "source_file": "C:/HVWork/PRD_Manager/next.config.js",
       "source_location": "L1",
-      "community": 44,
+      "community": 43,
       "norm_label": "next.config.js",
       "id": "c_hvwork_prd_manager_next_config_js"
     },
@@ -4743,7 +4788,7 @@
       "file_type": "code",
       "source_file": "install.ps1",
       "source_location": "L1",
-      "community": 45,
+      "community": 44,
       "norm_label": "install.ps1",
       "id": "install_ps1"
     },
@@ -4779,7 +4824,7 @@
       "file_type": "code",
       "source_file": ".vercel/project.json",
       "source_location": "L1",
-      "community": 32,
+      "community": 31,
       "norm_label": "project.json",
       "id": "vercel_project_json"
     },
@@ -4788,7 +4833,7 @@
       "file_type": "code",
       "source_file": ".vercel/project.json",
       "source_location": "L1",
-      "community": 32,
+      "community": 31,
       "norm_label": "projectid",
       "id": "vercel_project_projectid"
     },
@@ -4797,7 +4842,7 @@
       "file_type": "code",
       "source_file": ".vercel/project.json",
       "source_location": "L1",
-      "community": 32,
+      "community": 31,
       "norm_label": "orgid",
       "id": "vercel_project_orgid"
     },
@@ -4806,7 +4851,7 @@
       "file_type": "code",
       "source_file": ".vercel/project.json",
       "source_location": "L1",
-      "community": 32,
+      "community": 31,
       "norm_label": "projectname",
       "id": "vercel_project_projectname"
     },
@@ -4815,7 +4860,7 @@
       "file_type": "code",
       "source_file": "C:/HVWork/PRD_Manager/prds/sanatan-sansaar/tasks.json",
       "source_location": "L1",
-      "community": 46,
+      "community": 45,
       "norm_label": "tasks.json",
       "id": "c_hvwork_prd_manager_prds_sanatan_sansaar_tasks_json"
     },
@@ -4824,7 +4869,7 @@
       "file_type": "code",
       "source_file": "C:/HVWork/PRD_Manager/prds/sanatan-sansaar/meta.json",
       "source_location": "L1",
-      "community": 25,
+      "community": 23,
       "norm_label": "meta.json",
       "id": "c_hvwork_prd_manager_prds_sanatan_sansaar_meta_json"
     },
@@ -4833,7 +4878,7 @@
       "file_type": "code",
       "source_file": "C:/HVWork/PRD_Manager/prds/sanatan-sansaar/versions/1.0.0-tasks.json",
       "source_location": "L1",
-      "community": 47,
+      "community": 46,
       "norm_label": "1.0.0-tasks.json",
       "id": "c_hvwork_prd_manager_prds_sanatan_sansaar_versions_1_0_0_tasks_json"
     },
@@ -4896,7 +4941,7 @@
       "file_type": "code",
       "source_file": "components/AssigneeInput.js",
       "source_location": "L1",
-      "community": 12,
+      "community": 2,
       "norm_label": "assigneeinput.js",
       "id": "components_assigneeinput_js"
     },
@@ -4905,7 +4950,7 @@
       "file_type": "code",
       "source_file": "components/KanbanBoard.js",
       "source_location": "L5",
-      "community": 15,
+      "community": 2,
       "norm_label": "default_columns",
       "id": "components_kanbanboard_default_columns"
     },
@@ -4914,7 +4959,7 @@
       "file_type": "code",
       "source_file": "components/KanbanBoard.js",
       "source_location": "L13",
-      "community": 15,
+      "community": 2,
       "norm_label": "col_colors",
       "id": "components_kanbanboard_col_colors"
     },
@@ -4923,7 +4968,7 @@
       "file_type": "code",
       "source_file": "components/KanbanBoard.js",
       "source_location": "L35",
-      "community": 15,
+      "community": 2,
       "norm_label": "parsementions()",
       "id": "components_kanbanboard_parsementions"
     },
@@ -4932,7 +4977,7 @@
       "file_type": "code",
       "source_file": "components/KanbanBoard.js",
       "source_location": "L49",
-      "community": 15,
+      "community": 2,
       "norm_label": "readfileasdataurl()",
       "id": "components_kanbanboard_readfileasdataurl"
     },
@@ -4941,7 +4986,7 @@
       "file_type": "code",
       "source_file": "components/KanbanBoard.js",
       "source_location": "L74",
-      "community": 15,
+      "community": 2,
       "norm_label": "updateatpath()",
       "id": "components_kanbanboard_updateatpath"
     },
@@ -4950,7 +4995,7 @@
       "file_type": "code",
       "source_file": "components/KanbanBoard.js",
       "source_location": "L82",
-      "community": 15,
+      "community": 2,
       "norm_label": "slugify()",
       "id": "components_kanbanboard_slugify"
     },
@@ -4959,7 +5004,7 @@
       "file_type": "code",
       "source_file": "components/CalendarView.js",
       "source_location": "L4",
-      "community": 21,
+      "community": 2,
       "norm_label": "priority_color",
       "id": "components_calendarview_priority_color"
     },
@@ -4968,7 +5013,7 @@
       "file_type": "code",
       "source_file": "components/CalendarView.js",
       "source_location": "L5",
-      "community": 21,
+      "community": 2,
       "norm_label": "weekdays",
       "id": "components_calendarview_weekdays"
     },
@@ -4977,7 +5022,7 @@
       "file_type": "code",
       "source_file": "components/CalendarView.js",
       "source_location": "L6",
-      "community": 21,
+      "community": 2,
       "norm_label": "months",
       "id": "components_calendarview_months"
     },
@@ -4986,7 +5031,7 @@
       "file_type": "code",
       "source_file": "components/CalendarView.js",
       "source_location": "L8",
-      "community": 21,
+      "community": 2,
       "norm_label": "ymd()",
       "id": "components_calendarview_ymd"
     },
@@ -4995,7 +5040,7 @@
       "file_type": "code",
       "source_file": "components/CalendarView.js",
       "source_location": "L12",
-      "community": 21,
+      "community": 2,
       "norm_label": "duekey()",
       "id": "components_calendarview_duekey"
     },
@@ -5004,7 +5049,7 @@
       "file_type": "code",
       "source_file": "components/TaskTree.js",
       "source_location": "L10",
-      "community": 12,
+      "community": 2,
       "norm_label": "getinitials()",
       "id": "components_tasktree_getinitials"
     },
@@ -5013,7 +5058,7 @@
       "file_type": "code",
       "source_file": "components/TaskTree.js",
       "source_location": "L15",
-      "community": 12,
+      "community": 2,
       "norm_label": "avatar_themes",
       "id": "components_tasktree_avatar_themes"
     },
@@ -5022,7 +5067,7 @@
       "file_type": "code",
       "source_file": "components/TaskTree.js",
       "source_location": "L26",
-      "community": 12,
+      "community": 2,
       "norm_label": "nametoavatartheme()",
       "id": "components_tasktree_nametoavatartheme"
     },
@@ -5031,7 +5076,7 @@
       "file_type": "code",
       "source_file": "components/TaskTree.js",
       "source_location": "L33",
-      "community": 12,
+      "community": 2,
       "norm_label": "getdescendantstats()",
       "id": "components_tasktree_getdescendantstats"
     },
@@ -5040,7 +5085,7 @@
       "file_type": "code",
       "source_file": "C:/HVWork/PRD_Manager/public/graphify/graph.json",
       "source_location": "L1",
-      "community": 20,
+      "community": 19,
       "norm_label": "graph.json",
       "id": "c_hvwork_prd_manager_public_graphify_graph_json"
     },
@@ -5049,7 +5094,7 @@
       "file_type": "code",
       "source_file": "C:/HVWork/PRD_Manager/public/graphify/graph.json",
       "source_location": "L2",
-      "community": 20,
+      "community": 19,
       "norm_label": "nodes",
       "id": "graphify_graph_nodes"
     },
@@ -5058,7 +5103,7 @@
       "file_type": "code",
       "source_file": "C:/HVWork/PRD_Manager/public/graphify/graph.json",
       "source_location": "L65",
-      "community": 20,
+      "community": 19,
       "norm_label": "edges",
       "id": "graphify_graph_edges"
     },
@@ -5067,7 +5112,7 @@
       "file_type": "code",
       "source_file": "C:/HVWork/PRD_Manager/public/graphify/graph.json",
       "source_location": "L87",
-      "community": 20,
+      "community": 19,
       "norm_label": "meta",
       "id": "graphify_graph_meta"
     },
@@ -5076,7 +5121,7 @@
       "file_type": "code",
       "source_file": "C:/HVWork/PRD_Manager/public/graphify/graph.json",
       "source_location": "L88",
-      "community": 20,
+      "community": 19,
       "norm_label": "projects",
       "id": "graphify_graph_meta_projects"
     },
@@ -5085,7 +5130,7 @@
       "file_type": "code",
       "source_file": "C:/HVWork/PRD_Manager/public/graphify/graph.json",
       "source_location": "L89",
-      "community": 20,
+      "community": 19,
       "norm_label": "versions",
       "id": "graphify_graph_meta_versions"
     },
@@ -5094,7 +5139,7 @@
       "file_type": "code",
       "source_file": "C:/HVWork/PRD_Manager/public/graphify/graph.json",
       "source_location": "L90",
-      "community": 20,
+      "community": 19,
       "norm_label": "proposals",
       "id": "graphify_graph_meta_proposals"
     },
@@ -5103,7 +5148,7 @@
       "file_type": "code",
       "source_file": "C:/HVWork/PRD_Manager/public/graphify/graph.json",
       "source_location": "L91",
-      "community": 20,
+      "community": 19,
       "norm_label": "prds",
       "id": "graphify_graph_meta_prds"
     },
@@ -5112,7 +5157,7 @@
       "file_type": "code",
       "source_file": "C:/HVWork/PRD_Manager/scripts/generate_graph.py",
       "source_location": "L1",
-      "community": 27,
+      "community": 25,
       "norm_label": "generate_graph.py",
       "id": "c_hvwork_prd_manager_scripts_generate_graph_py"
     },
@@ -5121,7 +5166,7 @@
       "file_type": "code",
       "source_file": "scripts/migrate-redis.js",
       "source_location": "L1",
-      "community": 30,
+      "community": 29,
       "norm_label": "migrate-redis.js",
       "id": "scripts_migrate_redis_js"
     },
@@ -5130,7 +5175,7 @@
       "file_type": "code",
       "source_file": "scripts/migrate-redis.js",
       "source_location": "L4",
-      "community": 30,
+      "community": 29,
       "norm_label": "{ redis }",
       "id": "scripts_migrate_redis_redis"
     },
@@ -5139,7 +5184,7 @@
       "file_type": "code",
       "source_file": "scripts/migrate-redis.js",
       "source_location": "L6",
-      "community": 30,
+      "community": 29,
       "norm_label": "old",
       "id": "scripts_migrate_redis_old"
     },
@@ -5148,7 +5193,7 @@
       "file_type": "code",
       "source_file": "scripts/migrate-redis.js",
       "source_location": "L11",
-      "community": 30,
+      "community": 29,
       "norm_label": "new",
       "id": "scripts_migrate_redis_new"
     },
@@ -5157,7 +5202,7 @@
       "file_type": "code",
       "source_file": "scripts/migrate-redis.js",
       "source_location": "L16",
-      "community": 30,
+      "community": 29,
       "norm_label": "migrate()",
       "id": "scripts_migrate_redis_migrate"
     },
@@ -5166,7 +5211,7 @@
       "file_type": "code",
       "source_file": "lib/audit-log.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 0,
       "norm_label": "{ redis }",
       "id": "lib_audit_log_redis"
     },
@@ -5175,7 +5220,7 @@
       "file_type": "code",
       "source_file": "lib/audit-log.js",
       "source_location": "L3",
-      "community": 4,
+      "community": 0,
       "norm_label": "getkv()",
       "id": "lib_audit_log_getkv"
     },
@@ -5184,7 +5229,7 @@
       "file_type": "code",
       "source_file": "lib/require-superadmin.js",
       "source_location": "L1",
-      "community": 5,
+      "community": 22,
       "norm_label": "require-superadmin.js",
       "id": "lib_require_superadmin_js"
     },
@@ -5193,7 +5238,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L1",
-      "community": 0,
+      "community": 3,
       "norm_label": "{ redis }",
       "id": "lib_prd_store_redis"
     },
@@ -5202,7 +5247,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L3",
-      "community": 0,
+      "community": 3,
       "norm_label": "getkv()",
       "id": "lib_prd_store_getkv"
     },
@@ -5211,7 +5256,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L108",
-      "community": 0,
+      "community": 3,
       "norm_label": "updateproject()",
       "id": "lib_prd_store_updateproject"
     },
@@ -5220,7 +5265,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L239",
-      "community": 0,
+      "community": 3,
       "norm_label": "listlabels()",
       "id": "lib_prd_store_listlabels"
     },
@@ -5229,7 +5274,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L243",
-      "community": 0,
+      "community": 3,
       "norm_label": "createlabel()",
       "id": "lib_prd_store_createlabel"
     },
@@ -5238,7 +5283,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L251",
-      "community": 0,
+      "community": 3,
       "norm_label": "updatelabel()",
       "id": "lib_prd_store_updatelabel"
     },
@@ -5247,7 +5292,7 @@
       "file_type": "code",
       "source_file": "lib/prd-store.js",
       "source_location": "L260",
-      "community": 0,
+      "community": 3,
       "norm_label": "deletelabel()",
       "id": "lib_prd_store_deletelabel"
     },
@@ -5292,7 +5337,7 @@
       "file_type": "code",
       "source_file": "lib/notification-store.js",
       "source_location": "L1",
-      "community": 9,
+      "community": 10,
       "norm_label": "notification-store.js",
       "id": "lib_notification_store_js"
     },
@@ -5301,7 +5346,7 @@
       "file_type": "code",
       "source_file": "lib/notification-store.js",
       "source_location": "L1",
-      "community": 9,
+      "community": 10,
       "norm_label": "{ redis }",
       "id": "lib_notification_store_redis"
     },
@@ -5310,7 +5355,7 @@
       "file_type": "code",
       "source_file": "lib/notification-store.js",
       "source_location": "L3",
-      "community": 9,
+      "community": 10,
       "norm_label": "getkv()",
       "id": "lib_notification_store_getkv"
     },
@@ -5319,7 +5364,7 @@
       "file_type": "code",
       "source_file": "lib/notification-store.js",
       "source_location": "L6",
-      "community": 9,
+      "community": 10,
       "norm_label": "key()",
       "id": "lib_notification_store_key"
     },
@@ -5328,7 +5373,7 @@
       "file_type": "code",
       "source_file": "lib/notification-store.js",
       "source_location": "L9",
-      "community": 9,
+      "community": 10,
       "norm_label": "addnotification()",
       "id": "lib_notification_store_addnotification"
     },
@@ -5337,7 +5382,7 @@
       "file_type": "code",
       "source_file": "lib/notification-store.js",
       "source_location": "L25",
-      "community": 9,
+      "community": 10,
       "norm_label": "listnotifications()",
       "id": "lib_notification_store_listnotifications"
     },
@@ -5346,7 +5391,7 @@
       "file_type": "code",
       "source_file": "lib/notification-store.js",
       "source_location": "L30",
-      "community": 9,
+      "community": 10,
       "norm_label": "markread()",
       "id": "lib_notification_store_markread"
     },
@@ -5355,7 +5400,7 @@
       "file_type": "code",
       "source_file": "lib/notification-store.js",
       "source_location": "L38",
-      "community": 9,
+      "community": 10,
       "norm_label": "markallread()",
       "id": "lib_notification_store_markallread"
     },
@@ -5364,7 +5409,7 @@
       "file_type": "code",
       "source_file": "lib/notification-store.js",
       "source_location": "L48",
-      "community": 3,
+      "community": 0,
       "norm_label": "notifytaskchange()",
       "id": "lib_notification_store_notifytaskchange"
     },
@@ -5373,7 +5418,7 @@
       "file_type": "code",
       "source_file": "lib/sprint-store.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 9,
       "norm_label": "{ redis }",
       "id": "lib_sprint_store_redis"
     },
@@ -5382,7 +5427,7 @@
       "file_type": "code",
       "source_file": "lib/sprint-store.js",
       "source_location": "L3",
-      "community": 4,
+      "community": 9,
       "norm_label": "getkv()",
       "id": "lib_sprint_store_getkv"
     },
@@ -5391,7 +5436,7 @@
       "file_type": "code",
       "source_file": "lib/snapshot-store.js",
       "source_location": "L1",
-      "community": 10,
+      "community": 5,
       "norm_label": "{ redis }",
       "id": "lib_snapshot_store_redis"
     },
@@ -5400,7 +5445,7 @@
       "file_type": "code",
       "source_file": "lib/snapshot-store.js",
       "source_location": "L3",
-      "community": 10,
+      "community": 5,
       "norm_label": "getkv()",
       "id": "lib_snapshot_store_getkv"
     },
@@ -5409,7 +5454,7 @@
       "file_type": "code",
       "source_file": "lib/api-fetch.js",
       "source_location": "L24",
-      "community": 17,
+      "community": 4,
       "norm_label": "apifetchorlogout()",
       "id": "lib_api_fetch_apifetchorlogout"
     },
@@ -5418,7 +5463,7 @@
       "file_type": "code",
       "source_file": "lib/task-store.js",
       "source_location": "L1",
-      "community": 3,
+      "community": 0,
       "norm_label": "{ redis }",
       "id": "lib_task_store_redis"
     },
@@ -5427,7 +5472,7 @@
       "file_type": "code",
       "source_file": "lib/task-store.js",
       "source_location": "L3",
-      "community": 3,
+      "community": 0,
       "norm_label": "getkv()",
       "id": "lib_task_store_getkv"
     },
@@ -5436,7 +5481,7 @@
       "file_type": "code",
       "source_file": "lib/task-store.js",
       "source_location": "L147",
-      "community": 3,
+      "community": 0,
       "norm_label": "movetask()",
       "id": "lib_task_store_movetask"
     },
@@ -5445,7 +5490,7 @@
       "file_type": "code",
       "source_file": "lib/task-store.js",
       "source_location": "L193",
-      "community": 3,
+      "community": 0,
       "norm_label": "reorderboard()",
       "id": "lib_task_store_reorderboard"
     },
@@ -5454,7 +5499,7 @@
       "file_type": "code",
       "source_file": "lib/permissions.js",
       "source_location": "L1",
-      "community": 5,
+      "community": 16,
       "norm_label": "permissions.js",
       "id": "lib_permissions_js"
     },
@@ -5463,7 +5508,7 @@
       "file_type": "code",
       "source_file": "lib/permissions.js",
       "source_location": "L1",
-      "community": 5,
+      "community": 16,
       "norm_label": "all_permissions",
       "id": "lib_permissions_all_permissions"
     },
@@ -5472,7 +5517,7 @@
       "file_type": "code",
       "source_file": "lib/permissions.js",
       "source_location": "L16",
-      "community": 5,
+      "community": 16,
       "norm_label": "permission_labels",
       "id": "lib_permissions_permission_labels"
     },
@@ -5481,7 +5526,7 @@
       "file_type": "code",
       "source_file": "C:/HVWork/PRD_Manager/graphify/graph.json",
       "source_location": "L1",
-      "community": 20,
+      "community": 19,
       "norm_label": "graph.json",
       "id": "c_hvwork_prd_manager_graphify_graph_json"
     },
@@ -5490,7 +5535,7 @@
       "file_type": "code",
       "source_file": "pages/admin.js",
       "source_location": "L215",
-      "community": 22,
+      "community": 4,
       "norm_label": "adminpermissioneditor()",
       "id": "pages_admin_adminpermissioneditor"
     },
@@ -5499,7 +5544,7 @@
       "file_type": "code",
       "source_file": "pages/admin.js",
       "source_location": "L361",
-      "community": 22,
+      "community": 4,
       "norm_label": "adminpasswordeditor()",
       "id": "pages_admin_adminpasswordeditor"
     },
@@ -5508,7 +5553,7 @@
       "file_type": "code",
       "source_file": "pages/admin.js",
       "source_location": "L411",
-      "community": 22,
+      "community": 4,
       "norm_label": "adminstab()",
       "id": "pages_admin_adminstab"
     },
@@ -5517,7 +5562,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/dashboard.js",
       "source_location": "L1",
-      "community": 26,
+      "community": 4,
       "norm_label": "dashboard.js",
       "id": "pages_projects_slug_dashboard_js"
     },
@@ -5526,7 +5571,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/dashboard.js",
       "source_location": "L7",
-      "community": 26,
+      "community": 4,
       "norm_label": "progressbar()",
       "id": "slug_dashboard_progressbar"
     },
@@ -5535,7 +5580,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/dashboard.js",
       "source_location": "L19",
-      "community": 26,
+      "community": 4,
       "norm_label": "statcard()",
       "id": "slug_dashboard_statcard"
     },
@@ -5544,7 +5589,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/dashboard.js",
       "source_location": "L35",
-      "community": 26,
+      "community": 4,
       "norm_label": "sectioncard()",
       "id": "slug_dashboard_sectioncard"
     },
@@ -5553,7 +5598,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/dashboard.js",
       "source_location": "L68",
-      "community": 26,
+      "community": 4,
       "norm_label": "itemrow()",
       "id": "slug_dashboard_itemrow"
     },
@@ -5562,7 +5607,7 @@
       "file_type": "code",
       "source_file": "pages/projects/[slug]/dashboard.js",
       "source_location": "L86",
-      "community": 26,
+      "community": 4,
       "norm_label": "tag()",
       "id": "slug_dashboard_tag"
     },
@@ -5625,7 +5670,7 @@
       "file_type": "code",
       "source_file": "pages/api/auth/login.js",
       "source_location": "L1",
-      "community": 5,
+      "community": 16,
       "norm_label": "{ redis }",
       "id": "auth_login_redis"
     },
@@ -5634,7 +5679,7 @@
       "file_type": "code",
       "source_file": "pages/api/auth/login.js",
       "source_location": "L3",
-      "community": 5,
+      "community": 16,
       "norm_label": "getkv()",
       "id": "auth_login_getkv"
     },
@@ -5643,7 +5688,7 @@
       "file_type": "code",
       "source_file": "pages/api/auth/login.js",
       "source_location": "L4",
-      "community": 5,
+      "community": 16,
       "norm_label": "{ logaudit }",
       "id": "auth_login_logaudit"
     },
@@ -5652,7 +5697,7 @@
       "file_type": "code",
       "source_file": "pages/api/auth/login.js",
       "source_location": "L5",
-      "community": 5,
+      "community": 16,
       "norm_label": "{ all_permissions }",
       "id": "auth_login_all_permissions"
     },
@@ -5661,7 +5706,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/index.js",
       "source_location": "L1",
-      "community": 0,
+      "community": 5,
       "norm_label": "{ redis }",
       "id": "projects_index_redis"
     },
@@ -5670,7 +5715,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/index.js",
       "source_location": "L3",
-      "community": 0,
+      "community": 5,
       "norm_label": "getkv()",
       "id": "projects_index_getkv"
     },
@@ -5679,7 +5724,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug].js",
       "source_location": "L1",
-      "community": 0,
+      "community": 3,
       "norm_label": "{ getproject, updateproject, deleteproject }",
       "id": "projects_slug_getproject_updateproject_deleteproject"
     },
@@ -5688,7 +5733,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug].js",
       "source_location": "L3",
-      "community": 0,
+      "community": 3,
       "norm_label": "{ requirepermission, requireprojectaccess }",
       "id": "projects_slug_requirepermission_requireprojectaccess"
     },
@@ -5697,7 +5742,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/export.js",
       "source_location": "L1",
-      "community": 0,
+      "community": 3,
       "norm_label": "export.js",
       "id": "pages_api_projects_slug_export_js"
     },
@@ -5706,7 +5751,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/export.js",
       "source_location": "L4",
-      "community": 0,
+      "community": 3,
       "norm_label": "csvescape()",
       "id": "slug_export_csvescape"
     },
@@ -5715,7 +5760,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/export.js",
       "source_location": "L13",
-      "community": 0,
+      "community": 3,
       "norm_label": "handler()",
       "id": "slug_export_handler"
     },
@@ -5724,7 +5769,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/labels.js",
       "source_location": "L1",
-      "community": 0,
+      "community": 3,
       "norm_label": "labels.js",
       "id": "pages_api_projects_slug_labels_js"
     },
@@ -5733,7 +5778,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/labels.js",
       "source_location": "L1",
-      "community": 0,
+      "community": 3,
       "norm_label": "{ listlabels, createlabel, updatelabel, deletelabel }",
       "id": "slug_labels_listlabels_createlabel_updatelabel_deletelabel"
     },
@@ -5742,7 +5787,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/labels.js",
       "source_location": "L2",
-      "community": 0,
+      "community": 3,
       "norm_label": "{ logaudit }",
       "id": "slug_labels_logaudit"
     },
@@ -5751,7 +5796,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/labels.js",
       "source_location": "L3",
-      "community": 0,
+      "community": 3,
       "norm_label": "{ requirepermission, requireprojectaccess }",
       "id": "slug_labels_requirepermission_requireprojectaccess"
     },
@@ -5760,7 +5805,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/labels.js",
       "source_location": "L5",
-      "community": 0,
+      "community": 3,
       "norm_label": "handler()",
       "id": "slug_labels_handler"
     },
@@ -5796,7 +5841,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/sprint.js",
       "source_location": "L3",
-      "community": 4,
+      "community": 9,
       "norm_label": "{ requireprojectaccess }",
       "id": "slug_sprint_requireprojectaccess"
     },
@@ -5805,7 +5850,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/dashboard.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 9,
       "norm_label": "dashboard.js",
       "id": "pages_api_projects_slug_dashboard_js"
     },
@@ -5814,7 +5859,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/dashboard.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 9,
       "norm_label": "{ redis }",
       "id": "slug_dashboard_redis"
     },
@@ -5823,7 +5868,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/dashboard.js",
       "source_location": "L3",
-      "community": 4,
+      "community": 9,
       "norm_label": "getkv()",
       "id": "slug_dashboard_getkv"
     },
@@ -5832,7 +5877,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/dashboard.js",
       "source_location": "L4",
-      "community": 4,
+      "community": 9,
       "norm_label": "{ getproject, listproposals }",
       "id": "slug_dashboard_getproject_listproposals"
     },
@@ -5841,7 +5886,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/dashboard.js",
       "source_location": "L5",
-      "community": 4,
+      "community": 9,
       "norm_label": "{ getauditlogs }",
       "id": "slug_dashboard_getauditlogs"
     },
@@ -5850,25 +5895,16 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/dashboard.js",
       "source_location": "L6",
-      "community": 4,
+      "community": 9,
       "norm_label": "{ getsprints }",
       "id": "slug_dashboard_getsprints"
-    },
-    {
-      "label": "{ requirePermission }",
-      "file_type": "code",
-      "source_file": "pages/api/projects/[slug]/dashboard.js",
-      "source_location": "L7",
-      "community": 4,
-      "norm_label": "{ requirepermission }",
-      "id": "slug_dashboard_requirepermission"
     },
     {
       "label": "getTasksForProject()",
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/dashboard.js",
       "source_location": "L9",
-      "community": 4,
+      "community": 9,
       "norm_label": "gettasksforproject()",
       "id": "slug_dashboard_gettasksforproject"
     },
@@ -5877,7 +5913,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/dashboard.js",
       "source_location": "L21",
-      "community": 4,
+      "community": 9,
       "norm_label": "handler()",
       "id": "slug_dashboard_handler"
     },
@@ -5895,7 +5931,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/tasks/index.js",
       "source_location": "L1",
-      "community": 3,
+      "community": 0,
       "norm_label": "{ listtasks, createtask }",
       "id": "tasks_index_listtasks_createtask"
     },
@@ -5904,7 +5940,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/tasks/index.js",
       "source_location": "L2",
-      "community": 3,
+      "community": 0,
       "norm_label": "{ logaudit }",
       "id": "tasks_index_logaudit"
     },
@@ -5913,7 +5949,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/tasks/index.js",
       "source_location": "L3",
-      "community": 3,
+      "community": 0,
       "norm_label": "{ requirepermission, requireprojectaccess }",
       "id": "tasks_index_requirepermission_requireprojectaccess"
     },
@@ -5922,7 +5958,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/tasks/index.js",
       "source_location": "L5",
-      "community": 3,
+      "community": 0,
       "norm_label": "handler()",
       "id": "tasks_index_handler"
     },
@@ -5931,7 +5967,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/tasks/[taskId].js",
       "source_location": "L1",
-      "community": 3,
+      "community": 0,
       "norm_label": "{ gettask, updatetask, deletetask, reordertask, movetask, reorderboard }",
       "id": "tasks_taskid_gettask_updatetask_deletetask_reordertask_movetask_reorderboard"
     },
@@ -5940,7 +5976,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/tasks/[taskId].js",
       "source_location": "L2",
-      "community": 3,
+      "community": 0,
       "norm_label": "{ logaudit, getaudituser }",
       "id": "tasks_taskid_logaudit_getaudituser"
     },
@@ -5949,7 +5985,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/tasks/[taskId].js",
       "source_location": "L3",
-      "community": 3,
+      "community": 0,
       "norm_label": "{ notifytaskchange }",
       "id": "tasks_taskid_notifytaskchange"
     },
@@ -5958,7 +5994,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/tasks/[taskId].js",
       "source_location": "L4",
-      "community": 3,
+      "community": 0,
       "norm_label": "{ requirepermission, requireprojectaccess }",
       "id": "tasks_taskid_requirepermission_requireprojectaccess"
     },
@@ -5967,7 +6003,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/tasks/[taskId].js",
       "source_location": "L6",
-      "community": 3,
+      "community": 0,
       "norm_label": "handler()",
       "id": "tasks_taskid_handler"
     },
@@ -5976,7 +6012,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/versions/[version].js",
       "source_location": "L3",
-      "community": 0,
+      "community": 3,
       "norm_label": "{ requireprojectaccess }",
       "id": "versions_version_requireprojectaccess"
     },
@@ -5994,25 +6030,16 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/versions/[version]/tasks/index.js",
       "source_location": "L3",
-      "community": 3,
+      "community": 0,
       "norm_label": "{ requireprojectaccess }",
       "id": "tasks_index_requireprojectaccess"
-    },
-    {
-      "label": "{ requireAdmin }",
-      "file_type": "code",
-      "source_file": "pages/api/projects/[slug]/versions/[version]/tasks/[taskId].js",
-      "source_location": "L4",
-      "community": 3,
-      "norm_label": "{ requireadmin }",
-      "id": "tasks_taskid_requireadmin"
     },
     {
       "label": "{ requireProjectAccess }",
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/versions/[version]/tasks/[taskId].js",
       "source_location": "L5",
-      "community": 3,
+      "community": 0,
       "norm_label": "{ requireprojectaccess }",
       "id": "tasks_taskid_requireprojectaccess"
     },
@@ -6030,7 +6057,7 @@
       "file_type": "code",
       "source_file": "pages/api/projects/[slug]/proposals/index.js",
       "source_location": "L3",
-      "community": 0,
+      "community": 3,
       "norm_label": "{ requirepermission, requireprojectaccess }",
       "id": "proposals_index_requirepermission_requireprojectaccess"
     },
@@ -6048,7 +6075,7 @@
       "file_type": "code",
       "source_file": "pages/api/admin/users/[name].js",
       "source_location": "L1",
-      "community": 5,
+      "community": 26,
       "norm_label": "[name].js",
       "id": "pages_api_admin_users_name_js"
     },
@@ -6057,7 +6084,7 @@
       "file_type": "code",
       "source_file": "pages/api/admin/users/[name].js",
       "source_location": "L1",
-      "community": 5,
+      "community": 26,
       "norm_label": "{ redis }",
       "id": "users_name_redis"
     },
@@ -6066,7 +6093,7 @@
       "file_type": "code",
       "source_file": "pages/api/admin/users/[name].js",
       "source_location": "L3",
-      "community": 5,
+      "community": 26,
       "norm_label": "getkv()",
       "id": "users_name_getkv"
     },
@@ -6075,7 +6102,7 @@
       "file_type": "code",
       "source_file": "pages/api/admin/users/[name].js",
       "source_location": "L4",
-      "community": 5,
+      "community": 26,
       "norm_label": "{ logaudit }",
       "id": "users_name_logaudit"
     },
@@ -6084,7 +6111,7 @@
       "file_type": "code",
       "source_file": "pages/api/admin/users/[name].js",
       "source_location": "L6",
-      "community": 5,
+      "community": 26,
       "norm_label": "{ all_permissions }",
       "id": "users_name_all_permissions"
     },
@@ -6093,7 +6120,7 @@
       "file_type": "code",
       "source_file": "pages/api/admin/users/[name].js",
       "source_location": "L8",
-      "community": 5,
+      "community": 26,
       "norm_label": "handler()",
       "id": "users_name_handler"
     },
@@ -6102,7 +6129,7 @@
       "file_type": "code",
       "source_file": "pages/api/admin/users/index.js",
       "source_location": "L1",
-      "community": 5,
+      "community": 22,
       "norm_label": "index.js",
       "id": "pages_api_admin_users_index_js"
     },
@@ -6111,7 +6138,7 @@
       "file_type": "code",
       "source_file": "pages/api/admin/users/index.js",
       "source_location": "L1",
-      "community": 5,
+      "community": 22,
       "norm_label": "{ redis }",
       "id": "users_index_redis"
     },
@@ -6120,7 +6147,7 @@
       "file_type": "code",
       "source_file": "pages/api/admin/users/index.js",
       "source_location": "L3",
-      "community": 5,
+      "community": 22,
       "norm_label": "getkv()",
       "id": "users_index_getkv"
     },
@@ -6129,7 +6156,7 @@
       "file_type": "code",
       "source_file": "pages/api/admin/users/index.js",
       "source_location": "L4",
-      "community": 5,
+      "community": 22,
       "norm_label": "{ logaudit }",
       "id": "users_index_logaudit"
     },
@@ -6138,7 +6165,7 @@
       "file_type": "code",
       "source_file": "pages/api/admin/users/index.js",
       "source_location": "L6",
-      "community": 5,
+      "community": 22,
       "norm_label": "{ all_permissions }",
       "id": "users_index_all_permissions"
     },
@@ -6147,7 +6174,7 @@
       "file_type": "code",
       "source_file": "pages/api/admin/users/index.js",
       "source_location": "L8",
-      "community": 5,
+      "community": 22,
       "norm_label": "handler()",
       "id": "users_index_handler"
     },
@@ -6156,7 +6183,7 @@
       "file_type": "code",
       "source_file": "pages/api/dashboard/index.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 5,
       "norm_label": "{ redis }",
       "id": "dashboard_index_redis"
     },
@@ -6165,7 +6192,7 @@
       "file_type": "code",
       "source_file": "pages/api/dashboard/index.js",
       "source_location": "L3",
-      "community": 4,
+      "community": 5,
       "norm_label": "getkv()",
       "id": "dashboard_index_getkv"
     },
@@ -6174,7 +6201,7 @@
       "file_type": "code",
       "source_file": "pages/api/notifications/[id].js",
       "source_location": "L1",
-      "community": 9,
+      "community": 10,
       "norm_label": "[id].js",
       "id": "pages_api_notifications_id_js"
     },
@@ -6183,7 +6210,7 @@
       "file_type": "code",
       "source_file": "pages/api/notifications/[id].js",
       "source_location": "L1",
-      "community": 9,
+      "community": 10,
       "norm_label": "{ markread }",
       "id": "notifications_id_markread"
     },
@@ -6192,7 +6219,7 @@
       "file_type": "code",
       "source_file": "pages/api/notifications/[id].js",
       "source_location": "L2",
-      "community": 9,
+      "community": 10,
       "norm_label": "{ getaudituser }",
       "id": "notifications_id_getaudituser"
     },
@@ -6201,7 +6228,7 @@
       "file_type": "code",
       "source_file": "pages/api/notifications/[id].js",
       "source_location": "L4",
-      "community": 9,
+      "community": 10,
       "norm_label": "handler()",
       "id": "notifications_id_handler"
     },
@@ -6210,7 +6237,7 @@
       "file_type": "code",
       "source_file": "pages/api/notifications/index.js",
       "source_location": "L1",
-      "community": 9,
+      "community": 10,
       "norm_label": "index.js",
       "id": "pages_api_notifications_index_js"
     },
@@ -6219,7 +6246,7 @@
       "file_type": "code",
       "source_file": "pages/api/notifications/index.js",
       "source_location": "L1",
-      "community": 9,
+      "community": 10,
       "norm_label": "{ listnotifications, markallread }",
       "id": "notifications_index_listnotifications_markallread"
     },
@@ -6228,7 +6255,7 @@
       "file_type": "code",
       "source_file": "pages/api/notifications/index.js",
       "source_location": "L2",
-      "community": 9,
+      "community": 10,
       "norm_label": "{ getaudituser }",
       "id": "notifications_index_getaudituser"
     },
@@ -6237,7 +6264,7 @@
       "file_type": "code",
       "source_file": "pages/api/notifications/index.js",
       "source_location": "L4",
-      "community": 9,
+      "community": 10,
       "norm_label": "handler()",
       "id": "notifications_index_handler"
     },
@@ -6246,7 +6273,7 @@
       "file_type": "code",
       "source_file": "pages/api/cron/due-reminders.js",
       "source_location": "L1",
-      "community": 9,
+      "community": 10,
       "norm_label": "due-reminders.js",
       "id": "pages_api_cron_due_reminders_js"
     },
@@ -6255,7 +6282,7 @@
       "file_type": "code",
       "source_file": "pages/api/cron/due-reminders.js",
       "source_location": "L1",
-      "community": 9,
+      "community": 10,
       "norm_label": "{ listprojects }",
       "id": "cron_due_reminders_listprojects"
     },
@@ -6264,7 +6291,7 @@
       "file_type": "code",
       "source_file": "pages/api/cron/due-reminders.js",
       "source_location": "L2",
-      "community": 9,
+      "community": 10,
       "norm_label": "{ listtasks }",
       "id": "cron_due_reminders_listtasks"
     },
@@ -6273,7 +6300,7 @@
       "file_type": "code",
       "source_file": "pages/api/cron/due-reminders.js",
       "source_location": "L3",
-      "community": 9,
+      "community": 10,
       "norm_label": "{ addnotification }",
       "id": "cron_due_reminders_addnotification"
     },
@@ -6282,7 +6309,7 @@
       "file_type": "code",
       "source_file": "pages/api/cron/due-reminders.js",
       "source_location": "L7",
-      "community": 9,
+      "community": 10,
       "norm_label": "handler()",
       "id": "cron_due_reminders_handler"
     },
@@ -6295,7 +6322,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 15,
       "norm_label": "prd manager (ui guide)",
       "id": "readme_ui_prd_manager"
     },
@@ -6308,7 +6335,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 17,
       "norm_label": "projects feature",
       "id": "readme_ui_projects"
     },
@@ -6321,7 +6348,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 15,
       "norm_label": "versions (prd editing)",
       "id": "readme_ui_versions"
     },
@@ -6334,7 +6361,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 15,
       "norm_label": "proposals",
       "id": "readme_ui_proposals"
     },
@@ -6347,7 +6374,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 17,
       "norm_label": "tasks feature",
       "id": "readme_ui_tasks"
     },
@@ -6360,7 +6387,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 17,
       "norm_label": "kanban board view",
       "id": "readme_ui_kanban_board"
     },
@@ -6373,7 +6400,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 17,
       "norm_label": "task tree view",
       "id": "readme_ui_task_tree"
     },
@@ -6386,7 +6413,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 17,
       "norm_label": "sprint view",
       "id": "readme_ui_sprint_view"
     },
@@ -6399,7 +6426,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 15,
       "norm_label": "project dashboard",
       "id": "readme_ui_project_dashboard"
     },
@@ -6412,7 +6439,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 20,
       "norm_label": "admin panel",
       "id": "readme_ui_admin_panel"
     },
@@ -6425,7 +6452,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 20,
       "norm_label": "snapshots",
       "id": "readme_ui_snapshots"
     },
@@ -6438,7 +6465,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 15,
       "norm_label": "authentication (session cookie)",
       "id": "readme_ui_authentication"
     },
@@ -6451,7 +6478,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 20,
       "norm_label": "granular admin permissions",
       "id": "readme_ui_permissions"
     },
@@ -6464,7 +6491,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 15,
       "norm_label": "next.js",
       "id": "readme_ui_nextjs"
     },
@@ -6477,7 +6504,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 20,
       "norm_label": "upstash redis",
       "id": "readme_ui_upstash_redis"
     },
@@ -6490,7 +6517,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 33,
       "norm_label": "vercel deployment",
       "id": "readme_ui_vercel"
     },
@@ -6503,7 +6530,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 33,
       "norm_label": ".vercel folder",
       "id": "vercel_readme_vercel_folder"
     },
@@ -6516,7 +6543,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 33,
       "norm_label": "project.json (vercel link)",
       "id": "vercel_readme_project_json"
     },
@@ -6529,7 +6556,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 20,
       "norm_label": "claude.md project instructions",
       "id": "claude_claude_project_instructions"
     },
@@ -6542,7 +6569,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 20,
       "norm_label": "lib/prd-store.js (redis crud)",
       "id": "claude_claude_prd_store"
     },
@@ -6555,7 +6582,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 20,
       "norm_label": "lib/api-fetch.js (fetch wrapper)",
       "id": "claude_claude_api_fetch"
     },
@@ -6568,7 +6595,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 5,
+      "community": 20,
       "norm_label": "requirepermission middleware",
       "id": "claude_claude_require_permission"
     },
@@ -6581,7 +6608,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 17,
       "norm_label": "buildtree() client-side hierarchy",
       "id": "claude_claude_build_tree"
     },
@@ -6594,7 +6621,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 17,
       "norm_label": "redis key scheme",
       "id": "claude_claude_redis_key_scheme"
     },
@@ -6607,7 +6634,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 17,
       "norm_label": "project entity",
       "id": "claude_claude_entity_project"
     },
@@ -6620,7 +6647,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 17,
       "norm_label": "task entity",
       "id": "claude_claude_entity_task"
     },
@@ -6633,7 +6660,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 15,
       "norm_label": "version entity",
       "id": "claude_claude_entity_version"
     },
@@ -6646,7 +6673,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 15,
       "norm_label": "proposal entity",
       "id": "claude_claude_entity_proposal"
     },
@@ -6659,7 +6686,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 17,
       "norm_label": "sprint entity",
       "id": "claude_claude_entity_sprint"
     },
@@ -6672,7 +6699,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 7,
+      "community": 17,
       "norm_label": "immutable kebab-case slug",
       "id": "claude_claude_slug_convention"
     },
@@ -6681,7 +6708,7 @@
       "file_type": "code",
       "source_file": "CalendarView.js",
       "source_location": "L1",
-      "community": 21,
+      "community": 2,
       "norm_label": "calendarview.js",
       "id": "calendarview_js"
     },
@@ -6690,7 +6717,7 @@
       "file_type": "code",
       "source_file": "CalendarView.js",
       "source_location": "L8",
-      "community": 21,
+      "community": 2,
       "norm_label": "statuses",
       "id": "components_calendarview_statuses"
     },
@@ -6699,7 +6726,7 @@
       "file_type": "code",
       "source_file": "CalendarView.js",
       "source_location": "L10",
-      "community": 21,
+      "community": 2,
       "norm_label": "blankform()",
       "id": "components_calendarview_blankform"
     },
@@ -6708,7 +6735,7 @@
       "file_type": "code",
       "source_file": "CalendarView.js",
       "source_location": "L14",
-      "community": 21,
+      "community": 2,
       "norm_label": "daytaskform()",
       "id": "components_calendarview_daytaskform"
     },
@@ -6717,7 +6744,7 @@
       "file_type": "code",
       "source_file": "tasks.js",
       "source_location": "L1",
-      "community": 19,
+      "community": 4,
       "norm_label": "tasks.js",
       "id": "tasks_js"
     },
@@ -6726,9 +6753,258 @@
       "file_type": "code",
       "source_file": "KanbanBoard.js",
       "source_location": "L1",
-      "id": "kanbanboard_js",
-      "community": 15,
+      "community": 2,
+      "norm_label": "kanbanboard.js",
+      "id": "kanbanboard_js"
+    },
+    {
+      "label": "KanbanBoard.js",
+      "file_type": "code",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": "L1",
+      "id": "components_kanbanboard_js",
+      "community": 2,
       "norm_label": "kanbanboard.js"
+    },
+    {
+      "label": "CalendarView.js",
+      "file_type": "code",
+      "source_file": "components/CalendarView.js",
+      "source_location": "L1",
+      "id": "components_calendarview_js",
+      "community": 2,
+      "norm_label": "calendarview.js"
+    },
+    {
+      "label": "readFileAsDataUrl()",
+      "file_type": "code",
+      "source_file": "components/CalendarView.js",
+      "source_location": "L11",
+      "id": "components_calendarview_readfileasdataurl",
+      "community": 2,
+      "norm_label": "readfileasdataurl()"
+    },
+    {
+      "label": "readFileAsDataUrl()",
+      "file_type": "code",
+      "source_file": "components/TaskTree.js",
+      "source_location": "L7",
+      "id": "components_tasktree_readfileasdataurl",
+      "community": 2,
+      "norm_label": "readfileasdataurl()"
+    },
+    {
+      "label": "STATUS_ORDER",
+      "file_type": "code",
+      "source_file": "components/TaskTree.js",
+      "source_location": "L18",
+      "id": "components_tasktree_status_order",
+      "community": 2,
+      "norm_label": "status_order"
+    },
+    {
+      "label": "PRIORITY_ORDER",
+      "file_type": "code",
+      "source_file": "components/TaskTree.js",
+      "source_location": "L19",
+      "id": "components_tasktree_priority_order",
+      "community": 2,
+      "norm_label": "priority_order"
+    },
+    {
+      "label": "updateStatus (drag status change)",
+      "file_type": "code",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "components_kanbanboard_updatestatus",
+      "community": 2,
+      "norm_label": "updatestatus (drag status change)"
+    },
+    {
+      "label": "reorderColumn (boardReorder PATCH)",
+      "file_type": "code",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "components_kanbanboard_reordercolumn",
+      "community": 2,
+      "norm_label": "reordercolumn (boardreorder patch)"
+    },
+    {
+      "label": "postComment (task updates)",
+      "file_type": "code",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "components_kanbanboard_postcomment",
+      "community": 2,
+      "norm_label": "postcomment (task updates)"
+    },
+    {
+      "label": "Kanban Column localStorage Persistence",
+      "file_type": "concept",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "components_kanbanboard_column_persistence",
+      "community": 2,
+      "norm_label": "kanban column localstorage persistence"
+    },
+    {
+      "label": "Kanban Label CRUD (labels API)",
+      "file_type": "code",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "components_kanbanboard_label_crud",
+      "community": 2,
+      "norm_label": "kanban label crud (labels api)"
+    },
+    {
+      "label": "reschedule (set dueDate via drag)",
+      "file_type": "code",
+      "source_file": "components/CalendarView.js",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "components_calendarview_reschedule",
+      "community": 2,
+      "norm_label": "reschedule (set duedate via drag)"
+    },
+    {
+      "label": "CalendarView saveTask",
+      "file_type": "code",
+      "source_file": "components/CalendarView.js",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "components_calendarview_savetask",
+      "community": 2,
+      "norm_label": "calendarview savetask"
+    },
+    {
+      "label": "TaskTree DnD (move/nest PATCH)",
+      "file_type": "code",
+      "source_file": "components/TaskTree.js",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "components_tasktree_dnd",
+      "community": 2,
+      "norm_label": "tasktree dnd (move/nest patch)"
+    },
+    {
+      "label": "TaskNode handleAddUpdate (updates)",
+      "file_type": "code",
+      "source_file": "components/TaskTree.js",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "components_tasktree_handleaddupdate",
+      "community": 2,
+      "norm_label": "tasknode handleaddupdate (updates)"
+    },
+    {
+      "label": "AssigneeInput Component",
+      "file_type": "code",
+      "source_file": "components/AssigneeInput.js",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "components_assigneeinput_assigneeinput",
+      "community": 2,
+      "norm_label": "assigneeinput component"
+    },
+    {
+      "label": "/api/assignees endpoint",
+      "file_type": "code",
+      "source_file": "pages/api/assignees.js",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "pages_api_assignees_endpoint",
+      "community": 2,
+      "norm_label": "/api/assignees endpoint"
+    },
+    {
+      "label": "/api/dashboard endpoint",
+      "file_type": "code",
+      "source_file": "pages/api/dashboard.js",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "pages_api_dashboard_endpoint",
+      "community": 8,
+      "norm_label": "/api/dashboard endpoint"
+    },
+    {
+      "label": "Task Data Structure",
+      "file_type": "concept",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concept_task_entity",
+      "community": 2,
+      "norm_label": "task data structure"
+    },
+    {
+      "label": "Inline Attachment + Cover (data URL in Redis)",
+      "file_type": "concept",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concept_attachment_cover",
+      "community": 2,
+      "norm_label": "inline attachment + cover (data url in redis)"
+    },
+    {
+      "label": "Task View Modes (kanban/calendar/tree)",
+      "file_type": "concept",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "concept_task_view_modes",
+      "community": 2,
+      "norm_label": "task view modes (kanban/calendar/tree)"
     }
   ],
   "links": [
@@ -7269,12 +7545,32 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "components_kanbanboard_js",
+      "target": "components_kanbanboard_priority_color",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "KanbanBoard.js",
       "source_location": "L19",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "kanbanboard_js",
       "target": "components_kanbanboard_priority_label"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": "L21",
+      "weight": 1.0,
+      "source": "components_kanbanboard_js",
+      "target": "components_kanbanboard_priority_label",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -7289,6 +7585,16 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": "L25",
+      "weight": 1.0,
+      "source": "components_kanbanboard_js",
+      "target": "components_kanbanboard_isoverdue",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "KanbanBoard.js",
       "source_location": "L28",
       "weight": 1.0,
@@ -7299,12 +7605,32 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": "L30",
+      "weight": 1.0,
+      "source": "components_kanbanboard_js",
+      "target": "components_kanbanboard_formatdate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "KanbanBoard.js",
       "source_location": "L58",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "kanbanboard_js",
       "target": "components_kanbanboard_toeditform"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": "L60",
+      "weight": 1.0,
+      "source": "components_kanbanboard_js",
+      "target": "components_kanbanboard_toeditform",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -7452,7 +7778,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "components/TaskTree.js",
-      "source_location": "L5",
+      "source_location": "L16",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "components_tasktree_js",
@@ -7462,7 +7788,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "components/TaskTree.js",
-      "source_location": "L6",
+      "source_location": "L17",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "components_tasktree_js",
@@ -7472,7 +7798,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "components/TaskTree.js",
-      "source_location": "L7",
+      "source_location": "L20",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "components_tasktree_js",
@@ -7482,7 +7808,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "components/TaskTree.js",
-      "source_location": "L8",
+      "source_location": "L21",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "components_tasktree_js",
@@ -7492,7 +7818,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "components/TaskTree.js",
-      "source_location": "L42",
+      "source_location": "L55",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "components_tasktree_js",
@@ -7502,7 +7828,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "components/TaskTree.js",
-      "source_location": "L58",
+      "source_location": "L71",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "components_tasktree_js",
@@ -7512,7 +7838,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "components/TaskTree.js",
-      "source_location": "L62",
+      "source_location": "L75",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "components_tasktree_js",
@@ -7522,7 +7848,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "components/TaskTree.js",
-      "source_location": "L104",
+      "source_location": "L168",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "components_tasktree_js",
@@ -7532,7 +7858,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "components/TaskTree.js",
-      "source_location": "L356",
+      "source_location": "L501",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "components_tasktree_js",
@@ -7542,7 +7868,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "components/TaskTree.js",
-      "source_location": "L363",
+      "source_location": "L508",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "components_tasktree_js",
@@ -7574,7 +7900,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "components/TaskTree.js",
-      "source_location": "L10",
+      "source_location": "L23",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "components_tasktree_js",
@@ -7584,7 +7910,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "components/TaskTree.js",
-      "source_location": "L15",
+      "source_location": "L28",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "components_tasktree_js",
@@ -7594,7 +7920,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "components/TaskTree.js",
-      "source_location": "L26",
+      "source_location": "L39",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "components_tasktree_js",
@@ -7604,40 +7930,110 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "components/TaskTree.js",
-      "source_location": "L33",
+      "source_location": "L46",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "components_tasktree_js",
       "target": "components_tasktree_getdescendantstats"
     },
     {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/TaskTree.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "components_tasktree_js",
+      "target": "components_tasktree_readfileasdataurl",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/TaskTree.js",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "components_tasktree_js",
+      "target": "components_tasktree_status_order",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/TaskTree.js",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "components_tasktree_js",
+      "target": "components_tasktree_priority_order",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "components/TaskTree.js",
-      "source_location": "L398",
+      "source_location": null,
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "components_tasktree_tasktree",
       "target": "components_tasktree_buildtree"
     },
     {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.65,
       "source_file": "components/TaskTree.js",
-      "source_location": "L63",
+      "source_location": null,
       "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_tasktree_taskform",
-      "target": "components_tasktree_blankform"
+      "source": "components_tasktree_buildtree",
+      "target": "kanbanboard_js"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "components/TaskTree.js",
-      "source_location": "L107",
+      "source_location": "L76",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_tasktree_taskform",
+      "target": "components_tasktree_blankform"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "components/TaskTree.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_tasktree_taskform",
+      "target": "components_assigneeinput_assigneeinput"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "components/TaskTree.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_tasktree_tasknode",
+      "target": "components_tasktree_taskform"
+    },
+    {
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "components/TaskTree.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_tasktree_taskform",
+      "target": "concept_attachment_cover"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "components/TaskTree.js",
+      "source_location": null,
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "components_tasktree_tasknode",
@@ -7648,11 +8044,31 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "components/TaskTree.js",
-      "source_location": "L201",
+      "source_location": "L269",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "components_tasktree_tasknode",
       "target": "components_tasktree_getdescendantstats"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "components/TaskTree.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_tasktree_tasktree",
+      "target": "components_tasktree_tasknode"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "components/TaskTree.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_tasktree_tasknode",
+      "target": "components_tasktree_handleaddupdate"
     },
     {
       "relation": "semantically_similar_to",
@@ -7673,6 +8089,46 @@
       "weight": 1.0,
       "source": "components_tasktree_tasktree",
       "target": "prd_manager_task_lifecycle"
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "components/TaskTree.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_tasktree_tasktree",
+      "target": "concept_task_entity"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "components/TaskTree.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_tasktree_tasktree",
+      "target": "pages_api_assignees_endpoint"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "components/TaskTree.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_tasktree_tasktree",
+      "target": "components_tasktree_dnd"
+    },
+    {
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "components/TaskTree.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_tasktree_tasktree",
+      "target": "concept_task_view_modes"
     },
     {
       "relation": "contains",
@@ -7863,11 +8319,11 @@
       "target": "lib_api_fetch_js"
     },
     {
-      "relation": "imports",
+      "relation": "calls",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "KanbanBoard.js",
-      "source_location": "L2",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "kanbanboard_js",
@@ -7973,11 +8429,11 @@
       "target": "lib_api_fetch_apifetch"
     },
     {
-      "relation": "imports",
+      "relation": "calls",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "CalendarView.js",
-      "source_location": "L2",
+      "source_file": "components/CalendarView.js",
+      "source_location": null,
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "calendarview_js",
@@ -8036,6 +8492,68 @@
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "tasks_js",
+      "target": "lib_api_fetch_apifetch"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "components_kanbanboard_js",
+      "target": "lib_api_fetch_apifetch",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "components/CalendarView.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "components_calendarview_js",
+      "target": "lib_api_fetch_apifetch",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "pages/index.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "pages_index_home",
+      "target": "lib_api_fetch_apifetch"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_kanbanboard_postcomment",
+      "target": "lib_api_fetch_apifetch"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "components/CalendarView.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_calendarview_reschedule",
+      "target": "lib_api_fetch_apifetch"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "components/TaskTree.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_tasktree_dnd",
       "target": "lib_api_fetch_apifetch"
     },
     {
@@ -10550,7 +11068,7 @@
       "target": "lib_require_admin_js"
     },
     {
-      "relation": "imports",
+      "relation": "contains",
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "pages/api/projects/[slug]/versions/[version]/tasks/[taskId].js",
@@ -12213,7 +12731,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "pages/dashboard.js",
-      "source_location": "L636",
+      "source_location": "L639",
       "weight": 1.0,
       "confidence_score": 1.0,
       "context": "call",
@@ -12274,7 +12792,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pages/dashboard.js",
-      "source_location": "L134",
+      "source_location": "L137",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "pages_dashboard_js",
@@ -12284,7 +12802,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pages/dashboard.js",
-      "source_location": "L147",
+      "source_location": "L150",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "pages_dashboard_js",
@@ -12294,7 +12812,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pages/dashboard.js",
-      "source_location": "L165",
+      "source_location": "L168",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "pages_dashboard_js",
@@ -12304,7 +12822,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pages/dashboard.js",
-      "source_location": "L209",
+      "source_location": "L212",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "pages_dashboard_js",
@@ -12314,7 +12832,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pages/dashboard.js",
-      "source_location": "L226",
+      "source_location": "L229",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "pages_dashboard_js",
@@ -12324,7 +12842,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pages/dashboard.js",
-      "source_location": "L254",
+      "source_location": "L257",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "pages_dashboard_js",
@@ -12334,7 +12852,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pages/dashboard.js",
-      "source_location": "L282",
+      "source_location": "L285",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "pages_dashboard_js",
@@ -12344,7 +12862,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pages/dashboard.js",
-      "source_location": "L302",
+      "source_location": "L305",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "pages_dashboard_js",
@@ -12354,7 +12872,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pages/dashboard.js",
-      "source_location": "L338",
+      "source_location": "L341",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "pages_dashboard_js",
@@ -12364,7 +12882,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pages/dashboard.js",
-      "source_location": "L369",
+      "source_location": "L372",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "pages_dashboard_js",
@@ -12374,7 +12892,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pages/dashboard.js",
-      "source_location": "L406",
+      "source_location": "L409",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "pages_dashboard_js",
@@ -12384,7 +12902,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pages/dashboard.js",
-      "source_location": "L448",
+      "source_location": "L451",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "pages_dashboard_js",
@@ -12394,7 +12912,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pages/dashboard.js",
-      "source_location": "L478",
+      "source_location": "L481",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "pages_dashboard_js",
@@ -12404,7 +12922,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pages/dashboard.js",
-      "source_location": "L539",
+      "source_location": "L542",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "pages_dashboard_js",
@@ -12414,7 +12932,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pages/dashboard.js",
-      "source_location": "L563",
+      "source_location": "L566",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "pages_dashboard_js",
@@ -12429,6 +12947,36 @@
       "weight": 1.0,
       "source": "pages_dashboard_js",
       "target": "prd_manager_dashboard_aggregation"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "pages/dashboard.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "pages_dashboard_js",
+      "target": "pages_api_dashboard_endpoint"
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "pages/dashboard.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "pages_dashboard_js",
+      "target": "concept_task_entity"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.65,
+      "source_file": "pages/index.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "pages_index_home",
+      "target": "pages_dashboard_js"
     },
     {
       "relation": "contains",
@@ -12459,6 +13007,16 @@
       "confidence_score": 1.0,
       "source": "pages_index_js",
       "target": "pages_index_home"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "pages/index.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "pages_index_home",
+      "target": "pages_api_assignees_endpoint"
     },
     {
       "relation": "contains",
@@ -13936,16 +14494,6 @@
       "confidence_score": 1.0,
       "source": "pages_api_projects_slug_versions_version_tasks_taskid_js",
       "target": "pages_api_projects_slug_versions_version_tasks_taskid_js_tasks_taskid_logaudit"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "pages/api/projects/[slug]/versions/[version]/tasks/[taskId].js",
-      "source_location": "L4",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "pages_api_projects_slug_versions_version_tasks_taskid_js",
-      "target": "tasks_taskid_requireadmin"
     },
     {
       "relation": "contains",
@@ -17091,14 +17639,24 @@
       "target": "components_assigneeinput_js"
     },
     {
-      "relation": "contains",
+      "relation": "references",
       "confidence": "EXTRACTED",
-      "source_file": "KanbanBoard.js",
-      "source_location": "L5",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "kanbanboard_js",
       "target": "components_kanbanboard_default_columns"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "components_kanbanboard_js",
+      "target": "components_kanbanboard_default_columns",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -17113,11 +17671,41 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "components_kanbanboard_js",
+      "target": "components_kanbanboard_col_colors",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "KanbanBoard.js",
       "source_location": "L35",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "kanbanboard_js",
+      "target": "components_kanbanboard_parsementions"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": "L37",
+      "weight": 1.0,
+      "source": "components_kanbanboard_js",
+      "target": "components_kanbanboard_parsementions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_kanbanboard_postcomment",
       "target": "components_kanbanboard_parsementions"
     },
     {
@@ -17133,12 +17721,32 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": "L51",
+      "weight": 1.0,
+      "source": "components_kanbanboard_js",
+      "target": "components_kanbanboard_readfileasdataurl",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "KanbanBoard.js",
       "source_location": "L74",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "kanbanboard_js",
       "target": "components_kanbanboard_updateatpath"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": "L76",
+      "weight": 1.0,
+      "source": "components_kanbanboard_js",
+      "target": "components_kanbanboard_updateatpath",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -17153,12 +17761,32 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": "L84",
+      "weight": 1.0,
+      "source": "components_kanbanboard_js",
+      "target": "components_kanbanboard_slugify",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "CalendarView.js",
       "source_location": "L5",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "calendarview_js",
       "target": "components_calendarview_priority_color"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/CalendarView.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "components_calendarview_js",
+      "target": "components_calendarview_priority_color",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -17173,6 +17801,16 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "components/CalendarView.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "components_calendarview_js",
+      "target": "components_calendarview_weekdays",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "CalendarView.js",
       "source_location": "L7",
       "weight": 1.0,
@@ -17181,10 +17819,20 @@
       "target": "components_calendarview_months"
     },
     {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/CalendarView.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "components_calendarview_js",
+      "target": "components_calendarview_months",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "calls",
       "confidence": "EXTRACTED",
-      "source_file": "CalendarView.js",
-      "source_location": "L136",
+      "source_file": "components/CalendarView.js",
+      "source_location": "L198",
       "weight": 1.0,
       "context": "call",
       "confidence_score": 1.0,
@@ -17195,23 +17843,43 @@
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
-      "source_file": "CalendarView.js",
-      "source_location": "L55",
+      "source_file": "components/CalendarView.js",
+      "source_location": "L115",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "components_calendarview_duekey",
       "target": "components_calendarview_ymd"
     },
     {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/CalendarView.js",
+      "source_location": "L106",
+      "weight": 1.0,
+      "source": "components_calendarview_js",
+      "target": "components_calendarview_ymd",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "calls",
       "confidence": "EXTRACTED",
-      "source_file": "CalendarView.js",
-      "source_location": "L74",
+      "source_file": "components/CalendarView.js",
+      "source_location": "L134",
       "weight": 1.0,
       "context": "call",
       "confidence_score": 1.0,
       "source": "calendarview_js",
       "target": "components_calendarview_duekey"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/CalendarView.js",
+      "source_location": "L110",
+      "weight": 1.0,
+      "source": "components_calendarview_js",
+      "target": "components_calendarview_duekey",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -17635,7 +18303,7 @@
       "target": "lib_require_permission_js"
     },
     {
-      "relation": "imports",
+      "relation": "contains",
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "pages/api/projects/[slug]/dashboard.js",
@@ -18346,16 +19014,6 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "pages/api/projects/[slug]/dashboard.js",
-      "source_location": "L7",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "pages_api_projects_slug_dashboard_js",
-      "target": "slug_dashboard_requirepermission"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "pages/api/projects/[slug]/dashboard.js",
       "source_location": "L9",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -19009,8 +19667,8 @@
     {
       "relation": "calls",
       "confidence": "EXTRACTED",
-      "source_file": "CalendarView.js",
-      "source_location": "L238",
+      "source_file": "components/CalendarView.js",
+      "source_location": "L302",
       "weight": 1.0,
       "context": "call",
       "confidence_score": 1.0,
@@ -19018,16 +19676,299 @@
       "target": "components_calendarview_blankform"
     },
     {
-      "relation": "contains",
+      "relation": "references",
       "confidence": "EXTRACTED",
-      "source_file": "CalendarView.js",
-      "source_location": "L14",
+      "source_file": "components/CalendarView.js",
+      "source_location": null,
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "calendarview_js",
       "target": "components_calendarview_daytaskform"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/CalendarView.js",
+      "source_location": "L118",
+      "weight": 1.0,
+      "source": "components_calendarview_js",
+      "target": "calendarview_js",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "components/CalendarView.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "calendarview_js",
+      "target": "concept_task_entity"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "components/CalendarView.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "calendarview_js",
+      "target": "pages_api_assignees_endpoint"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "components/CalendarView.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "calendarview_js",
+      "target": "components_calendarview_reschedule"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "components/CalendarView.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "calendarview_js",
+      "target": "components_calendarview_savetask"
+    },
+    {
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "components/CalendarView.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "calendarview_js",
+      "target": "concept_task_view_modes"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/CalendarView.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "components_calendarview_js",
+      "target": "components_calendarview_statuses",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/CalendarView.js",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "components_calendarview_js",
+      "target": "components_calendarview_blankform",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/CalendarView.js",
+      "source_location": "L24",
+      "weight": 1.0,
+      "source": "components_calendarview_js",
+      "target": "components_calendarview_daytaskform",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "components/CalendarView.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_calendarview_daytaskform",
+      "target": "components_assigneeinput_assigneeinput"
+    },
+    {
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "components/CalendarView.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_calendarview_daytaskform",
+      "target": "concept_attachment_cover"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": "L93",
+      "weight": 1.0,
+      "source": "components_kanbanboard_js",
+      "target": "kanbanboard_js",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "kanbanboard_js",
+      "target": "concept_task_entity"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "kanbanboard_js",
+      "target": "pages_api_assignees_endpoint"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "kanbanboard_js",
+      "target": "components_assigneeinput_assigneeinput"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "kanbanboard_js",
+      "target": "components_kanbanboard_updatestatus"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "kanbanboard_js",
+      "target": "components_kanbanboard_reordercolumn"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "kanbanboard_js",
+      "target": "components_kanbanboard_column_persistence"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "kanbanboard_js",
+      "target": "components_kanbanboard_label_crud"
+    },
+    {
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "kanbanboard_js",
+      "target": "concept_attachment_cover"
+    },
+    {
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "kanbanboard_js",
+      "target": "concept_task_view_modes"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "components/CalendarView.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "components_calendarview_js",
+      "target": "components_calendarview_readfileasdataurl",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_kanbanboard_updatestatus",
+      "target": "components_calendarview_reschedule"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "components/KanbanBoard.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_kanbanboard_postcomment",
+      "target": "components_tasktree_handleaddupdate"
     }
   ],
-  "hyperedges": [],
-  "built_at_commit": "9b253eb469d7bd9de22eed9f8576b9301f30d0dc"
+  "hyperedges": [
+    {
+      "id": "task_view_modes_flow",
+      "label": "Three task views render the same task data",
+      "nodes": [
+        "components_kanbanboard_kanbanboard",
+        "components_calendarview_calendarview",
+        "components_tasktree_tasktree",
+        "concept_task_entity"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "components/KanbanBoard.js"
+    },
+    {
+      "id": "task_mutation_via_apifetch",
+      "label": "Task views mutate tasks through apiFetch wrapper",
+      "nodes": [
+        "components_kanbanboard_updatestatus",
+        "components_calendarview_reschedule",
+        "components_tasktree_dnd",
+        "lib_api_fetch_apifetch"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "lib/api-fetch.js"
+    },
+    {
+      "id": "shared_attachment_pattern",
+      "label": "Inline data-URL attachment + cover pattern across forms",
+      "nodes": [
+        "components_kanbanboard_kanbanboard",
+        "components_calendarview_daytaskform",
+        "components_tasktree_taskform",
+        "concept_attachment_cover"
+      ],
+      "relation": "implement",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "components/CalendarView.js"
+    }
+  ],
+  "built_at_commit": "a85e1921f19e240fe6fae7a69d720ce44122085b"
 }

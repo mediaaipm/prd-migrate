@@ -116,6 +116,9 @@ function StatusBadge({ status }) {
   const map = {
     todo:        { bg: '#f1f5f9', color: '#475569' },
     'in-progress': { bg: '#eff6ff', color: '#1d4ed8' },
+    'in-review': { bg: '#f5f3ff', color: '#7c3aed' },
+    review:      { bg: '#fffbeb', color: '#d97706' },
+    blocked:     { bg: '#fef2f2', color: '#dc2626' },
     done:        { bg: '#f0fdf4', color: '#15803d' },
     pending:     { bg: '#fefce8', color: '#a16207' },
     promoted:    { bg: '#f0fdf4', color: '#15803d' },

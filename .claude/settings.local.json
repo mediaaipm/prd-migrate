@@ -156,7 +156,9 @@
       "Bash(graphify query *)",
       "Bash(npx --no-install esbuild components/TaskTree.js --loader=jsx --bundle --external:react --external:../lib/api-fetch --external:./AssigneeInput --format=esm)",
       "Bash(rm -f graphify-out/.graphify_old.json graphify-out/.graphify_incremental.json)",
-      "Bash(graphify export *)"
+      "Bash(graphify export *)",
+      "Bash(ls pages/api/projects/[slug]/tasks/)",
+      "Bash(grep -rl \"image\\\\|upload\\\\|base64\\\\|attachment\" pages components lib)"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects"

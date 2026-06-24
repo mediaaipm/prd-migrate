@@ -2,10 +2,23 @@ import { useState, useEffect, useRef } from 'react'
 import { apiFetch } from '../lib/api-fetch'
 import AssigneeInput from './AssigneeInput'
 
+const MAX_ATTACH_BYTES = 1024 * 1024 // 1MB cap per image (stored inline as data URL in Redis)
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
 const STATUS_CYCLE = ['todo', 'in-progress', 'done']
-const STATUS_LABEL = { 'todo': 'To Do', 'in-progress': 'In Progress', 'done': 'Done' }
-const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626' }
-const PRIORITY_LABEL = { low: 'Low', medium: 'Med', high: 'High' }
+const STATUS_LABEL = { 'backlog': 'Backlog', 'todo': 'To Do', 'in-progress': 'In Progress', 'in-review': 'In Review', 'review': 'Review', 'blocked': 'Blocked', 'done': 'Done' }
+const STATUS_ORDER = ['backlog', 'todo', 'in-progress', 'in-review', 'review', 'blocked', 'done']
+const PRIORITY_ORDER = ['critical', 'high', 'medium', 'low']
+const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
+const PRIORITY_LABEL = { low: 'Low', medium: 'Med', high: 'High', critical: 'Crit' }
 
 function getInitials(name) {
   if (!name) return '?'
@@ -56,12 +69,38 @@ function buildTree(tasks) {
 }
 
 function blankForm() {
-  return { title: '', description: '', status: 'todo', priority: 'medium', assignees: [], startDate: '', dueDate: '', numberOverride: '' }
+  return { title: '', description: '', status: 'todo', priority: 'medium', assignees: [], startDate: '', dueDate: '', numberOverride: '', attachments: [], cover: null }
 }
 
 function TaskForm({ initial, onSave, onCancel, label, assignees = [] }) {
   const [form, setForm] = useState(initial || blankForm())
   const f = (k) => e => setForm(p => ({ ...p, [k]: e.target.value }))
+
+  async function addImages(fileList) {
+    const files = Array.from(fileList || [])
+    const added = []
+    for (const file of files) {
+      if (!(file.type || '').startsWith('image/')) continue
+      if (file.size > MAX_ATTACH_BYTES) { alert(`"${file.name}" is too large (max ${Math.round(MAX_ATTACH_BYTES / 1024)}KB).`); continue }
+      const dataUrl = await readFileAsDataUrl(file)
+      added.push({
+        id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        name: file.name, type: file.type, size: file.size, dataUrl,
+        uploadedAt: new Date().toISOString(),
+      })
+    }
+    if (added.length) setForm(p => ({ ...p, attachments: [...(p.attachments || []), ...added] }))
+  }
+  function removeImage(id) {
+    setForm(p => ({
+      ...p,
+      attachments: (p.attachments || []).filter(a => a.id !== id),
+      cover: p.cover && p.cover.attId === id ? null : p.cover,
+    }))
+  }
+  function toggleCover(att) {
+    setForm(p => ({ ...p, cover: p.cover?.attId === att.id ? null : { dataUrl: att.dataUrl, attId: att.id } }))
+  }
 
   return (
     <div className="task-form">
@@ -74,12 +113,15 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [] }) {
         <select className="form-input" value={form.status} onChange={f('status')}>
           <option value="todo">To Do</option>
           <option value="in-progress">In Progress</option>
+          <option value="review">Review</option>
+          <option value="blocked">Blocked</option>
           <option value="done">Done</option>
         </select>
         <select className="form-input" value={form.priority} onChange={f('priority')}>
           <option value="low">Low priority</option>
           <option value="medium">Medium priority</option>
           <option value="high">High priority</option>
+          <option value="critical">Critical priority</option>
         </select>
       </div>
       <AssigneeInput
@@ -87,6 +129,28 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [] }) {
         options={assignees}
         onChange={next => setForm(p => ({ ...p, assignees: next }))}
       />
+      <div className="task-form-images">
+        {(form.attachments || []).length > 0 && (
+          <div className="task-form-thumbs">
+            {(form.attachments || []).map(att => {
+              const isCover = form.cover?.attId === att.id
+              return (
+                <div key={att.id} className={`task-form-thumb${isCover ? ' is-cover' : ''}`}>
+                  <a href={att.dataUrl} target="_blank" rel="noopener noreferrer" title={att.name}>
+                    <img src={att.dataUrl} alt={att.name} />
+                  </a>
+                  <button type="button" className="task-form-thumb-cover" onClick={() => toggleCover(att)} title={isCover ? 'Unset cover' : 'Set as cover'}>{isCover ? '★' : '☆'}</button>
+                  <button type="button" className="task-form-thumb-remove" onClick={() => removeImage(att.id)} title="Remove">✕</button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+        <label className="task-form-image-add">
+          + Add image
+          <input type="file" accept="image/*" multiple onChange={e => { addImages(e.target.files); e.target.value = '' }} style={{ display: 'none' }} />
+        </label>
+      </div>
       <div className="task-form-row">
         <input className="form-input" type="date" title="Start date" value={form.startDate} onChange={f('startDate')} />
         <input className="form-input" type="date" title="Due date" value={form.dueDate} onChange={f('dueDate')} />
@@ -142,6 +206,8 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
         startDate: form.startDate || null,
         dueDate: form.dueDate || null,
         numberOverride: form.numberOverride || null,
+        attachments: form.attachments || [],
+        cover: form.cover || null,
       }),
     })
     setEditing(false)
@@ -198,7 +264,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
     onRefresh()
   }
 
-  const statusClass = localStatus === 'done' ? 'task-status done' : localStatus === 'in-progress' ? 'task-status in-progress' : 'task-status todo'
+  const statusClass = localStatus === 'done' ? 'task-status done' : localStatus === 'in-progress' ? 'task-status in-progress' : localStatus === 'blocked' ? 'task-status blocked' : (localStatus === 'review' || localStatus === 'in-review') ? 'task-status review' : 'task-status todo'
 
   const { total: descTotal, done: descDone } = hasChildren ? getDescendantStats(node) : { total: 0, done: 0 }
 
@@ -228,7 +294,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
             {node.number}
           </span>
           <button className={statusClass} onClick={cycleStatus} title={`Status: ${STATUS_LABEL[localStatus]} — click to cycle`}>
-            {localStatus === 'done' ? '✓' : localStatus === 'in-progress' ? '◑' : '○'}
+            {localStatus === 'done' ? '✓' : localStatus === 'in-progress' ? '◑' : localStatus === 'blocked' ? '⊘' : (localStatus === 'review' || localStatus === 'in-review') ? '◎' : '○'}
           </button>
           <span
             className="task-title task-title--clickable"
@@ -238,6 +304,12 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
           >
             {node.title}
           </span>
+          {node.cover?.dataUrl && (
+            <img src={node.cover.dataUrl} alt="cover" className="task-row-cover" title="Cover image" />
+          )}
+          {Array.isArray(node.attachments) && node.attachments.length > 0 && (
+            <span className="task-meta-chip task-attach-chip" title={`${node.attachments.length} image(s)`}>🖼 {node.attachments.length}</span>
+          )}
           {node.startDate && <span className="task-meta-chip task-start" title="Start date">▶ {node.startDate}</span>}
           {node.dueDate && <span className="task-meta-chip task-due" title="Due date">⏎ {node.dueDate}</span>}
           {node.description && <span className="task-meta-chip task-desc" title={node.description}>{node.description.length > 40 ? node.description.slice(0, 40) + '…' : node.description}</span>}
@@ -289,6 +361,8 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
               startDate: node.startDate || '',
               dueDate: node.dueDate || '',
               numberOverride: node.numberOverride || '',
+              attachments: Array.isArray(node.attachments) ? node.attachments : [],
+              cover: node.cover || null,
             }}
             onSave={handleSaveEdit}
             onCancel={() => setEditing(false)}
@@ -367,6 +441,8 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
                   startDate: node.startDate || '',
                   dueDate: node.dueDate || '',
                   numberOverride: node.numberOverride || '',
+                  attachments: Array.isArray(node.attachments) ? node.attachments : [],
+                  cover: node.cover || null,
                 }}
                 onSave={async form => { await handleSaveEdit(form); setDetailEditing(false) }}
                 onCancel={() => setDetailEditing(false)}
@@ -390,6 +466,18 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
                   <span className="task-detail-label">Description</span>
                   <span className="task-detail-desc">{node.description || '—'}</span>
                 </div>
+                {Array.isArray(node.attachments) && node.attachments.length > 0 && (
+                  <div className="task-detail-field">
+                    <span className="task-detail-label">Images</span>
+                    <div className="task-detail-thumbs">
+                      {node.attachments.map(att => (
+                        <a key={att.id} href={att.dataUrl} target="_blank" rel="noopener noreferrer" title={att.name}>
+                          <img src={att.dataUrl} alt={att.name} className="task-detail-thumb" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="task-detail-actions">
                   <button className="btn-primary" style={{ fontSize: 12 }} onClick={() => setDetailEditing(true)}>Edit</button>
                 </div>
@@ -422,6 +510,12 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser }) {
   const [assignees, setAssignees] = useState([])
   const [search, setSearch] = useState('')
   const [filterPerson, setFilterPerson] = useState('')
+  const [filterStatus, setFilterStatus] = useState('')
+  const [filterPriority, setFilterPriority] = useState('')
+  const [startFrom, setStartFrom] = useState('')
+  const [startTo, setStartTo] = useState('')
+  const [dueFrom, setDueFrom] = useState('')
+  const [dueTo, setDueTo] = useState('')
   const draggedId = useRef(null)
   const [dropTarget, setDropTarget] = useState(null)
 
@@ -456,7 +550,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser }) {
 
   const q = search.toLowerCase()
   const pq = filterPerson.toLowerCase().trim()
-  const isFiltering = q || pq
+  const isFiltering = q || pq || filterStatus || filterPriority || startFrom || startTo || dueFrom || dueTo
   const filtered = isFiltering
     ? liveTasks.filter(t => {
         const taskAssignees = Array.isArray(t.assignees) ? t.assignees : (t.assignee ? [t.assignee] : [])
@@ -469,9 +563,25 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser }) {
           (t.numberOverride || '').toString().includes(q)
         )
         const matchesPerson = !pq || taskAssignees.some(a => a.toLowerCase().includes(pq))
-        return matchesSearch && matchesPerson
+        const matchesStatus = !filterStatus || (t.status || 'todo') === filterStatus
+        const matchesPriority = !filterPriority || (t.priority || 'medium') === filterPriority
+        const sd = t.startDate || ''
+        const matchesStart = (!startFrom || (sd && sd >= startFrom)) && (!startTo || (sd && sd <= startTo))
+        const dd = t.dueDate || ''
+        const matchesDue = (!dueFrom || (dd && dd >= dueFrom)) && (!dueTo || (dd && dd <= dueTo))
+        return matchesSearch && matchesPerson && matchesStatus && matchesPriority && matchesStart && matchesDue
       })
     : null
+
+  const statusOptions = (() => {
+    const present = new Set(liveTasks.map(t => t.status || 'todo'))
+    return [...STATUS_ORDER.filter(s => present.has(s)), ...[...present].filter(s => !STATUS_ORDER.includes(s))]
+  })()
+
+  function clearFilters() {
+    setSearch(''); setFilterPerson(''); setFilterStatus(''); setFilterPriority('')
+    setStartFrom(''); setStartTo(''); setDueFrom(''); setDueTo('')
+  }
 
   async function handleAddRoot(form) {
     await apiFetch(apiBase, {
@@ -520,6 +630,37 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser }) {
               {assignees.map(a => <option key={a.name} value={a.name} />)}
             </datalist>
           </div>
+        )}
+        {liveTasks.length > 0 && (
+          <select className="form-input filter-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+            <option value="">All statuses</option>
+            {statusOptions.map(s => <option key={s} value={s}>{STATUS_LABEL[s] || s}</option>)}
+          </select>
+        )}
+        {liveTasks.length > 0 && (
+          <select className="form-input filter-select" value={filterPriority} onChange={e => setFilterPriority(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+            <option value="">All priorities</option>
+            {PRIORITY_ORDER.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
+          </select>
+        )}
+        {liveTasks.length > 0 && (
+          <div className="tt-date-filter" title="Filter by start date">
+            <span className="tt-date-filter-label">Start</span>
+            <input type="date" className="form-input tt-date-input" value={startFrom} onChange={e => setStartFrom(e.target.value)} title="Start date from" />
+            <span className="tt-date-filter-sep">–</span>
+            <input type="date" className="form-input tt-date-input" value={startTo} onChange={e => setStartTo(e.target.value)} title="Start date to" />
+          </div>
+        )}
+        {liveTasks.length > 0 && (
+          <div className="tt-date-filter" title="Filter by due date">
+            <span className="tt-date-filter-label">Due</span>
+            <input type="date" className="form-input tt-date-input" value={dueFrom} onChange={e => setDueFrom(e.target.value)} title="Due date from" />
+            <span className="tt-date-filter-sep">–</span>
+            <input type="date" className="form-input tt-date-input" value={dueTo} onChange={e => setDueTo(e.target.value)} title="Due date to" />
+          </div>
+        )}
+        {isFiltering && (
+          <button className="btn-ghost" onClick={clearFilters} style={{ fontSize: 12, padding: '5px 10px' }} title="Clear all filters">Clear</button>
         )}
         {liveTasks.length > 0 && (
           <span className="task-count-label">

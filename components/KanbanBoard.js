@@ -7,6 +7,8 @@ const DEFAULT_COLUMNS = [
   { status: 'todo',        label: 'To Do',        color: '#3b82f6' },
   { status: 'in-progress', label: 'In Progress',  color: '#f59e0b' },
   { status: 'in-review',   label: 'In Review',    color: '#8b5cf6' },
+  { status: 'review',      label: 'Review',       color: '#d97706' },
+  { status: 'blocked',     label: 'Blocked',      color: '#dc2626' },
   { status: 'done',        label: 'Done',         color: '#16a34a' },
 ]
 
@@ -15,8 +17,8 @@ const COL_COLORS = [
   '#ef4444','#ec4899','#06b6d4','#f97316','#84cc16',
 ]
 
-const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626' }
-const PRIORITY_LABEL = { low: 'Low', medium: 'Med', high: 'High' }
+const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
+const PRIORITY_LABEL = { low: 'Low', medium: 'Med', high: 'High', critical: 'Crit' }
 
 const MAX_ATTACH_BYTES = 1024 * 1024 // 1MB cap per file (stored inline as data URL in Redis)
 
@@ -325,6 +327,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
             <option value="low">Low</option>
             <option value="medium">Med</option>
             <option value="high">High</option>
+            <option value="critical">Crit</option>
           </select>
           <button
             className="btn-ghost kanban-add-subtask-remove"
@@ -664,6 +667,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
         </div>
         <select className="form-input filter-select" value={kbPriority} onChange={e => setKbPriority(e.target.value)}>
           <option value="">All priorities</option>
+          <option value="critical">Critical</option>
           <option value="high">High</option>
           <option value="medium">Medium</option>
           <option value="low">Low</option>
@@ -846,6 +850,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                         <option value="low">Low</option>
                         <option value="medium">Medium</option>
                         <option value="high">High</option>
+                        <option value="critical">Critical</option>
                       </select>
                       <button className="btn-ghost" style={{ fontSize: 12, padding: '4px 10px' }} onClick={() => setAddingFor(null)}>Cancel</button>
                       <button
@@ -1231,6 +1236,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                   <option value="low">Low priority</option>
                   <option value="medium">Medium priority</option>
                   <option value="high">High priority</option>
+                  <option value="critical">Critical priority</option>
                 </select>
               </div>
               <AssigneeInput

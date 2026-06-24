@@ -2,18 +2,55 @@ import { useState, useEffect } from 'react'
 import { apiFetch } from '../lib/api-fetch'
 import AssigneeInput from './AssigneeInput'
 
-const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626' }
+const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-const STATUSES = ['backlog', 'todo', 'in-progress', 'in-review', 'done']
+const STATUSES = ['backlog', 'todo', 'in-progress', 'in-review', 'review', 'blocked', 'done']
+const MAX_ATTACH_BYTES = 1024 * 1024 // 1MB cap per image (stored inline as data URL in Redis)
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
 
 function blankForm(dueDate) {
-  return { title: '', description: '', status: 'todo', priority: 'medium', assignees: [], startDate: '', dueDate: dueDate || '' }
+  return { title: '', description: '', status: 'todo', priority: 'medium', assignees: [], startDate: '', dueDate: dueDate || '', attachments: [], cover: null }
 }
 
 function DayTaskForm({ initial, onSave, onCancel, label, assignees }) {
   const [form, setForm] = useState(initial)
   const f = (k) => e => setForm(p => ({ ...p, [k]: e.target.value }))
+
+  async function addImages(fileList) {
+    const files = Array.from(fileList || [])
+    const added = []
+    for (const file of files) {
+      if (!(file.type || '').startsWith('image/')) continue
+      if (file.size > MAX_ATTACH_BYTES) { alert(`"${file.name}" is too large (max ${Math.round(MAX_ATTACH_BYTES / 1024)}KB).`); continue }
+      const dataUrl = await readFileAsDataUrl(file)
+      added.push({
+        id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        name: file.name, type: file.type, size: file.size, dataUrl,
+        uploadedAt: new Date().toISOString(),
+      })
+    }
+    if (added.length) setForm(p => ({ ...p, attachments: [...(p.attachments || []), ...added] }))
+  }
+  function removeImage(id) {
+    setForm(p => ({
+      ...p,
+      attachments: (p.attachments || []).filter(a => a.id !== id),
+      cover: p.cover && p.cover.attId === id ? null : p.cover,
+    }))
+  }
+  function toggleCover(att) {
+    setForm(p => ({ ...p, cover: p.cover?.attId === att.id ? null : { dataUrl: att.dataUrl, attId: att.id } }))
+  }
+
   return (
     <div className="task-form">
       <input className="form-input" placeholder="Task title *" value={form.title} onChange={f('title')} autoFocus />
@@ -26,9 +63,32 @@ function DayTaskForm({ initial, onSave, onCancel, label, assignees }) {
           <option value="low">Low priority</option>
           <option value="medium">Medium priority</option>
           <option value="high">High priority</option>
+          <option value="critical">Critical priority</option>
         </select>
       </div>
       <AssigneeInput value={form.assignees} options={assignees} onChange={next => setForm(p => ({ ...p, assignees: next }))} />
+      <div className="task-form-images">
+        {(form.attachments || []).length > 0 && (
+          <div className="task-form-thumbs">
+            {(form.attachments || []).map(att => {
+              const isCover = form.cover?.attId === att.id
+              return (
+                <div key={att.id} className={`task-form-thumb${isCover ? ' is-cover' : ''}`}>
+                  <a href={att.dataUrl} target="_blank" rel="noopener noreferrer" title={att.name}>
+                    <img src={att.dataUrl} alt={att.name} />
+                  </a>
+                  <button type="button" className="task-form-thumb-cover" onClick={() => toggleCover(att)} title={isCover ? 'Unset cover' : 'Set as cover'}>{isCover ? '★' : '☆'}</button>
+                  <button type="button" className="task-form-thumb-remove" onClick={() => removeImage(att.id)} title="Remove">✕</button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+        <label className="task-form-image-add">
+          + Add image
+          <input type="file" accept="image/*" multiple onChange={e => { addImages(e.target.files); e.target.value = '' }} style={{ display: 'none' }} />
+        </label>
+      </div>
       <div className="task-form-row">
         <input className="form-input" type="date" title="Start date" value={form.startDate} onChange={f('startDate')} />
         <input className="form-input" type="date" title="Due date" value={form.dueDate} onChange={f('dueDate')} />
@@ -110,6 +170,7 @@ export default function CalendarView({ tasks, apiBase, onRefresh }) {
           title: form.title, description: form.description, status: form.status,
           priority: form.priority, assignees: form.assignees || [],
           startDate: form.startDate || null, dueDate: form.dueDate || null, parentId: null,
+          attachments: form.attachments || [], cover: form.cover || null,
         }),
       })
     } else {
@@ -120,6 +181,7 @@ export default function CalendarView({ tasks, apiBase, onRefresh }) {
           title: form.title, description: form.description, status: form.status,
           priority: form.priority, assignees: form.assignees || [],
           startDate: form.startDate || null, dueDate: form.dueDate || null,
+          attachments: form.attachments || [], cover: form.cover || null,
         }),
       })
     }
@@ -176,8 +238,10 @@ export default function CalendarView({ tasks, apiBase, onRefresh }) {
                     title={t.title}
                     style={{ borderLeftColor: PRIORITY_COLOR[t.priority] || '#64748b' }}
                   >
+                    {t.cover?.dataUrl && <img src={t.cover.dataUrl} alt="" className="cal-task-cover" />}
                     {t.number && <span className="cal-task-num">#{t.number}</span>}
                     <span className={t.status === 'done' ? 'cal-task-done' : ''}>{t.title}</span>
+                    {!t.cover?.dataUrl && Array.isArray(t.attachments) && t.attachments.length > 0 && <span className="cal-task-attach" title={`${t.attachments.length} image(s)`}>🖼</span>}
                   </div>
                 ))}
               </div>
@@ -225,7 +289,7 @@ export default function CalendarView({ tasks, apiBase, onRefresh }) {
                   const ta = Array.isArray(t.assignees) ? t.assignees : (t.assignee ? [t.assignee] : [])
                   return (
                     <DayTaskForm
-                      initial={{ title: t.title, description: t.description || '', status: t.status || 'todo', priority: t.priority || 'medium', assignees: ta, startDate: t.startDate || '', dueDate: t.dueDate || openDay }}
+                      initial={{ title: t.title, description: t.description || '', status: t.status || 'todo', priority: t.priority || 'medium', assignees: ta, startDate: t.startDate || '', dueDate: t.dueDate || openDay, attachments: Array.isArray(t.attachments) ? t.attachments : [], cover: t.cover || null }}
                       onSave={saveTask}
                       onCancel={() => setEditId(null)}
                       label="Update"
@@ -249,8 +313,10 @@ export default function CalendarView({ tasks, apiBase, onRefresh }) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
                       {openDayTasks.map(t => (
                         <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 8, borderLeft: `3px solid ${PRIORITY_COLOR[t.priority] || '#64748b'}` }}>
+                          {t.cover?.dataUrl && <img src={t.cover.dataUrl} alt="" style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 5, border: '1px solid var(--border)' }} />}
                           {t.number && <span style={{ fontSize: 11, color: '#94a3b8' }}>#{t.number}</span>}
                           <span style={{ flex: 1, fontSize: 13, textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>{t.title}</span>
+                          {!t.cover?.dataUrl && Array.isArray(t.attachments) && t.attachments.length > 0 && <span style={{ fontSize: 11 }} title={`${t.attachments.length} image(s)`}>🖼 {t.attachments.length}</span>}
                           <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 10, background: '#f1f5f9', color: '#475569' }}>{t.status}</span>
                           <button className="btn-ghost" style={{ fontSize: 12, padding: '3px 10px' }} onClick={() => setEditId(t.id)}>Edit</button>
                           <button className="btn-ghost" style={{ fontSize: 12, padding: '3px 8px', color: '#dc2626' }} onClick={() => deleteTask(t.id)}>✕</button>

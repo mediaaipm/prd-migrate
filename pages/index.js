@@ -132,6 +132,7 @@ export default function Home({ currentUser }) {
             </select>
             <select className="form-input filter-select" value={filterPriority} onChange={e => setFilterPriority(e.target.value)}>
               <option value="">All priorities</option>
+              <option value="critical">Critical</option>
               <option value="high">High</option>
               <option value="medium">Medium</option>
               <option value="low">Low</option>
