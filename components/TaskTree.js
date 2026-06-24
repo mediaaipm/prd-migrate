@@ -483,6 +483,10 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
                   <span>{nodeAssignees.length ? nodeAssignees.map(a => typeof a === 'object' ? a.name : a).join(', ') : '—'}</span>
                 </div>
                 <div className="task-detail-field">
+                  <span className="task-detail-label">Assigned by</span>
+                  <span>{node.assignedBy || '—'}</span>
+                </div>
+                <div className="task-detail-field">
                   <span className="task-detail-label">Description</span>
                   <span className="task-detail-desc">{node.description || '—'}</span>
                 </div>

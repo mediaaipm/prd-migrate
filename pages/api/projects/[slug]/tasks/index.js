@@ -12,9 +12,11 @@ export default async function handler(req, res) {
   }
   if (req.method === 'POST') {
     if (!requirePermission('task:create')(req, res)) return;
-    const { title, description, status, priority, assignee, startDate, dueDate, parentId, numberOverride } = req.body || {};
+    const { title, description, status, priority, assignee, assignees, startDate, dueDate, parentId, numberOverride } = req.body || {};
     if (!title) return res.status(400).json({ error: 'title is required' });
-    const task = await createTask(slug, v, { title, description, status, priority, assignee, startDate, dueDate, parentId, numberOverride });
+    let assignedBy = null;
+    try { assignedBy = (JSON.parse(req.headers['x-user'] || '{}').name) || null; } catch {}
+    const task = await createTask(slug, v, { title, description, status, priority, assignee, assignees, assignedBy, startDate, dueDate, parentId, numberOverride });
     await logAudit(req, 'create_task', 'task', { slug, version: v, taskId: task.id, title, parentId });
     return res.status(201).json(task);
   }
