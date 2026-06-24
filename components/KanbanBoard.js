@@ -93,6 +93,12 @@ function slugify(label, existingStatuses) {
 export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUser }) {
   const storageKey = `kanban-cols:${apiBase}`
 
+  // Full edit for admins; assignees may only change status of their own tasks.
+  const canEditAll = !!currentUser?.isAdmin
+  const isMine = task => !!currentUser?.name && (Array.isArray(task?.assignees) ? task.assignees : (task?.assignee ? [task.assignee] : []))
+    .some(a => (typeof a === 'object' ? a?.name : a) === currentUser.name)
+  const canChangeStatus = task => canEditAll || isMine(task)
+
   const [columns, setColumns] = useState(() => {
     if (typeof window === 'undefined') return DEFAULT_COLUMNS
     try {
@@ -442,6 +448,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
   async function updateStatus(taskId, newStatus) {
     const task = boardTasks.find(t => t.id === taskId)
     if (!task || task.status === newStatus) return
+    if (!canChangeStatus(task)) return
     setAnimatingOut(prev => new Set([...prev, taskId]))
     await Promise.all([
       apiFetch(`${apiBase}/${taskId}`, {
@@ -795,20 +802,22 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                       {hasKbFilters ? `/${boardTasks.filter(t => t.status === col.status).length}` : ''}
                     </span>
                   </div>
-                  <div className="kanban-col-header-actions" onClick={e => e.stopPropagation()}>
-                    <button
-                      className="kanban-add-btn"
-                      onMouseDown={e => e.stopPropagation()}
-                      onClick={() => addingFor === col.status ? setAddingFor(null) : startAdding(col.status)}
-                      title={`Add task to ${col.label}`}
-                    >+</button>
-                    <button
-                      className="kanban-col-delete-btn"
-                      onMouseDown={e => e.stopPropagation()}
-                      onClick={() => deleteColumn(col.status)}
-                      title="Delete column"
-                    >✕</button>
-                  </div>
+                  {canEditAll && (
+                    <div className="kanban-col-header-actions" onClick={e => e.stopPropagation()}>
+                      <button
+                        className="kanban-add-btn"
+                        onMouseDown={e => e.stopPropagation()}
+                        onClick={() => addingFor === col.status ? setAddingFor(null) : startAdding(col.status)}
+                        title={`Add task to ${col.label}`}
+                      >+</button>
+                      <button
+                        className="kanban-col-delete-btn"
+                        onMouseDown={e => e.stopPropagation()}
+                        onClick={() => deleteColumn(col.status)}
+                        title="Delete column"
+                      >✕</button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Color swatches shown when editing column */}
@@ -891,11 +900,13 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                           {renderCardLabels(task)}
                           <div className="kanban-card-header">
                             {task.number && <span className="task-number" style={{ fontSize: 10 }}>{task.number}</span>}
-                            <button
-                              className="kanban-card-edit-btn"
-                              onClick={() => openEdit(task)}
-                              title="Edit task"
-                            >✎</button>
+                            {canEditAll && (
+                              <button
+                                className="kanban-card-edit-btn"
+                                onClick={() => openEdit(task)}
+                                title="Edit task"
+                              >✎</button>
+                            )}
                           </div>
                           <div className="kanban-card-title">{task.title}</div>
                           <div className="kanban-card-meta">
@@ -973,6 +984,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                                       className="kanban-subtask-status-select"
                                       style={{ '--status-color': statusCol?.color || '#64748b' }}
                                       value={sub.status}
+                                      disabled={!canChangeStatus(sub)}
                                       onClick={e => e.stopPropagation()}
                                       onChange={e => { e.stopPropagation(); updateStatus(sub.id, e.target.value) }}
                                     >
@@ -980,12 +992,14 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                                         <option key={c.status} value={c.status}>{c.label}</option>
                                       ))}
                                     </select>
-                                    <button
-                                      className="kanban-card-edit-btn"
-                                      style={{ fontSize: 10, padding: '1px 4px' }}
-                                      onClick={() => openEdit(sub)}
-                                      title="Edit subtask"
-                                    >✎</button>
+                                    {canEditAll && (
+                                      <button
+                                        className="kanban-card-edit-btn"
+                                        style={{ fontSize: 10, padding: '1px 4px' }}
+                                        onClick={() => openEdit(sub)}
+                                        title="Edit subtask"
+                                      >✎</button>
+                                    )}
                                   </span>
                                 </div>
                               )
@@ -1041,6 +1055,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                               className="kanban-subtask-status-select"
                               style={{ '--status-color': statusCol?.color || '#64748b' }}
                               value={sub.status}
+                              disabled={!canChangeStatus(sub)}
                               onClick={e => e.stopPropagation()}
                               onChange={e => { e.stopPropagation(); updateStatus(sub.id, e.target.value) }}
                             >
@@ -1048,12 +1063,14 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                                 <option key={c.status} value={c.status}>{c.label}</option>
                               ))}
                             </select>
-                            <button
-                              className="kanban-card-edit-btn"
-                              style={{ fontSize: 10, padding: '1px 4px' }}
-                              onClick={() => openEdit(sub)}
-                              title="Edit subtask"
-                            >✎</button>
+                            {canEditAll && (
+                              <button
+                                className="kanban-card-edit-btn"
+                                style={{ fontSize: 10, padding: '1px 4px' }}
+                                onClick={() => openEdit(sub)}
+                                title="Edit subtask"
+                              >✎</button>
+                            )}
                           </span>
                         </div>
                       </div>
@@ -1084,9 +1101,9 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                         <button className="btn-ghost" style={{ fontSize: 12, padding: '4px 10px' }} onClick={() => { setQuickAddFor(null); setQuickAddTitle('') }}>✕</button>
                       </div>
                     </div>
-                  ) : (
+                  ) : canEditAll ? (
                     <button className="kanban-quick-add-btn" onClick={() => { setQuickAddFor(col.status); setQuickAddTitle('') }}>+ Add a card</button>
-                  )}
+                  ) : null}
                 </div>
               </div>
             )
@@ -1129,11 +1146,11 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                 </div>
               </div>
             </div>
-          ) : (
+          ) : canEditAll ? (
             <button className="kanban-add-col-btn" onClick={() => setAddingCol(true)}>
               + Add column
             </button>
-          )}
+          ) : null}
         </div>
       </div>
 

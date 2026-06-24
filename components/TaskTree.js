@@ -181,16 +181,27 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
 
   const nodeAssignees = Array.isArray(node.assignees) ? node.assignees : (node.assignee ? [node.assignee] : [])
 
+  const isAdmin = !!currentUser?.isAdmin
+  const isMine = !!currentUser?.name && nodeAssignees.some(a => (typeof a === 'object' ? a?.name : a) === currentUser.name)
+  // Full edit for admins; assignees may only change status of their own tasks.
+  const canEdit = isAdmin
+  const canChangeStatus = isAdmin || isMine
+
   const hasChildren = node.children && node.children.length > 0
 
-  async function cycleStatus() {
-    const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(localStatus) + 1) % STATUS_CYCLE.length]
+  async function setStatus(next) {
+    if (!canChangeStatus || next === localStatus) return
     setLocalStatus(next)
     apiFetch(`${apiBase}/${node.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: next }),
     })
+  }
+
+  async function cycleStatus() {
+    if (!canChangeStatus) return
+    setStatus(STATUS_CYCLE[(STATUS_CYCLE.indexOf(localStatus) + 1) % STATUS_CYCLE.length])
   }
 
   async function handleSaveEdit(form) {
@@ -293,7 +304,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
           <span className="task-number" title={node.autoNumber !== node.number ? `Auto: ${node.autoNumber}` : 'Auto-numbered'}>
             {node.number}
           </span>
-          <button className={statusClass} onClick={cycleStatus} title={`Status: ${STATUS_LABEL[localStatus]} — click to cycle`}>
+          <button className={statusClass} onClick={cycleStatus} disabled={!canChangeStatus} title={canChangeStatus ? `Status: ${STATUS_LABEL[localStatus]} — click to cycle` : `Status: ${STATUS_LABEL[localStatus]}`}>
             {localStatus === 'done' ? '✓' : localStatus === 'in-progress' ? '◑' : localStatus === 'blocked' ? '⊘' : (localStatus === 'review' || localStatus === 'in-review') ? '◎' : '○'}
           </button>
           <span
@@ -338,14 +349,14 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
           )}
         </div>
         <div className="task-row-actions">
-          <button className="task-action-btn task-action-btn--move" onClick={() => handleMove('up')} title="Move up">↑</button>
-          <button className="task-action-btn task-action-btn--move" onClick={() => handleMove('down')} title="Move down">↓</button>
-          <button className="task-action-btn" onClick={() => { setAddingChild(v => !v); setEditing(false) }} title="Add sub-task">+ sub</button>
-          <button className="task-action-btn" onClick={() => { setEditing(v => !v); setAddingChild(false); setShowUpdates(false) }} title="Edit task">Edit</button>
-          <button className={`task-action-btn ${showUpdates ? 'active' : ''}`} onClick={() => { setShowUpdates(v => !v); setEditing(false); setAddingChild(false) }} title="Updates">Updates</button>
-          {currentUser?.isAdmin && (
+          {canEdit && <>
+            <button className="task-action-btn task-action-btn--move" onClick={() => handleMove('up')} title="Move up">↑</button>
+            <button className="task-action-btn task-action-btn--move" onClick={() => handleMove('down')} title="Move down">↓</button>
+            <button className="task-action-btn" onClick={() => { setAddingChild(v => !v); setEditing(false) }} title="Add sub-task">+ sub</button>
+            <button className="task-action-btn" onClick={() => { setEditing(v => !v); setAddingChild(false); setShowUpdates(false) }} title="Edit task">Edit</button>
+            <button className={`task-action-btn ${showUpdates ? 'active' : ''}`} onClick={() => { setShowUpdates(v => !v); setEditing(false); setAddingChild(false) }} title="Updates">Updates</button>
             <button className="task-action-btn danger" onClick={handleDelete} title="Delete task">✕</button>
-          )}
+          </>}
         </div>
       </div>
 
@@ -453,7 +464,16 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
               <div className="task-detail">
                 <div className="task-detail-title">{node.title}</div>
                 <div className="task-detail-grid">
-                  <div className="task-detail-field"><span className="task-detail-label">Status</span><span className={statusClass + ' task-detail-static'}>{STATUS_LABEL[localStatus] || localStatus}</span></div>
+                  <div className="task-detail-field">
+                    <span className="task-detail-label">Status</span>
+                    {canChangeStatus ? (
+                      <select className="form-input" value={localStatus} onChange={e => setStatus(e.target.value)} style={{ maxWidth: 180, fontSize: 12 }}>
+                        {STATUS_ORDER.map(s => <option key={s} value={s}>{STATUS_LABEL[s] || s}</option>)}
+                      </select>
+                    ) : (
+                      <span className={statusClass + ' task-detail-static'}>{STATUS_LABEL[localStatus] || localStatus}</span>
+                    )}
+                  </div>
                   <div className="task-detail-field"><span className="task-detail-label">Priority</span><span>{PRIORITY_LABEL[node.priority] || node.priority || '—'}</span></div>
                   <div className="task-detail-field"><span className="task-detail-label">Start</span><span>{node.startDate || '—'}</span></div>
                   <div className="task-detail-field"><span className="task-detail-label">Due</span><span>{node.dueDate || '—'}</span></div>
@@ -478,9 +498,11 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
                     </div>
                   </div>
                 )}
-                <div className="task-detail-actions">
-                  <button className="btn-primary" style={{ fontSize: 12 }} onClick={() => setDetailEditing(true)}>Edit</button>
-                </div>
+                {canEdit && (
+                  <div className="task-detail-actions">
+                    <button className="btn-primary" style={{ fontSize: 12 }} onClick={() => setDetailEditing(true)}>Edit</button>
+                  </div>
+                )}
               </div>
             )}
           </div>

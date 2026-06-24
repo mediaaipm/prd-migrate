@@ -158,7 +158,9 @@
       "Bash(rm -f graphify-out/.graphify_old.json graphify-out/.graphify_incremental.json)",
       "Bash(graphify export *)",
       "Bash(ls pages/api/projects/[slug]/tasks/)",
-      "Bash(grep -rl \"image\\\\|upload\\\\|base64\\\\|attachment\" pages components lib)"
+      "Bash(grep -rl \"image\\\\|upload\\\\|base64\\\\|attachment\" pages components lib)",
+      "Bash(git --no-pager diff --stat)",
+      "Bash(git --no-pager diff)"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects"
