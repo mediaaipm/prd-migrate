@@ -685,6 +685,20 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   flex-shrink: 0;
 }
 
+.task-id-badge {
+  font-family: 'Menlo', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 4px;
+  padding: 1px 5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .task-status {
   background: none;
   border: 1.5px solid var(--border);

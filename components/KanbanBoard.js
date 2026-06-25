@@ -90,7 +90,7 @@ function slugify(label, existingStatuses) {
   return `${base}-${i}`
 }
 
-export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUser, taskAcl, onAclChange }) {
+export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUser, taskAcl, onAclChange, taskPrefix, onPrefixChange }) {
   const storageKey = `kanban-cols:${apiBase}`
 
   // Full edit for admins; assignees may only change status of their own tasks.
@@ -306,6 +306,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
     setAclDraft({
       assigneeCanChangeStatus: taskAcl?.assigneeCanChangeStatus !== false,
       assigneeStatuses: list,
+      taskPrefix: taskPrefix || '',
     })
     setShowAclMgr(true)
   }
@@ -324,13 +325,15 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
       assigneeCanChangeStatus: aclDraft.assigneeCanChangeStatus,
       assigneeStatuses: aclDraft.assigneeStatuses,
     }
+    const prefix = (aclDraft.taskPrefix || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8)
     await apiFetch(`/api/projects/${slug}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ taskAcl: payload }),
+      body: JSON.stringify({ taskAcl: payload, taskPrefix: prefix }),
     })
     setSavingAcl(false)
     onAclChange?.(payload)
+    onPrefixChange?.(prefix)
     setShowAclMgr(false)
   }
 
@@ -790,8 +793,8 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
           </button>
         )}
         {canEditAll && slug && (
-          <button className="btn-ghost" style={{ whiteSpace: 'nowrap', fontSize: 12 }} onClick={openAclMgr} title="Set what assignees can do">
-            🔒 Permissions
+          <button className="btn-ghost" style={{ whiteSpace: 'nowrap', fontSize: 12 }} onClick={openAclMgr} title="Task id prefix & assignee permissions">
+            ⚙ Task Settings
           </button>
         )}
         {hasKbFilters && (
@@ -974,6 +977,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                           )}
                           {renderCardLabels(task)}
                           <div className="kanban-card-header">
+                            {taskPrefix && task.seq != null && <span className="task-id-badge" style={{ fontSize: 10 }}>{taskPrefix}-{task.seq}</span>}
                             {task.number && <span className="task-number" style={{ fontSize: 10 }}>{task.number}</span>}
                             {canEditAll && (
                               <button
@@ -1277,10 +1281,24 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
         <div className="kanban-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowAclMgr(false) }}>
           <div className="kanban-modal" style={{ maxWidth: 440 }}>
             <div className="kanban-modal-header">
-              <span>Assignee Permissions</span>
+              <span>Task Settings</span>
               <button className="kanban-modal-close" onClick={() => setShowAclMgr(false)}>✕</button>
             </div>
             <div className="task-form">
+              <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 12, marginBottom: 4 }}>
+                <div className="task-assignees-label" style={{ marginBottom: 6 }}>Task ID prefix</div>
+                <input
+                  className="form-input"
+                  placeholder="e.g. ENG, MED, CON, WAR"
+                  value={aclDraft.taskPrefix}
+                  maxLength={8}
+                  onChange={e => setAclDraft(d => ({ ...d, taskPrefix: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') }))}
+                  style={{ textTransform: 'uppercase' }}
+                />
+                <p style={{ fontSize: 11, color: 'var(--muted)', margin: '6px 0 0' }}>
+                  Tasks get an incremental id like <strong>{(aclDraft.taskPrefix || 'ENG')}-1</strong>, <strong>{(aclDraft.taskPrefix || 'ENG')}-2</strong>. Leave blank to hide.
+                </p>
+              </div>
               <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 4px' }}>
                 Admins always have full control. These rules apply to members changing the status of tasks assigned to them.
               </p>

@@ -160,7 +160,9 @@
       "Bash(ls pages/api/projects/[slug]/tasks/)",
       "Bash(grep -rl \"image\\\\|upload\\\\|base64\\\\|attachment\" pages components lib)",
       "Bash(git --no-pager diff --stat)",
-      "Bash(git --no-pager diff)"
+      "Bash(git --no-pager diff)",
+      "Bash(grep -rn \"api/projects/\\\\${slug}\\\\`\\\\|/api/projects/\\\\${\" pages/ components/)",
+      "Bash(grep -n \"Task .{node.number}\\\\|Task \\\\${node.number}\\\\|task-modal-title\\\\|node.number}\" components/TaskTree.js)"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects"

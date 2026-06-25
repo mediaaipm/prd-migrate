@@ -168,7 +168,7 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [] }) {
   )
 }
 
-function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], currentUser, dnd, taskAcl }) {
+function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], currentUser, dnd, taskAcl, taskPrefix }) {
   const [expanded, setExpanded] = useState(true)
   const [editing, setEditing] = useState(false)
   const [addingChild, setAddingChild] = useState(false)
@@ -319,6 +319,9 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
           >
             {expanded ? '▼' : '▶'}
           </button>
+          {taskPrefix && node.seq != null && (
+            <span className="task-id-badge" title="Task ID">{taskPrefix}-{node.seq}</span>
+          )}
           <span className="task-number" title={node.autoNumber !== node.number ? `Auto: ${node.autoNumber}` : 'Auto-numbered'}>
             {node.number}
           </span>
@@ -456,7 +459,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
         <div className="kanban-modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowDetail(false); setDetailEditing(false) } }}>
           <div className="kanban-modal">
             <div className="kanban-modal-header">
-              <span>{detailEditing ? 'Edit Task' : `Task ${node.number}`}</span>
+              <span>{detailEditing ? 'Edit Task' : `Task ${taskPrefix && node.seq != null ? `${taskPrefix}-${node.seq}` : node.number}`}</span>
               <button className="kanban-modal-close" onClick={() => { setShowDetail(false); setDetailEditing(false) }}>✕</button>
             </div>
             {detailEditing ? (
@@ -534,7 +537,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
       {expanded && hasChildren && (
         <div className="task-children">
           {node.children.map(child => (
-            <TaskNode key={child.id} node={child} apiBase={apiBase} onRefresh={onRefresh} depth={depth + 1} assignees={assignees} currentUser={currentUser} dnd={dnd} taskAcl={taskAcl} />
+            <TaskNode key={child.id} node={child} apiBase={apiBase} onRefresh={onRefresh} depth={depth + 1} assignees={assignees} currentUser={currentUser} dnd={dnd} taskAcl={taskAcl} taskPrefix={taskPrefix} />
           ))}
         </div>
       )}
@@ -549,7 +552,7 @@ function countDescendants(node) {
   return count
 }
 
-export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskAcl }) {
+export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskAcl, taskPrefix }) {
   const [addingRoot, setAddingRoot] = useState(false)
   const [assignees, setAssignees] = useState([])
   const [search, setSearch] = useState('')
@@ -733,7 +736,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
         ) : (
           <div className="task-list">
             {filtered.map(t => (
-              <TaskNode key={t.id} node={{ ...t, children: [] }} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} taskAcl={taskAcl} />
+              <TaskNode key={t.id} node={{ ...t, children: [] }} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} taskAcl={taskAcl} taskPrefix={taskPrefix} />
             ))}
           </div>
         )
@@ -742,7 +745,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
       ) : (
         <div className="task-list">
           {tree.map(node => (
-            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={dnd} taskAcl={taskAcl} />
+            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={dnd} taskAcl={taskAcl} taskPrefix={taskPrefix} />
           ))}
         </div>
       )}
