@@ -90,7 +90,7 @@ function slugify(label, existingStatuses) {
   return `${base}-${i}`
 }
 
-export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUser }) {
+export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUser, taskAcl, onAclChange }) {
   const storageKey = `kanban-cols:${apiBase}`
 
   // Full edit for admins; assignees may only change status of their own tasks.
@@ -98,6 +98,14 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
   const isMine = task => !!currentUser?.name && (Array.isArray(task?.assignees) ? task.assignees : (task?.assignee ? [task.assignee] : []))
     .some(a => (typeof a === 'object' ? a?.name : a) === currentUser.name)
   const canChangeStatus = task => canEditAll || isMine(task)
+  // Project ACL: which statuses a non-admin assignee may set (admins unrestricted).
+  const statusAllowedForUser = status => {
+    if (canEditAll) return true
+    if (taskAcl?.assigneeCanChangeStatus === false) return false
+    const list = taskAcl?.assigneeStatuses
+    if (!Array.isArray(list)) return true
+    return list.includes(status)
+  }
 
   const [columns, setColumns] = useState(() => {
     if (typeof window === 'undefined') return DEFAULT_COLUMNS
@@ -111,6 +119,24 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
   useEffect(() => {
     try { localStorage.setItem(storageKey, JSON.stringify(columns)) } catch {}
   }, [columns, storageKey])
+
+  // Reconcile columns with statuses present in tasks. A task set (e.g. from the
+  // calendar) to a status with no column would otherwise vanish from the board.
+  useEffect(() => {
+    const known = new Set(columns.map(c => c.status))
+    const fallback = DEFAULT_COLUMNS.reduce((m, c) => (m[c.status] = c, m), {})
+    const missing = []
+    for (const t of tasks) {
+      if (t.archived || !t.status || known.has(t.status)) continue
+      known.add(t.status)
+      missing.push(fallback[t.status] || {
+        status: t.status,
+        label: t.status.replace(/(^|-)([a-z])/g, (_, s, c) => (s ? ' ' : '') + c.toUpperCase()),
+        color: COL_COLORS[(columns.length + missing.length) % COL_COLORS.length],
+      })
+    }
+    if (missing.length) setColumns(prev => [...prev, ...missing])
+  }, [tasks]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [draggingId, setDraggingId] = useState(null)
   const [dragOverStatus, setDragOverStatus] = useState(null)
@@ -138,6 +164,11 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
   // Label manager
   const [showLabelMgr, setShowLabelMgr] = useState(false)
   const [newLabel, setNewLabel] = useState({ name: '', color: COL_COLORS[1] })
+
+  // Permissions (ACL) manager — admin sets which statuses assignees may set
+  const [showAclMgr, setShowAclMgr] = useState(false)
+  const [aclDraft, setAclDraft] = useState(null)
+  const [savingAcl, setSavingAcl] = useState(false)
 
   // Column management
   const [addingCol, setAddingCol] = useState(false)
@@ -266,6 +297,41 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
     if (!labelsApi) return
     await apiFetch(`${labelsApi}?id=${id}`, { method: 'DELETE' })
     loadLabels()
+  }
+
+  // --- Permissions (ACL) management ---
+  function openAclMgr() {
+    // null assigneeStatuses means "all allowed" — seed the draft with every column checked.
+    const list = Array.isArray(taskAcl?.assigneeStatuses) ? taskAcl.assigneeStatuses : columns.map(c => c.status)
+    setAclDraft({
+      assigneeCanChangeStatus: taskAcl?.assigneeCanChangeStatus !== false,
+      assigneeStatuses: list,
+    })
+    setShowAclMgr(true)
+  }
+  function toggleAclStatus(status) {
+    setAclDraft(d => ({
+      ...d,
+      assigneeStatuses: d.assigneeStatuses.includes(status)
+        ? d.assigneeStatuses.filter(s => s !== status)
+        : [...d.assigneeStatuses, status],
+    }))
+  }
+  async function saveAcl() {
+    if (!slug || !aclDraft) return
+    setSavingAcl(true)
+    const payload = {
+      assigneeCanChangeStatus: aclDraft.assigneeCanChangeStatus,
+      assigneeStatuses: aclDraft.assigneeStatuses,
+    }
+    await apiFetch(`/api/projects/${slug}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ taskAcl: payload }),
+    })
+    setSavingAcl(false)
+    onAclChange?.(payload)
+    setShowAclMgr(false)
   }
 
   function startAdding(status) {
@@ -449,6 +515,10 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
     const task = boardTasks.find(t => t.id === taskId)
     if (!task || task.status === newStatus) return
     if (!canChangeStatus(task)) return
+    if (!statusAllowedForUser(newStatus)) {
+      alert('You are not allowed to move tasks to this status.')
+      return
+    }
     setAnimatingOut(prev => new Set([...prev, taskId]))
     await Promise.all([
       apiFetch(`${apiBase}/${taskId}`, {
@@ -717,6 +787,11 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
         {labelsApi && (
           <button className="btn-ghost" style={{ whiteSpace: 'nowrap', fontSize: 12 }} onClick={() => setShowLabelMgr(true)}>
             🏷 Labels
+          </button>
+        )}
+        {canEditAll && slug && (
+          <button className="btn-ghost" style={{ whiteSpace: 'nowrap', fontSize: 12 }} onClick={openAclMgr} title="Set what assignees can do">
+            🔒 Permissions
           </button>
         )}
         {hasKbFilters && (
@@ -989,7 +1064,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                                       onChange={e => { e.stopPropagation(); updateStatus(sub.id, e.target.value) }}
                                     >
                                       {columns.map(c => (
-                                        <option key={c.status} value={c.status}>{c.label}</option>
+                                        <option key={c.status} value={c.status} disabled={!statusAllowedForUser(c.status)}>{c.label}</option>
                                       ))}
                                     </select>
                                     {canEditAll && (
@@ -1060,7 +1135,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                               onChange={e => { e.stopPropagation(); updateStatus(sub.id, e.target.value) }}
                             >
                               {columns.map(c => (
-                                <option key={c.status} value={c.status}>{c.label}</option>
+                                <option key={c.status} value={c.status} disabled={!statusAllowedForUser(c.status)}>{c.label}</option>
                               ))}
                             </select>
                             {canEditAll && (
@@ -1191,6 +1266,56 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                   ))}
                 </div>
                 <button className="btn-primary" style={{ fontSize: 12, marginTop: 8 }} onClick={createLabel} disabled={!newLabel.name.trim()}>+ Add label</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Permissions (ACL) modal */}
+      {showAclMgr && aclDraft && (
+        <div className="kanban-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowAclMgr(false) }}>
+          <div className="kanban-modal" style={{ maxWidth: 440 }}>
+            <div className="kanban-modal-header">
+              <span>Assignee Permissions</span>
+              <button className="kanban-modal-close" onClick={() => setShowAclMgr(false)}>✕</button>
+            </div>
+            <div className="task-form">
+              <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 4px' }}>
+                Admins always have full control. These rules apply to members changing the status of tasks assigned to them.
+              </p>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
+                <input
+                  type="checkbox"
+                  checked={aclDraft.assigneeCanChangeStatus}
+                  onChange={e => setAclDraft(d => ({ ...d, assigneeCanChangeStatus: e.target.checked }))}
+                />
+                Allow assignees to change status
+              </label>
+              {aclDraft.assigneeCanChangeStatus && (
+                <div style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginTop: 4 }}>
+                  <div className="task-assignees-label" style={{ marginBottom: 8 }}>Statuses assignees may set:</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {columns.map(c => (
+                      <label key={c.status} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                        <input
+                          type="checkbox"
+                          checked={aclDraft.assigneeStatuses.includes(c.status)}
+                          onChange={() => toggleAclStatus(c.status)}
+                        />
+                        <span className="kanban-column-dot" style={{ background: c.color }} />
+                        {c.label}
+                      </label>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: 11, color: 'var(--muted)', margin: '8px 0 0' }}>
+                    Unchecked statuses can only be set by an admin.
+                  </p>
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
+                <button className="btn-ghost" onClick={() => setShowAclMgr(false)}>Cancel</button>
+                <button className="btn-primary" onClick={saveAcl} disabled={savingAcl}>Save</button>
               </div>
             </div>
           </div>

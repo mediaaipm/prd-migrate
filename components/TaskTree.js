@@ -16,6 +16,9 @@ function readFileAsDataUrl(file) {
 const STATUS_CYCLE = ['todo', 'in-progress', 'done']
 const STATUS_LABEL = { 'backlog': 'Backlog', 'todo': 'To Do', 'in-progress': 'In Progress', 'in-review': 'In Review', 'review': 'Review', 'blocked': 'Blocked', 'done': 'Done' }
 const STATUS_ORDER = ['backlog', 'todo', 'in-progress', 'in-review', 'review', 'blocked', 'done']
+const STATUS_COLOR = { 'backlog': '#64748b', 'todo': '#2563eb', 'in-progress': '#f59e0b', 'in-review': '#9333ea', 'review': '#9333ea', 'blocked': '#dc2626', 'done': '#16a34a' }
+// Statuses shown in the color legend (collapsed review variants).
+const STATUS_LEGEND = ['backlog', 'todo', 'in-progress', 'in-review', 'blocked', 'done']
 const PRIORITY_ORDER = ['critical', 'high', 'medium', 'low']
 const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
 const PRIORITY_LABEL = { low: 'Low', medium: 'Med', high: 'High', critical: 'Crit' }
@@ -165,7 +168,7 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [] }) {
   )
 }
 
-function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], currentUser, dnd }) {
+function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], currentUser, dnd, taskAcl }) {
   const [expanded, setExpanded] = useState(true)
   const [editing, setEditing] = useState(false)
   const [addingChild, setAddingChild] = useState(false)
@@ -186,11 +189,20 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
   // Full edit for admins; assignees may only change status of their own tasks.
   const canEdit = isAdmin
   const canChangeStatus = isAdmin || isMine
+  // Project ACL: which statuses a non-admin assignee may set (admins unrestricted).
+  const statusAllowed = status => {
+    if (isAdmin) return true
+    if (taskAcl?.assigneeCanChangeStatus === false) return false
+    const list = taskAcl?.assigneeStatuses
+    if (!Array.isArray(list)) return true
+    return list.includes(status)
+  }
 
   const hasChildren = node.children && node.children.length > 0
 
   async function setStatus(next) {
     if (!canChangeStatus || next === localStatus) return
+    if (!statusAllowed(next)) { alert('You are not allowed to set this status.'); return }
     setLocalStatus(next)
     apiFetch(`${apiBase}/${node.id}`, {
       method: 'PUT',
@@ -201,7 +213,13 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
 
   async function cycleStatus() {
     if (!canChangeStatus) return
-    setStatus(STATUS_CYCLE[(STATUS_CYCLE.indexOf(localStatus) + 1) % STATUS_CYCLE.length])
+    // Advance to the next status in the cycle the user is actually allowed to set.
+    const start = STATUS_CYCLE.indexOf(localStatus)
+    for (let i = 1; i <= STATUS_CYCLE.length; i++) {
+      const cand = STATUS_CYCLE[(start + i) % STATUS_CYCLE.length]
+      if (cand === localStatus) break
+      if (statusAllowed(cand)) { setStatus(cand); return }
+    }
   }
 
   async function handleSaveEdit(form) {
@@ -275,7 +293,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
     onRefresh()
   }
 
-  const statusClass = localStatus === 'done' ? 'task-status done' : localStatus === 'in-progress' ? 'task-status in-progress' : localStatus === 'blocked' ? 'task-status blocked' : (localStatus === 'review' || localStatus === 'in-review') ? 'task-status review' : 'task-status todo'
+  const statusClass = localStatus === 'done' ? 'task-status done' : localStatus === 'in-progress' ? 'task-status in-progress' : localStatus === 'blocked' ? 'task-status blocked' : (localStatus === 'review' || localStatus === 'in-review') ? 'task-status review' : localStatus === 'backlog' ? 'task-status backlog' : 'task-status todo'
 
   const { total: descTotal, done: descDone } = hasChildren ? getDescendantStats(node) : { total: 0, done: 0 }
 
@@ -468,7 +486,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
                     <span className="task-detail-label">Status</span>
                     {canChangeStatus ? (
                       <select className="form-input" value={localStatus} onChange={e => setStatus(e.target.value)} style={{ maxWidth: 180, fontSize: 12 }}>
-                        {STATUS_ORDER.map(s => <option key={s} value={s}>{STATUS_LABEL[s] || s}</option>)}
+                        {STATUS_ORDER.map(s => <option key={s} value={s} disabled={!statusAllowed(s)}>{STATUS_LABEL[s] || s}</option>)}
                       </select>
                     ) : (
                       <span className={statusClass + ' task-detail-static'}>{STATUS_LABEL[localStatus] || localStatus}</span>
@@ -516,7 +534,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
       {expanded && hasChildren && (
         <div className="task-children">
           {node.children.map(child => (
-            <TaskNode key={child.id} node={child} apiBase={apiBase} onRefresh={onRefresh} depth={depth + 1} assignees={assignees} currentUser={currentUser} dnd={dnd} />
+            <TaskNode key={child.id} node={child} apiBase={apiBase} onRefresh={onRefresh} depth={depth + 1} assignees={assignees} currentUser={currentUser} dnd={dnd} taskAcl={taskAcl} />
           ))}
         </div>
       )}
@@ -531,7 +549,7 @@ function countDescendants(node) {
   return count
 }
 
-export default function TaskTree({ tasks, apiBase, onRefresh, currentUser }) {
+export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskAcl }) {
   const [addingRoot, setAddingRoot] = useState(false)
   const [assignees, setAssignees] = useState([])
   const [search, setSearch] = useState('')
@@ -693,6 +711,14 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser }) {
             {filtered ? `${filtered.length} of ${liveTasks.length}` : `${liveTasks.length} task${liveTasks.length !== 1 ? 's' : ''}`}
           </span>
         )}
+        <div className="status-legend" title="Status color key">
+          {STATUS_LEGEND.map(s => (
+            <span key={s} className="status-legend-item">
+              <span className="status-legend-dot" style={{ background: STATUS_COLOR[s] }} />
+              {STATUS_LABEL[s]}
+            </span>
+          ))}
+        </div>
       </div>
 
       {addingRoot && (
@@ -707,7 +733,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser }) {
         ) : (
           <div className="task-list">
             {filtered.map(t => (
-              <TaskNode key={t.id} node={{ ...t, children: [] }} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} />
+              <TaskNode key={t.id} node={{ ...t, children: [] }} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} taskAcl={taskAcl} />
             ))}
           </div>
         )
@@ -716,7 +742,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser }) {
       ) : (
         <div className="task-list">
           {tree.map(node => (
-            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={dnd} />
+            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={dnd} taskAcl={taskAcl} />
           ))}
         </div>
       )}

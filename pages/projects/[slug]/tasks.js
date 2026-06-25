@@ -501,6 +501,7 @@ export default function TasksPage({ currentUser }) {
   const { slug, version } = router.query
 
   const [projectName, setProjectName] = useState('')
+  const [taskAcl, setTaskAcl] = useState(null)
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [versions, setVersions] = useState([])
@@ -543,6 +544,7 @@ export default function TasksPage({ currentUser }) {
         if (p) {
           setProjectName(p.name)
           setVersions(p.versions || [])
+          setTaskAcl(p.taskAcl || null)
         }
       })
   }, [router.isReady, slug])
@@ -754,11 +756,11 @@ export default function TasksPage({ currentUser }) {
             </div>
           </div>
           {loading ? <TaskSkeleton /> : viewMode === 'kanban' ? (
-            <KanbanBoard key={apiBase} tasks={tasks} apiBase={apiBase} slug={slug} onRefresh={refreshTasks} currentUser={currentUser} />
+            <KanbanBoard key={apiBase} tasks={tasks} apiBase={apiBase} slug={slug} onRefresh={refreshTasks} currentUser={currentUser} taskAcl={taskAcl} onAclChange={setTaskAcl} />
           ) : viewMode === 'calendar' ? (
             <CalendarView tasks={tasks} apiBase={apiBase} onRefresh={refreshTasks} />
           ) : (
-            <TaskTree tasks={tasks} apiBase={apiBase} onRefresh={refreshTasks} currentUser={currentUser} />
+            <TaskTree tasks={tasks} apiBase={apiBase} onRefresh={refreshTasks} currentUser={currentUser} taskAcl={taskAcl} />
           )}
         </div>
 

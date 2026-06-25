@@ -1,7 +1,8 @@
 const { getTask, updateTask, deleteTask, reorderTask, moveTask, reorderBoard } = require('../../../../../lib/task-store');
 const { logAudit, getAuditUser } = require('../../../../../lib/audit-log');
 const { notifyTaskChange } = require('../../../../../lib/notification-store');
-const { requirePermission, requireProjectAccess, hasPermission, isAssignee } = require('../../../../../lib/require-permission');
+const { requirePermission, requireProjectAccess, hasPermission, isAssignee, assigneeStatusAllowed } = require('../../../../../lib/require-permission');
+const { getProject } = require('../../../../../lib/prd-store');
 
 export default async function handler(req, res) {
   const { slug, taskId, version } = req.query;
@@ -17,9 +18,14 @@ export default async function handler(req, res) {
     const updates = req.body || {};
     const before = await getTask(slug, v, taskId);
     if (!before) return res.status(404).json({ error: 'Not found' });
-    // Assignees may change ONLY the status of tasks they're on, even without task:update.
+    // Assignees may change ONLY the status of tasks they're on, even without task:update —
+    // and only to statuses the project ACL permits (admins/task:update are unrestricted).
     const statusOnly = Object.keys(updates).length > 0 && Object.keys(updates).every(k => k === 'status');
-    const allowed = hasPermission(req, 'task:update') || (statusOnly && isAssignee(req, before));
+    let allowed = hasPermission(req, 'task:update');
+    if (!allowed && statusOnly && isAssignee(req, before)) {
+      const project = await getProject(slug);
+      allowed = assigneeStatusAllowed(project?.taskAcl, updates.status);
+    }
     if (!allowed) return res.status(403).json({ error: 'Permission denied: task:update' });
     const task = await updateTask(slug, v, taskId, updates);
     const details = { slug, version: v, taskId, fields: Object.keys(updates) };
