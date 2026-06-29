@@ -180,7 +180,10 @@
       "PowerShell(node \"node_modules/next/dist/bin/next\" build 2>&1)",
       "PowerShell($f = \"node_modules/next/package.json\"; \\(Get-Item $f\\).Length; \"---\"; Get-Content $f -TotalCount 5)",
       "Bash(echo \"exit:$?\")",
-      "Bash(grep -iE \"package.json$\")"
+      "Bash(grep -iE \"package.json$\")",
+      "Bash(git commit -m 'Add explicit GitLab CI build job *)",
+      "Bash(git fetch *)",
+      "Bash(git ls-tree *)"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects"
