@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { apiFetch } from '../lib/api-fetch'
 import AssigneeInput from './AssigneeInput'
+import TaskContextMenu from './TaskContextMenu'
+import TaskHistoryModal from './TaskHistoryModal'
 
 const DEFAULT_COLUMNS = [
   { status: 'backlog',     label: 'Backlog',      color: '#94a3b8' },
@@ -145,6 +147,8 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
   const [addForm, setAddForm] = useState(null)
   const [quickAddFor, setQuickAddFor] = useState(null)
   const [quickAddTitle, setQuickAddTitle] = useState('')
+  const [subAddFor, setSubAddFor] = useState(null) // parent task id for inline sub-task add
+  const [subAddForm, setSubAddForm] = useState({ title: '', priority: 'medium' })
   const [editingTask, setEditingTask] = useState(null)
   const [editForm, setEditForm] = useState(null)
   const [assignees, setAssignees] = useState([])
@@ -160,6 +164,19 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
 
   // Comments
   const [commentText, setCommentText] = useState('')
+
+  // Right-click activity/history (admin only)
+  const [ctxMenu, setCtxMenu] = useState(null)   // { x, y, task }
+  const [historyTask, setHistoryTask] = useState(null)
+  function handleCardContextMenu(e, task) {
+    if (!canEditAll) return
+    e.preventDefault()
+    e.stopPropagation()
+    setCtxMenu({ x: e.clientX, y: e.clientY, task })
+  }
+  function taskLabel(t) {
+    return taskPrefix && t.seq != null ? `${taskPrefix}-${t.seq}` : (t.number ? `#${t.number}` : '')
+  }
 
   // Label manager
   const [showLabelMgr, setShowLabelMgr] = useState(false)
@@ -378,6 +395,25 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
       body: JSON.stringify({ title: quickAddTitle.trim(), status, priority: 'medium' }),
     })
     setQuickAddTitle('')
+    onRefresh()
+  }
+
+  // Add a sub-task to an existing card on the board. Inherits the parent's status
+  // so it renders nested under the parent.
+  async function addSubtask(parent) {
+    if (!subAddForm.title.trim()) return
+    await apiFetch(apiBase, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: subAddForm.title.trim(),
+        priority: subAddForm.priority || 'medium',
+        status: parent.status,
+        parentId: parent.id,
+      }),
+    })
+    setSubAddFor(null)
+    setSubAddForm({ title: '', priority: 'medium' })
     onRefresh()
   }
 
@@ -967,6 +1003,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                         <div
                           className={`kanban-card${draggingId === task.id ? ' kanban-card--dragging' : ''}${dropClass}`}
                           draggable
+                          onContextMenu={e => handleCardContextMenu(e, task)}
                           onDragStart={e => onDragStart(e, task.id)}
                           onDragOver={e => onCardDragOver(e, task)}
                           onDrop={e => onCardDrop(e, task, col.status)}
@@ -1035,6 +1072,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                                   key={sub.id}
                                   className={`kanban-subtask-row${draggingId === sub.id ? ' kanban-card--dragging' : ''}`}
                                   draggable
+                                  onContextMenu={e => handleCardContextMenu(e, sub)}
                                   onDragStart={e => onDragStart(e, sub.id)}
                                   onDragEnd={onDragEnd}
                                 >
@@ -1085,6 +1123,46 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                             })}
                           </div>
                         )}
+
+                        {canEditAll && (
+                          subAddFor === task.id ? (
+                            <div className="kanban-add-subtask-block kanban-inline-subtask-add">
+                              <div className="kanban-add-subtask-row">
+                                <span className="kanban-subtask-indent-arrow">↳</span>
+                                <input
+                                  className="form-input kanban-add-subtask-input"
+                                  placeholder="Sub-task title"
+                                  value={subAddForm.title}
+                                  autoFocus
+                                  onChange={e => setSubAddForm(p => ({ ...p, title: e.target.value }))}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') addSubtask(task)
+                                    if (e.key === 'Escape') { setSubAddFor(null); setSubAddForm({ title: '', priority: 'medium' }) }
+                                  }}
+                                />
+                                <select
+                                  className="form-input kanban-add-subtask-priority"
+                                  value={subAddForm.priority}
+                                  onChange={e => setSubAddForm(p => ({ ...p, priority: e.target.value }))}
+                                >
+                                  <option value="low">Low</option>
+                                  <option value="medium">Med</option>
+                                  <option value="high">High</option>
+                                  <option value="critical">Crit</option>
+                                </select>
+                              </div>
+                              <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                                <button className="btn-primary" style={{ fontSize: 11, padding: '3px 10px' }} onClick={() => addSubtask(task)} disabled={!subAddForm.title.trim()}>Add</button>
+                                <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px' }} onClick={() => { setSubAddFor(null); setSubAddForm({ title: '', priority: 'medium' }) }}>✕</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              className="kanban-add-subtask-btn kanban-add-subtask-btn--card"
+                              onClick={() => { setSubAddFor(task.id); setSubAddForm({ title: '', priority: 'medium' }) }}
+                            >+ sub-task</button>
+                          )
+                        )}
                       </div>
                     )
                   })}
@@ -1103,6 +1181,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                         <div
                           className={`kanban-subtask-row kanban-subtask-row--orphan${draggingId === sub.id ? ' kanban-card--dragging' : ''}`}
                           draggable
+                          onContextMenu={e => handleCardContextMenu(e, sub)}
                           onDragStart={e => onDragStart(e, sub.id)}
                           onDragEnd={onDragEnd}
                         >
@@ -1496,6 +1575,23 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
             </div>
           </div>
         </div>
+      )}
+
+      {ctxMenu && (
+        <TaskContextMenu
+          x={ctxMenu.x}
+          y={ctxMenu.y}
+          onClose={() => setCtxMenu(null)}
+          items={[{ label: 'View activity / history', icon: '🕑', onClick: () => setHistoryTask(ctxMenu.task) }]}
+        />
+      )}
+      {historyTask && (
+        <TaskHistoryModal
+          apiBase={apiBase}
+          task={historyTask}
+          label={taskLabel(historyTask)}
+          onClose={() => setHistoryTask(null)}
+        />
       )}
     </div>
   )

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { apiFetch } from '../lib/api-fetch'
 import AssigneeInput from './AssigneeInput'
+import TaskContextMenu from './TaskContextMenu'
+import TaskHistoryModal from './TaskHistoryModal'
 
 const MAX_ATTACH_BYTES = 1024 * 1024 // 1MB cap per image (stored inline as data URL in Redis)
 
@@ -155,8 +157,14 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [] }) {
         </label>
       </div>
       <div className="task-form-row">
-        <input className="form-input" type="date" title="Start date" value={form.startDate} onChange={f('startDate')} />
-        <input className="form-input" type="date" title="Due date" value={form.dueDate} onChange={f('dueDate')} />
+        <label className="task-form-date">
+          <span className="task-form-date-label">Start</span>
+          <input className="form-input" type="date" title="Start date" value={form.startDate} onChange={f('startDate')} />
+        </label>
+        <label className="task-form-date">
+          <span className="task-form-date-label">End</span>
+          <input className="form-input" type="date" title="End date" value={form.dueDate} onChange={f('dueDate')} />
+        </label>
         <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
           <button className="btn-ghost" type="button" onClick={onCancel} style={{ fontSize: 12 }}>Cancel</button>
           <button className="btn-primary" type="button" onClick={() => form.title.trim() && onSave(form)} style={{ fontSize: 12 }} disabled={!form.title.trim()}>
@@ -168,7 +176,7 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [] }) {
   )
 }
 
-function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], currentUser, dnd, taskAcl, taskPrefix }) {
+function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], currentUser, dnd, taskAcl, taskPrefix, onContextMenu }) {
   const [expanded, setExpanded] = useState(true)
   const [editing, setEditing] = useState(false)
   const [addingChild, setAddingChild] = useState(false)
@@ -303,6 +311,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
     <div className="task-node" style={{ '--depth': depth }} data-depth={depth} data-group={hasChildren ? 'true' : undefined}>
       <div
         className={`task-row task-row--${localStatus}${localStatus === 'done' ? ' task-row-done' : ''}${dropZone ? ` task-row--drop-${dropZone}` : ''}`}
+        onContextMenu={onContextMenu ? e => onContextMenu(e, node) : undefined}
         draggable={!!dnd}
         onDragStart={dnd ? e => { e.dataTransfer.effectAllowed = 'move'; dnd.onDragStart(node.id) } : undefined}
         onDragOver={dnd ? e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; const r = e.currentTarget.getBoundingClientRect(); const rel = (e.clientY - r.top) / r.height; dnd.onDragOver(node.id, rel < 0.28 ? 'before' : rel > 0.72 ? 'after' : 'child') } : undefined}
@@ -537,7 +546,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
       {expanded && hasChildren && (
         <div className="task-children">
           {node.children.map(child => (
-            <TaskNode key={child.id} node={child} apiBase={apiBase} onRefresh={onRefresh} depth={depth + 1} assignees={assignees} currentUser={currentUser} dnd={dnd} taskAcl={taskAcl} taskPrefix={taskPrefix} />
+            <TaskNode key={child.id} node={child} apiBase={apiBase} onRefresh={onRefresh} depth={depth + 1} assignees={assignees} currentUser={currentUser} dnd={dnd} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={onContextMenu} />
           ))}
         </div>
       )}
@@ -554,6 +563,17 @@ function countDescendants(node) {
 
 export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskAcl, taskPrefix }) {
   const [addingRoot, setAddingRoot] = useState(false)
+  const [ctxMenu, setCtxMenu] = useState(null)   // { x, y, task }
+  const [historyTask, setHistoryTask] = useState(null)
+  const isAdmin = !!currentUser?.isAdmin
+  function handleContextMenu(e, task) {
+    if (!isAdmin) return
+    e.preventDefault()
+    setCtxMenu({ x: e.clientX, y: e.clientY, task })
+  }
+  function taskLabel(t) {
+    return taskPrefix && t.seq != null ? `${taskPrefix}-${t.seq}` : (t.number ? `#${t.number}` : '')
+  }
   const [assignees, setAssignees] = useState([])
   const [search, setSearch] = useState('')
   const [filterPerson, setFilterPerson] = useState('')
@@ -736,7 +756,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
         ) : (
           <div className="task-list">
             {filtered.map(t => (
-              <TaskNode key={t.id} node={{ ...t, children: [] }} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} taskAcl={taskAcl} taskPrefix={taskPrefix} />
+              <TaskNode key={t.id} node={{ ...t, children: [] }} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} />
             ))}
           </div>
         )
@@ -745,9 +765,26 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
       ) : (
         <div className="task-list">
           {tree.map(node => (
-            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={dnd} taskAcl={taskAcl} taskPrefix={taskPrefix} />
+            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={dnd} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} />
           ))}
         </div>
+      )}
+
+      {ctxMenu && (
+        <TaskContextMenu
+          x={ctxMenu.x}
+          y={ctxMenu.y}
+          onClose={() => setCtxMenu(null)}
+          items={[{ label: 'View activity / history', icon: '🕑', onClick: () => setHistoryTask(ctxMenu.task) }]}
+        />
+      )}
+      {historyTask && (
+        <TaskHistoryModal
+          apiBase={apiBase}
+          task={historyTask}
+          label={taskLabel(historyTask)}
+          onClose={() => setHistoryTask(null)}
+        />
       )}
     </div>
   )

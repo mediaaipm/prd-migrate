@@ -1,5 +1,6 @@
 const { getTask, updateTask, deleteTask, reorderTask, moveTask, reorderBoard } = require('../../../../../lib/task-store');
 const { logAudit, getAuditUser } = require('../../../../../lib/audit-log');
+const { recordTaskUpdate } = require('../../../../../lib/task-history-store');
 const { notifyTaskChange } = require('../../../../../lib/notification-store');
 const { requirePermission, requireProjectAccess, hasPermission, isAssignee, assigneeStatusAllowed } = require('../../../../../lib/require-permission');
 const { getProject } = require('../../../../../lib/prd-store');
@@ -31,6 +32,7 @@ export default async function handler(req, res) {
     const details = { slug, version: v, taskId, fields: Object.keys(updates) };
     if ('status' in updates) { details.statusFrom = before.status; details.statusTo = updates.status; }
     await logAudit(req, 'update_task', 'task', details);
+    await recordTaskUpdate(slug, v, taskId, getAuditUser(req), before, updates);
     await notifyTaskChange(getAuditUser(req)?.name, { slug, version: v, before, updates });
     return res.status(200).json(task);
   }

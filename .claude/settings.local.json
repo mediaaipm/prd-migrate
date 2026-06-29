@@ -162,7 +162,20 @@
       "Bash(git --no-pager diff --stat)",
       "Bash(git --no-pager diff)",
       "Bash(grep -rn \"api/projects/\\\\${slug}\\\\`\\\\|/api/projects/\\\\${\" pages/ components/)",
-      "Bash(grep -n \"Task .{node.number}\\\\|Task \\\\${node.number}\\\\|task-modal-title\\\\|node.number}\" components/TaskTree.js)"
+      "Bash(grep -n \"Task .{node.number}\\\\|Task \\\\${node.number}\\\\|task-modal-title\\\\|node.number}\" components/TaskTree.js)",
+      "Bash(node \"node_modules/next/dist/bin/next\" --version)",
+      "Bash(rm -rf node_modules package-lock.json)",
+      "Bash(npm cache *)",
+      "Bash(node -e \"require\\('./node_modules/next/package.json'\\); console.log\\('next pkg OK'\\)\")",
+      "Bash(cd \"G:/Other computers/My Computer/HVWork/gitlab/PRD_Manager\" && rm -rf node_modules/next && npm install next 2>&1 | tail -8)",
+      "PowerShell($proj = \"G:\\\\Other computers\\\\My Computer\\\\HVWork\\\\gitlab\\\\PRD_Manager\"; $local = \"C:\\\\npm-modules\\\\PRD_Manager\"; if \\(Test-Path \"$proj\\\\node_modules\"\\) { Remove-Item -Recurse -Force \"$proj\\\\node_modules\" -ErrorAction SilentlyContinue }; New-Item -ItemType Directory -Force -Path $local | Out-Null; New-Item -ItemType Junction -Path \"$proj\\\\node_modules\" -Target $local; Write-Output \"Junction created:\"; Get-Item \"$proj\\\\node_modules\" | Select-Object Name, LinkType, Target)",
+      "PowerShell($src = \"G:\\\\Other computers\\\\My Computer\\\\HVWork\\\\gitlab\\\\PRD_Manager\"; $dst = \"C:\\\\dev\\\\PRD_Manager\"; New-Item -ItemType Directory -Force -Path $dst | Out-Null; robocopy $src $dst /E /XD node_modules .next /NFL /NDL /NJH /NP /R:1 /W:1 | Out-Null; Write-Output \"robocopy exit: $LASTEXITCODE\"; Get-ChildItem $dst | Select-Object Name | Format-Table -HideTableHeaders)",
+      "Read(//c/dev/PRD_Manager/**)",
+      "Bash(rm -f package-lock.json)",
+      "Bash(grep -qiE \"ready|started|compiled|error|localhost\" \"C:\\\\Users\\\\hardik\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\g--Other-computers-My-Computer-HVWork-gitlab-PRD-Manager\\\\99d9b0f0-ec9b-49cb-a122-f499004c5bd9\\\\tasks\\\\bbdp6rnkm.output\")",
+      "Bash(break)",
+      "PowerShell(npm run build 2>&1)",
+      "Bash(git --no-pager diff -- pages/api/projects/'[slug]'/tasks/index.js \"pages/api/projects/[slug]/tasks/[taskId].js\")"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects"

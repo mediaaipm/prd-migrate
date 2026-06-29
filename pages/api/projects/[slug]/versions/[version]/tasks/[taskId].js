@@ -1,5 +1,6 @@
 const { getTask, updateTask, deleteTask, reorderTask, moveTask, reorderBoard } = require('../../../../../../../lib/task-store');
 const { logAudit, getAuditUser } = require('../../../../../../../lib/audit-log');
+const { recordTaskUpdate } = require('../../../../../../../lib/task-history-store');
 const { notifyTaskChange } = require('../../../../../../../lib/notification-store');
 const { requireAdmin } = require('../../../../../../../lib/require-admin');
 const { requireProjectAccess } = require('../../../../../../../lib/require-permission');
@@ -19,6 +20,7 @@ export default async function handler(req, res) {
     if (!before) return res.status(404).json({ error: 'Not found' });
     const task = await updateTask(slug, version, taskId, updates);
     await logAudit(req, 'update_task', 'task', { slug, version, taskId, fields: Object.keys(updates) });
+    await recordTaskUpdate(slug, version, taskId, getAuditUser(req), before, updates);
     await notifyTaskChange(getAuditUser(req)?.name, { slug, version, before, updates });
     return res.status(200).json(task);
   }

@@ -760,7 +760,7 @@ export default function TasksPage({ currentUser }) {
           {loading ? <TaskSkeleton /> : viewMode === 'kanban' ? (
             <KanbanBoard key={apiBase} tasks={tasks} apiBase={apiBase} slug={slug} onRefresh={refreshTasks} currentUser={currentUser} taskAcl={taskAcl} onAclChange={setTaskAcl} taskPrefix={taskPrefix} onPrefixChange={setTaskPrefix} />
           ) : viewMode === 'calendar' ? (
-            <CalendarView tasks={tasks} apiBase={apiBase} onRefresh={refreshTasks} />
+            <CalendarView tasks={tasks} apiBase={apiBase} onRefresh={refreshTasks} currentUser={currentUser} />
           ) : (
             <TaskTree tasks={tasks} apiBase={apiBase} onRefresh={refreshTasks} currentUser={currentUser} taskAcl={taskAcl} taskPrefix={taskPrefix} />
           )}
