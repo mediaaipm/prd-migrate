@@ -175,7 +175,10 @@
       "Bash(grep -qiE \"ready|started|compiled|error|localhost\" \"C:\\\\Users\\\\hardik\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\g--Other-computers-My-Computer-HVWork-gitlab-PRD-Manager\\\\99d9b0f0-ec9b-49cb-a122-f499004c5bd9\\\\tasks\\\\bbdp6rnkm.output\")",
       "Bash(break)",
       "PowerShell(npm run build 2>&1)",
-      "Bash(git --no-pager diff -- pages/api/projects/'[slug]'/tasks/index.js \"pages/api/projects/[slug]/tasks/[taskId].js\")"
+      "Bash(git --no-pager diff -- pages/api/projects/'[slug]'/tasks/index.js \"pages/api/projects/[slug]/tasks/[taskId].js\")",
+      "PowerShell(npm install 2>&1)",
+      "PowerShell(node \"node_modules/next/dist/bin/next\" build 2>&1)",
+      "PowerShell($f = \"node_modules/next/package.json\"; \\(Get-Item $f\\).Length; \"---\"; Get-Content $f -TotalCount 5)"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects"
