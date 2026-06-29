@@ -178,7 +178,9 @@
       "Bash(git --no-pager diff -- pages/api/projects/'[slug]'/tasks/index.js \"pages/api/projects/[slug]/tasks/[taskId].js\")",
       "PowerShell(npm install 2>&1)",
       "PowerShell(node \"node_modules/next/dist/bin/next\" build 2>&1)",
-      "PowerShell($f = \"node_modules/next/package.json\"; \\(Get-Item $f\\).Length; \"---\"; Get-Content $f -TotalCount 5)"
+      "PowerShell($f = \"node_modules/next/package.json\"; \\(Get-Item $f\\).Length; \"---\"; Get-Content $f -TotalCount 5)",
+      "Bash(echo \"exit:$?\")",
+      "Bash(grep -iE \"package.json$\")"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects"

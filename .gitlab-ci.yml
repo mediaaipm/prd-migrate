@@ -1,0 +1,22 @@
+# Explicit CI — overrides GitLab Auto DevOps.
+# Installs deps and runs the Next.js production build.
+
+stages:
+  - build
+
+build:
+  stage: build
+  image: node:18
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
+  script:
+    - npm ci --cache .npm --prefer-offline
+    - npm run build
+  artifacts:
+    paths:
+      - .next/
+    expire_in: 1 week
