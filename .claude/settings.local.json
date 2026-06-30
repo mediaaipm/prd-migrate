@@ -195,7 +195,13 @@
       "Bash(node -e \"const p=require\\('./node_modules/@upstash/redis/package.json'\\); console.log\\('upstash',p.version,JSON.stringify\\(p.engines\\)\\);\")",
       "Bash(node -e \"const p=require\\('./node_modules/diff/package.json'\\); console.log\\('diff',p.version,JSON.stringify\\(p.engines\\)\\);\")",
       "Bash(node -e \"const p=require\\('./node_modules/next/package.json'\\); console.log\\('next',p.version,JSON.stringify\\(p.engines\\)\\);\")",
-      "PowerShell($nvm = Get-Command nvm -ErrorAction SilentlyContinue; if \\($nvm\\) { \"nvm: $\\($nvm.Source\\)\"; nvm list } else { \"NO_NVM\" })"
+      "PowerShell($nvm = Get-Command nvm -ErrorAction SilentlyContinue; if \\($nvm\\) { \"nvm: $\\($nvm.Source\\)\"; nvm list } else { \"NO_NVM\" })",
+      "Bash(node -e \"const l=require\\('./package-lock.json'\\); for\\(const p of ['node_modules/next','node_modules/react','node_modules/react-dom']\\){const x=l.packages[p]; console.log\\(p, x&&x.version\\)}; console.log\\('lockfileVersion', l.lockfileVersion\\); console.log\\('root next', l.packages[''].dependencies.next\\)\")",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/next/package.json'\\).peerDependencies\\)\")",
+      "Bash(npm ls *)",
+      "Bash(cp package-lock.json /tmp/lock.bak)",
+      "Bash(node -e \"console.log\\('next engines:', JSON.stringify\\(require\\('./node_modules/next/package.json'\\).engines\\)\\)\")",
+      "Bash(xxd .nvmrc)"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects"
