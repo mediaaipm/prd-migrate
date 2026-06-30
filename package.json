@@ -11,12 +11,12 @@
     "@upstash/redis": "^1.38.0",
     "diff": "^9.0.0",
     "dotenv": "^17.4.2",
-    "next": "^13.5.11",
+    "next": "^16.2.9",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "remark": "^14.0.2"
   },
-  "devDependencies": {
-    "redis": "^6.0.0"
+  "engines": {
+    "node": ">=20"
   }
 }
