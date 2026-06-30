@@ -417,6 +417,7 @@ function AdminsTab() {
   const [adding, setAdding] = useState(false)
   const [expanded, setExpanded] = useState(null)
   const [expandedPw, setExpandedPw] = useState(null)
+  const [applyingAll, setApplyingAll] = useState(false)
 
   useEffect(() => { fetchAdmins() }, [])
 
@@ -459,11 +460,45 @@ function AdminsTab() {
     setAdmins(prev => prev.filter(a => a.name !== name))
   }
 
+  async function handleApplyAll() {
+    if (!admins.length) return
+    if (!confirm(`Grant the full permission list to all ${admins.length} admin(s)? This overwrites their current permissions.`)) return
+    setApplyingAll(true)
+    try {
+      const res = await apiFetch('/api/admin/users/bulk-permissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ permissions: ALL_PERMISSIONS }),
+      })
+      if (res.ok) {
+        const d = await res.json()
+        await fetchAdmins()
+        alert(`Updated ${d.updated} admin(s) to the full permission list.`)
+      } else {
+        const d = await res.json().catch(() => ({}))
+        alert(d.error || 'Failed to update permissions')
+      }
+    } finally {
+      setApplyingAll(false)
+    }
+  }
+
   return (
     <section className="section-card" style={{ marginTop: 0, borderRadius: '0 6px 6px 6px' }}>
       <div className="section-card-header">
         <span>Admins</span>
         {!loading && <span className="badge">{admins.length}</span>}
+        {!loading && admins.length > 0 && (
+          <button
+            className="btn-ghost"
+            style={{ marginLeft: 'auto', fontSize: 12, whiteSpace: 'nowrap' }}
+            onClick={handleApplyAll}
+            disabled={applyingAll}
+            title="Grant every permission to all secondary admins"
+          >
+            {applyingAll ? 'Applying…' : 'Grant full permissions to all'}
+          </button>
+        )}
       </div>
 
       <form onSubmit={handleAdd} style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}>

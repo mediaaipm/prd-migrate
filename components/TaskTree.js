@@ -57,7 +57,19 @@ function getDescendantStats(node) {
   return { total, done }
 }
 
-function buildTree(tasks) {
+function taskTimestamp(t) {
+  const d = t.createdAt ? new Date(t.createdAt).getTime() : NaN
+  if (!Number.isNaN(d)) return d
+  return Number.isFinite(Number(t.seq)) ? Number(t.seq) : 0
+}
+
+const TASK_COMPARATORS = {
+  order: (a, b) => a.order - b.order,
+  newest: (a, b) => taskTimestamp(b) - taskTimestamp(a),
+  oldest: (a, b) => taskTimestamp(a) - taskTimestamp(b),
+}
+
+function buildTree(tasks, sortBy = 'newest') {
   const byId = {}
   const roots = []
   tasks.forEach(t => { byId[t.id] = { ...t, children: [] } })
@@ -65,8 +77,9 @@ function buildTree(tasks) {
     if (t.parentId && byId[t.parentId]) byId[t.parentId].children.push(byId[t.id])
     else roots.push(byId[t.id])
   })
+  const cmp = TASK_COMPARATORS[sortBy] || TASK_COMPARATORS.newest
   function sort(nodes) {
-    nodes.sort((a, b) => a.order - b.order)
+    nodes.sort(cmp)
     nodes.forEach(n => sort(n.children))
   }
   sort(roots)
@@ -599,6 +612,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
     return taskPrefix && t.seq != null ? `${taskPrefix}-${t.seq}` : (t.number ? `#${t.number}` : '')
   }
   const [assignees, setAssignees] = useState([])
+  const [sortBy, setSortBy] = useState('newest')
   const [search, setSearch] = useState('')
   const [filterPerson, setFilterPerson] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
@@ -637,7 +651,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
   }, [])
 
   const liveTasks = (tasks || []).filter(t => !t.archived)
-  const tree = buildTree(liveTasks)
+  const tree = buildTree(liveTasks, sortBy)
 
   const q = search.toLowerCase()
   const pq = filterPerson.toLowerCase().trim()
@@ -661,7 +675,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
         const dd = t.dueDate || ''
         const matchesDue = (!dueFrom || (dd && dd >= dueFrom)) && (!dueTo || (dd && dd <= dueTo))
         return matchesSearch && matchesPerson && matchesStatus && matchesPriority && matchesStart && matchesDue
-      })
+      }).sort(TASK_COMPARATORS[sortBy] || TASK_COMPARATORS.newest)
     : null
 
   const statusOptions = (() => {
@@ -721,6 +735,13 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
               {assignees.map(a => <option key={a.name} value={a.name} />)}
             </datalist>
           </div>
+        )}
+        {liveTasks.length > 0 && (
+          <select className="form-input filter-select" value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }} title="Sort tasks">
+            <option value="newest">Latest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="order">Manual order</option>
+          </select>
         )}
         {liveTasks.length > 0 && (
           <select className="form-input filter-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
@@ -789,7 +810,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
       ) : (
         <div className="task-list">
           {tree.map(node => (
-            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={dnd} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} />
+            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={sortBy === 'order' ? dnd : null} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} />
           ))}
         </div>
       )}

@@ -1735,8 +1735,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   /* Actions always visible (hover doesn't work on touch) */
   .task-row-actions { opacity: 1; flex-wrap: wrap; gap: 2px; }
 
-  /* Hide reorder buttons — not useful on touch */
-  .task-action-btn--move { display: none; }
+  /* Keep reorder buttons on touch — drag-and-drop doesn't fire on touch,
+     so these tap-friendly arrows are the only way to move tasks on mobile. */
+  .task-action-btn--move { display: inline-flex; }
 
   /* Tighter action buttons */
   .task-action-btn { padding: 2px 5px; font-size: 10px; }
