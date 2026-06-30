@@ -201,7 +201,10 @@
       "Bash(npm ls *)",
       "Bash(cp package-lock.json /tmp/lock.bak)",
       "Bash(node -e \"console.log\\('next engines:', JSON.stringify\\(require\\('./node_modules/next/package.json'\\).engines\\)\\)\")",
-      "Bash(xxd .nvmrc)"
+      "Bash(xxd .nvmrc)",
+      "PowerShell(Test-NetConnection -ComputerName api.vercel.com -Port 443 -InformationLevel Detailed)",
+      "PowerShell(Resolve-DnsName api.vercel.com -Type A)",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"https://api.vercel.com/v2/user\" -Method Head -TimeoutSec 15; \"HTTP $\\($r.StatusCode\\)\" } catch { \"Reached API. Response: $\\($_.Exception.Response.StatusCode.value__\\) $\\($_.Exception.Message\\)\" })"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects"
