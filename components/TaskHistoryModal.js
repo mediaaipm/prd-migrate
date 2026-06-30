@@ -15,9 +15,26 @@ function actorName(actor) {
   return actor.name || actor.username || 'Someone'
 }
 
+const SYNTHETIC_LABEL = { created: 'Task created', updated: 'Last edited' }
+
 function HistoryEntry({ entry }) {
   const meta = ACTION_META[entry.action] || { icon: '•', verb: entry.action }
   const when = entry.timestamp ? new Date(entry.timestamp).toLocaleString() : ''
+  // Synthetic entries are reconstructed from the task's own timestamps when no
+  // detailed activity was recorded — we don't know who, so skip the actor.
+  if (entry.synthetic) {
+    return (
+      <li className="thist-item">
+        <span className="thist-icon" aria-hidden>{meta.icon}</span>
+        <div className="thist-body">
+          <div className="thist-line">
+            <span className="thist-verb">{SYNTHETIC_LABEL[entry.action] || meta.verb}</span>
+          </div>
+          <div className="thist-time">{when}</div>
+        </div>
+      </li>
+    )
+  }
   return (
     <li className="thist-item">
       <span className="thist-icon" aria-hidden>{meta.icon}</span>
@@ -47,7 +64,8 @@ function HistoryEntry({ entry }) {
   )
 }
 
-// Admin-only activity log for a single task. `apiBase` is the tasks collection
+// Activity log for a single task, viewable by anyone with project access.
+// `apiBase` is the tasks collection
 // endpoint (e.g. /api/projects/foo/tasks); history lives at `${apiBase}/${task.id}/history`.
 export default function TaskHistoryModal({ apiBase, task, label, onClose }) {
   const [history, setHistory] = useState(null)
@@ -58,7 +76,7 @@ export default function TaskHistoryModal({ apiBase, task, label, onClose }) {
     setHistory(null); setError('')
     apiFetch(`${apiBase}/${task.id}/history`)
       .then(r => {
-        if (r.status === 403) throw new Error('Admin access required to view activity.')
+        if (r.status === 403) throw new Error('You do not have access to this project.')
         return r.ok ? r.json() : Promise.reject(new Error('Failed to load activity.'))
       })
       .then(data => { if (live) setHistory(Array.isArray(data) ? data : []) })
@@ -82,9 +100,14 @@ export default function TaskHistoryModal({ apiBase, task, label, onClose }) {
           ) : history.length === 0 ? (
             <div className="thist-empty">No activity recorded yet.</div>
           ) : (
-            <ul className="thist-list">
-              {history.map(e => <HistoryEntry key={e.id} entry={e} />)}
-            </ul>
+            <>
+              {history.some(e => e.synthetic) && (
+                <div className="thist-note">Detailed activity wasn’t tracked for this task — showing created and last-edited times only.</div>
+              )}
+              <ul className="thist-list">
+                {history.map(e => <HistoryEntry key={e.id} entry={e} />)}
+              </ul>
+            </>
           )}
         </div>
       </div>

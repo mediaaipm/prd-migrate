@@ -1940,6 +1940,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .thist-content { padding: 12px 18px 18px; overflow-y: auto; }
 .thist-empty { padding: 26px 8px; text-align: center; font-size: 13px; color: var(--muted); }
 .thist-error { color: #dc2626; }
+.thist-note { margin: 0 0 10px; padding: 8px 10px; font-size: 12px; color: var(--muted); background: var(--bg-subtle, rgba(0,0,0,0.03)); border-radius: 6px; }
 .thist-list { list-style: none; margin: 0; padding: 0; }
 .thist-item {
   display: flex;

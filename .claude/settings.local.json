@@ -209,7 +209,10 @@
       "PowerShell(node --check \"pages/api/admin/users/bulk-permissions.js\")",
       "PowerShell(node --check \"scripts/grant-all-admin-permissions.js\")",
       "PowerShell(if \\($?\\) { \"OK endpoint\" })",
-      "PowerShell(if \\($?\\) { \"OK script\" })"
+      "PowerShell(if \\($?\\) { \"OK script\" })",
+      "Bash(xargs grep -l \"TaskContextMenu\\\\|TaskHistoryModal\")",
+      "Bash(npx graphify *)",
+      "Bash(python -m graphify --help)"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects"

@@ -602,9 +602,8 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
   const [addingRoot, setAddingRoot] = useState(false)
   const [ctxMenu, setCtxMenu] = useState(null)   // { x, y, task }
   const [historyTask, setHistoryTask] = useState(null)
-  const isAdmin = !!currentUser?.isAdmin
   function handleContextMenu(e, task) {
-    if (!isAdmin) return
+    // Activity/history is viewable by anyone with project access.
     e.preventDefault()
     setCtxMenu({ x: e.clientX, y: e.clientY, task })
   }

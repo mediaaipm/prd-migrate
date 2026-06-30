@@ -165,11 +165,10 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
   // Comments
   const [commentText, setCommentText] = useState('')
 
-  // Right-click activity/history (admin only)
+  // Right-click activity/history (viewable by anyone with project access)
   const [ctxMenu, setCtxMenu] = useState(null)   // { x, y, task }
   const [historyTask, setHistoryTask] = useState(null)
   function handleCardContextMenu(e, task) {
-    if (!canEditAll) return
     e.preventDefault()
     e.stopPropagation()
     setCtxMenu({ x: e.clientX, y: e.clientY, task })
