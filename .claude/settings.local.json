@@ -183,7 +183,19 @@
       "Bash(grep -iE \"package.json$\")",
       "Bash(git commit -m 'Add explicit GitLab CI build job *)",
       "Bash(git fetch *)",
-      "Bash(git ls-tree *)"
+      "Bash(git ls-tree *)",
+      "PowerShell(Test-Path \".\\\\node_modules\\\\.bin\\\\next\"; Test-Path \".\\\\node_modules\\\\next\\\\dist\\\\bin\\\\next\"; Test-Path \".\\\\node_modules\\\\next\"; \\(Get-Command node\\).Source; node -v; npm -v)",
+      "Bash(npm -v)",
+      "Bash(stat -c '%s bytes' node_modules/next/dist/bin/next 2>&1)",
+      "Read(//c/PRD_Manager/**)",
+      "Bash(npm ci *)",
+      "Bash(docker --version)",
+      "Bash(node -e \"const p=require\\('./node_modules/dotenv/package.json'\\); console.log\\('dotenv',p.version,JSON.stringify\\(p.engines\\)\\);\")",
+      "Bash(node -e \"const p=require\\('./node_modules/redis/package.json'\\); console.log\\('redis',p.version,JSON.stringify\\(p.engines\\)\\);\")",
+      "Bash(node -e \"const p=require\\('./node_modules/@upstash/redis/package.json'\\); console.log\\('upstash',p.version,JSON.stringify\\(p.engines\\)\\);\")",
+      "Bash(node -e \"const p=require\\('./node_modules/diff/package.json'\\); console.log\\('diff',p.version,JSON.stringify\\(p.engines\\)\\);\")",
+      "Bash(node -e \"const p=require\\('./node_modules/next/package.json'\\); console.log\\('next',p.version,JSON.stringify\\(p.engines\\)\\);\")",
+      "PowerShell($nvm = Get-Command nvm -ErrorAction SilentlyContinue; if \\($nvm\\) { \"nvm: $\\($nvm.Source\\)\"; nvm list } else { \"NO_NVM\" })"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects"
