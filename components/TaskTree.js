@@ -251,6 +251,26 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
     onRefresh()
   }
 
+  async function handleEditId() {
+    const input = window.prompt(`Set task ID number for "${node.title}".\nCurrent: ${taskPrefix}-${node.seq}\nIDs are unique per project and won't change unless edited here.`, String(node.seq ?? ''))
+    if (input == null) return
+    const n = parseInt(input.trim(), 10)
+    if (!Number.isInteger(n) || n < 1) { window.alert('Enter a positive whole number.'); return }
+    if (n === node.seq) return
+    const res = await apiFetch(`${apiBase}/${node.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ seq: n }),
+    })
+    if (!res.ok) {
+      let msg = 'Could not update task ID.'
+      try { msg = (await res.json()).error || msg } catch {}
+      window.alert(msg)
+      return
+    }
+    onRefresh()
+  }
+
   async function handleAddUpdate() {
     if (!updateText.trim()) return
     setSavingUpdate(true)
@@ -328,8 +348,12 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
           >
             {expanded ? '▼' : '▶'}
           </button>
-          {taskPrefix && node.seq != null && (
-            <span className="task-id-badge" title="Task ID">{taskPrefix}-{node.seq}</span>
+          {node.seq != null && (
+            <span
+              className={`task-id-badge${canEdit ? ' task-id-badge--editable' : ''}`}
+              title={canEdit ? 'Click to edit task ID' : 'Task ID'}
+              onClick={canEdit ? handleEditId : undefined}
+            >{taskPrefix ? `${taskPrefix}-${node.seq}` : `#${node.seq}`}</span>
           )}
           <span className="task-number" title={node.autoNumber !== node.number ? `Auto: ${node.autoNumber}` : 'Auto-numbered'}>
             {node.number}
@@ -468,7 +492,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
         <div className="kanban-modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowDetail(false); setDetailEditing(false) } }}>
           <div className="kanban-modal">
             <div className="kanban-modal-header">
-              <span>{detailEditing ? 'Edit Task' : `Task ${taskPrefix && node.seq != null ? `${taskPrefix}-${node.seq}` : node.number}`}</span>
+              <span>{detailEditing ? 'Edit Task' : `Task ${node.seq != null ? (taskPrefix ? `${taskPrefix}-${node.seq}` : `#${node.seq}`) : node.number}`}</span>
               <button className="kanban-modal-close" onClick={() => { setShowDetail(false); setDetailEditing(false) }}>✕</button>
             </div>
             {detailEditing ? (

@@ -503,6 +503,10 @@ export default function TasksPage({ currentUser }) {
   const [projectName, setProjectName] = useState('')
   const [taskAcl, setTaskAcl] = useState(null)
   const [taskPrefix, setTaskPrefix] = useState('')
+  const [taskSeqStart, setTaskSeqStart] = useState(1)
+  const [showIdSettings, setShowIdSettings] = useState(false)
+  const [idDraft, setIdDraft] = useState({ prefix: '', start: '1' })
+  const [savingId, setSavingId] = useState(false)
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [versions, setVersions] = useState([])
@@ -537,6 +541,28 @@ export default function TasksPage({ currentUser }) {
 
   const refreshTasks = useCallback(() => loadTasks({ background: true }), [loadTasks])
 
+  function openIdSettings() {
+    setIdDraft({ prefix: taskPrefix || '', start: String(taskSeqStart || 1) })
+    setShowIdSettings(true)
+  }
+  async function saveIdSettings() {
+    if (!slug) return
+    setSavingId(true)
+    const prefix = (idDraft.prefix || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8)
+    const start = Math.max(1, parseInt(idDraft.start, 10) || 1)
+    const res = await apiFetch(`/api/projects/${slug}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ taskPrefix: prefix, taskSeqStart: start }),
+    })
+    setSavingId(false)
+    if (res.ok) {
+      setTaskPrefix(prefix)
+      setTaskSeqStart(start)
+      setShowIdSettings(false)
+    }
+  }
+
   useEffect(() => {
     if (!router.isReady || !slug) return
     apiFetch(`/api/projects/${slug}`)
@@ -547,6 +573,7 @@ export default function TasksPage({ currentUser }) {
           setVersions(p.versions || [])
           setTaskAcl(p.taskAcl || null)
           setTaskPrefix(p.taskPrefix || '')
+          setTaskSeqStart(p.taskSeqStart || 1)
         }
       })
   }, [router.isReady, slug])
@@ -738,6 +765,11 @@ export default function TasksPage({ currentUser }) {
             <span>{contextLabel}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               {!loading && <span className="badge">{tasks.length}</span>}
+              {currentUser?.isAdmin && slug && (
+                <button className="btn-ghost" style={{ whiteSpace: 'nowrap', fontSize: 12 }} onClick={openIdSettings} title="Set task ID prefix & start number">
+                  ⚙ Task IDs
+                </button>
+              )}
               <div className="kanban-view-toggle">
                 <button
                   className={`kanban-view-btn${viewMode === 'list' ? ' active' : ''}`}
@@ -758,7 +790,7 @@ export default function TasksPage({ currentUser }) {
             </div>
           </div>
           {loading ? <TaskSkeleton /> : viewMode === 'kanban' ? (
-            <KanbanBoard key={apiBase} tasks={tasks} apiBase={apiBase} slug={slug} onRefresh={refreshTasks} currentUser={currentUser} taskAcl={taskAcl} onAclChange={setTaskAcl} taskPrefix={taskPrefix} onPrefixChange={setTaskPrefix} />
+            <KanbanBoard key={apiBase} tasks={tasks} apiBase={apiBase} slug={slug} onRefresh={refreshTasks} currentUser={currentUser} taskAcl={taskAcl} onAclChange={setTaskAcl} taskPrefix={taskPrefix} onPrefixChange={setTaskPrefix} taskSeqStart={taskSeqStart} onSeqStartChange={setTaskSeqStart} />
           ) : viewMode === 'calendar' ? (
             <CalendarView tasks={tasks} apiBase={apiBase} onRefresh={refreshTasks} currentUser={currentUser} />
           ) : (
@@ -790,6 +822,44 @@ export default function TasksPage({ currentUser }) {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {showIdSettings && (
+          <div className="kanban-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowIdSettings(false) }}>
+            <div className="kanban-modal" style={{ maxWidth: 420 }}>
+              <div className="kanban-modal-header">
+                <span>Task IDs</span>
+                <button className="kanban-modal-close" onClick={() => setShowIdSettings(false)}>✕</button>
+              </div>
+              <div className="task-form">
+                <div className="task-assignees-label" style={{ marginBottom: 6 }}>Task ID prefix</div>
+                <input
+                  className="form-input"
+                  placeholder="e.g. ENG, MED, CON, WAR"
+                  value={idDraft.prefix}
+                  maxLength={8}
+                  onChange={e => setIdDraft(d => ({ ...d, prefix: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') }))}
+                  style={{ textTransform: 'uppercase' }}
+                />
+                <div className="task-assignees-label" style={{ margin: '12px 0 6px' }}>Start number</div>
+                <input
+                  className="form-input"
+                  type="number"
+                  min={1}
+                  placeholder="1"
+                  value={idDraft.start}
+                  onChange={e => setIdDraft(d => ({ ...d, start: e.target.value.replace(/[^0-9]/g, '') }))}
+                />
+                <p style={{ fontSize: 11, color: 'var(--muted)', margin: '8px 0 0' }}>
+                  Tasks show <strong>{(idDraft.prefix || 'ENG')}-{idDraft.start || '1'}</strong>. New ids count up from the largest existing one, never below the start. Existing ids never change. Leave prefix blank to hide ids.
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+                  <button className="btn-ghost" onClick={() => setShowIdSettings(false)}>Cancel</button>
+                  <button className="btn-primary" onClick={saveIdSettings} disabled={savingId}>{savingId ? 'Saving…' : 'Save'}</button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

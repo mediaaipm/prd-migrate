@@ -28,7 +28,17 @@ export default async function handler(req, res) {
       allowed = assigneeStatusAllowed(project?.taskAcl, updates.status);
     }
     if (!allowed) return res.status(403).json({ error: 'Permission denied: task:update' });
-    const task = await updateTask(slug, v, taskId, updates);
+    // Changing a task's display id is an admin-level action.
+    if ('seq' in updates && !hasPermission(req, 'task:update')) {
+      return res.status(403).json({ error: 'Permission denied: task:update' });
+    }
+    let task;
+    try {
+      task = await updateTask(slug, v, taskId, updates);
+    } catch (e) {
+      if (e && e.code === 'TASK_ID') return res.status(409).json({ error: e.message });
+      throw e;
+    }
     const details = { slug, version: v, taskId, fields: Object.keys(updates) };
     if ('status' in updates) { details.statusFrom = before.status; details.statusTo = updates.status; }
     await logAudit(req, 'update_task', 'task', details);

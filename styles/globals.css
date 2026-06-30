@@ -698,6 +698,12 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   white-space: nowrap;
   flex-shrink: 0;
 }
+.task-id-badge--editable {
+  cursor: pointer;
+}
+.task-id-badge--editable:hover {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
 
 .task-status {
   background: none;

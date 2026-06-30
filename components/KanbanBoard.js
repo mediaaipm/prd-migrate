@@ -92,7 +92,7 @@ function slugify(label, existingStatuses) {
   return `${base}-${i}`
 }
 
-export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUser, taskAcl, onAclChange, taskPrefix, onPrefixChange }) {
+export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUser, taskAcl, onAclChange, taskPrefix, onPrefixChange, taskSeqStart, onSeqStartChange }) {
   const storageKey = `kanban-cols:${apiBase}`
 
   // Full edit for admins; assignees may only change status of their own tasks.
@@ -324,6 +324,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
       assigneeCanChangeStatus: taskAcl?.assigneeCanChangeStatus !== false,
       assigneeStatuses: list,
       taskPrefix: taskPrefix || '',
+      taskSeqStart: String(taskSeqStart || 1),
     })
     setShowAclMgr(true)
   }
@@ -343,14 +344,16 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
       assigneeStatuses: aclDraft.assigneeStatuses,
     }
     const prefix = (aclDraft.taskPrefix || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8)
+    const start = Math.max(1, parseInt(aclDraft.taskSeqStart, 10) || 1)
     await apiFetch(`/api/projects/${slug}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ taskAcl: payload, taskPrefix: prefix }),
+      body: JSON.stringify({ taskAcl: payload, taskPrefix: prefix, taskSeqStart: start }),
     })
     setSavingAcl(false)
     onAclChange?.(payload)
     onPrefixChange?.(prefix)
+    onSeqStartChange?.(start)
     setShowAclMgr(false)
   }
 
@@ -1014,7 +1017,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                           )}
                           {renderCardLabels(task)}
                           <div className="kanban-card-header">
-                            {taskPrefix && task.seq != null && <span className="task-id-badge" style={{ fontSize: 10 }}>{taskPrefix}-{task.seq}</span>}
+                            {task.seq != null && <span className="task-id-badge" style={{ fontSize: 10 }}>{taskPrefix ? `${taskPrefix}-${task.seq}` : `#${task.seq}`}</span>}
                             {task.number && <span className="task-number" style={{ fontSize: 10 }}>{task.number}</span>}
                             {canEditAll && (
                               <button
@@ -1374,8 +1377,17 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                   onChange={e => setAclDraft(d => ({ ...d, taskPrefix: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') }))}
                   style={{ textTransform: 'uppercase' }}
                 />
+                <div className="task-assignees-label" style={{ margin: '12px 0 6px' }}>Start number</div>
+                <input
+                  className="form-input"
+                  type="number"
+                  min={1}
+                  placeholder="1"
+                  value={aclDraft.taskSeqStart}
+                  onChange={e => setAclDraft(d => ({ ...d, taskSeqStart: e.target.value.replace(/[^0-9]/g, '') }))}
+                />
                 <p style={{ fontSize: 11, color: 'var(--muted)', margin: '6px 0 0' }}>
-                  Tasks get an incremental id like <strong>{(aclDraft.taskPrefix || 'ENG')}-1</strong>, <strong>{(aclDraft.taskPrefix || 'ENG')}-2</strong>. Leave blank to hide.
+                  New tasks count up from the largest existing id, never below this number — e.g. <strong>{(aclDraft.taskPrefix || 'ENG')}-{aclDraft.taskSeqStart || '1'}</strong>. Only affects future tasks; existing ids never change.
                 </p>
               </div>
               <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 4px' }}>

@@ -7,7 +7,7 @@ export default function Home({ currentUser }) {
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
-  const [form, setForm] = useState({ name: '', description: '' })
+  const [form, setForm] = useState({ name: '', description: '', taskPrefix: '', taskSeqStart: '' })
   const [showForm, setShowForm] = useState(false)
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
@@ -49,7 +49,7 @@ export default function Home({ currentUser }) {
       })
       if (res.ok) {
         setShowForm(false)
-        setForm({ name: '', description: '' })
+        setForm({ name: '', description: '', taskPrefix: '', taskSeqStart: '' })
         fetchProjects()
       }
     } finally {
@@ -107,6 +107,28 @@ export default function Home({ currentUser }) {
               <button className="btn-primary" type="submit" disabled={creating || !form.name.trim()}>
                 {creating ? 'Creating…' : 'Create'}
               </button>
+            </div>
+            <div className="form-row">
+              <input
+                className="form-input"
+                placeholder="Task ID prefix (e.g. ENG)"
+                value={form.taskPrefix}
+                maxLength={8}
+                onChange={e => setForm(f => ({ ...f, taskPrefix: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') }))}
+                style={{ textTransform: 'uppercase', maxWidth: 200 }}
+              />
+              <input
+                className="form-input"
+                type="number"
+                min={1}
+                placeholder="Start number (e.g. 1001)"
+                value={form.taskSeqStart}
+                onChange={e => setForm(f => ({ ...f, taskSeqStart: e.target.value.replace(/[^0-9]/g, '') }))}
+                style={{ maxWidth: 200 }}
+              />
+              <span style={{ fontSize: 12, color: 'var(--muted)', alignSelf: 'center' }}>
+                First task → <strong>{(form.taskPrefix || 'ENG')}-{form.taskSeqStart || '1'}</strong>. Editable later.
+              </span>
             </div>
           </form>
         )}

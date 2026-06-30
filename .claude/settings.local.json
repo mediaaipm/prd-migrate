@@ -204,7 +204,8 @@
       "Bash(xxd .nvmrc)",
       "PowerShell(Test-NetConnection -ComputerName api.vercel.com -Port 443 -InformationLevel Detailed)",
       "PowerShell(Resolve-DnsName api.vercel.com -Type A)",
-      "PowerShell(try { $r = Invoke-WebRequest -Uri \"https://api.vercel.com/v2/user\" -Method Head -TimeoutSec 15; \"HTTP $\\($r.StatusCode\\)\" } catch { \"Reached API. Response: $\\($_.Exception.Response.StatusCode.value__\\) $\\($_.Exception.Message\\)\" })"
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"https://api.vercel.com/v2/user\" -Method Head -TimeoutSec 15; \"HTTP $\\($r.StatusCode\\)\" } catch { \"Reached API. Response: $\\($_.Exception.Response.StatusCode.value__\\) $\\($_.Exception.Message\\)\" })",
+      "PowerShell(cd C:\\\\PRD_Manager; Test-Path node_modules\\\\.bin\\\\next.cmd; Test-Path node_modules; \\(Get-Content package.json | ConvertFrom-Json\\).dependencies.next; node -v; npm -v)"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects"

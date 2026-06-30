@@ -18,7 +18,15 @@ export default async function handler(req, res) {
     const updates = req.body || {};
     const before = await getTask(slug, version, taskId);
     if (!before) return res.status(404).json({ error: 'Not found' });
-    const task = await updateTask(slug, version, taskId, updates);
+    // Changing a task's display id is an admin-level action.
+    if ('seq' in updates && !requireAdmin(req, res)) return;
+    let task;
+    try {
+      task = await updateTask(slug, version, taskId, updates);
+    } catch (e) {
+      if (e && e.code === 'TASK_ID') return res.status(409).json({ error: e.message });
+      throw e;
+    }
     await logAudit(req, 'update_task', 'task', { slug, version, taskId, fields: Object.keys(updates) });
     await recordTaskUpdate(slug, version, taskId, getAuditUser(req), before, updates);
     await notifyTaskChange(getAuditUser(req)?.name, { slug, version, before, updates });
