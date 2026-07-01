@@ -1043,6 +1043,21 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .task-node[data-group="true"][data-depth="0"] > .task-row:hover { background: rgba(100,116,139,.09); }
 .task-node[data-group="true"][data-depth="0"] > .task-row .task-number { font-size: 12px; font-weight: 700; }
 
+/* Parent shown only as context for a matched child (search/filter) */
+.task-node--context > .task-row .task-title { opacity: .55; font-style: italic; }
+.task-context-tag {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 0 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* Assignee avatar circle */
 .task-assignee-avatar {
   width: 20px;
@@ -1294,12 +1309,25 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   padding: 10px 12px;
   cursor: grab;
   box-shadow: var(--shadow);
-  transition: box-shadow .15s, opacity .15s, transform .1s;
+  transition: box-shadow .18s ease, opacity .18s ease,
+              transform .22s cubic-bezier(.2,.8,.2,1), border-color .18s ease;
+  will-change: transform;
   user-select: none;
 }
-.kanban-card:hover { box-shadow: 0 4px 10px rgba(0,0,0,.1); }
+.kanban-card:hover {
+  box-shadow: 0 6px 16px rgba(0,0,0,.12);
+  border-color: rgba(124,58,237,.35);
+  transform: translateY(-1px);
+}
 .kanban-card:active { cursor: grabbing; }
-.kanban-card--dragging { opacity: .4; transform: scale(.97); }
+/* Placeholder left behind while a card is being dragged. */
+.kanban-card--dragging {
+  opacity: .35;
+  transform: scale(.98);
+  box-shadow: none;
+  border-style: dashed;
+  border-color: var(--accent);
+}
 
 .kanban-card-header {
   display: flex;
@@ -1401,7 +1429,8 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   padding: 5px 8px;
   cursor: grab;
   border-top: 1px solid rgba(124,58,237,.08);
-  transition: background .12s, opacity .15s, transform .15s;
+  transition: background .15s ease, opacity .18s ease,
+              transform .22s cubic-bezier(.2,.8,.2,1);
 }
 .kanban-subtask-row:first-child { border-top: none; }
 .kanban-subtask-row:hover { background: rgba(124,58,237,.07); }
@@ -1780,8 +1809,16 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 }
 
 /* Within-column drop indicators */
-.kanban-card--drop-before { box-shadow: 0 -3px 0 0 var(--accent, #6366f1); }
-.kanban-card--drop-after  { box-shadow: 0 3px 0 0 var(--accent, #6366f1); }
+/* Insertion indicator when dragging a card between others. The margin opens a
+   gap so the drop point is obvious and the reflow reads as a smooth slide. */
+.kanban-card--drop-before {
+  box-shadow: 0 -3px 0 0 var(--accent, #6366f1);
+  margin-top: 10px;
+}
+.kanban-card--drop-after {
+  box-shadow: 0 3px 0 0 var(--accent, #6366f1);
+  margin-bottom: 10px;
+}
 
 /* Quick-add card composer */
 .kanban-quick-add-btn {

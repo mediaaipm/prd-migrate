@@ -1005,6 +1005,10 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                         <div
                           className={`kanban-card${draggingId === task.id ? ' kanban-card--dragging' : ''}${dropClass}`}
                           draggable
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => openEdit(task)}
+                          onKeyDown={e => { if (e.key === 'Enter') openEdit(task) }}
                           onContextMenu={e => handleCardContextMenu(e, task)}
                           onDragStart={e => onDragStart(e, task.id)}
                           onDragOver={e => onCardDragOver(e, task)}
@@ -1021,7 +1025,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                             {canEditAll && (
                               <button
                                 className="kanban-card-edit-btn"
-                                onClick={() => openEdit(task)}
+                                onClick={e => { e.stopPropagation(); openEdit(task) }}
                                 title="Edit task"
                               >✎</button>
                             )}
@@ -1074,6 +1078,10 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                                   key={sub.id}
                                   className={`kanban-subtask-row${draggingId === sub.id ? ' kanban-card--dragging' : ''}`}
                                   draggable
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={() => openEdit(sub)}
+                                  onKeyDown={e => { if (e.key === 'Enter') openEdit(sub) }}
                                   onContextMenu={e => handleCardContextMenu(e, sub)}
                                   onDragStart={e => onDragStart(e, sub.id)}
                                   onDragEnd={onDragEnd}
@@ -1115,7 +1123,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                                       <button
                                         className="kanban-card-edit-btn"
                                         style={{ fontSize: 10, padding: '1px 4px' }}
-                                        onClick={() => openEdit(sub)}
+                                        onClick={e => { e.stopPropagation(); openEdit(sub) }}
                                         title="Edit subtask"
                                       >✎</button>
                                     )}
@@ -1183,6 +1191,10 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                         <div
                           className={`kanban-subtask-row kanban-subtask-row--orphan${draggingId === sub.id ? ' kanban-card--dragging' : ''}`}
                           draggable
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => openEdit(sub)}
+                          onKeyDown={e => { if (e.key === 'Enter') openEdit(sub) }}
                           onContextMenu={e => handleCardContextMenu(e, sub)}
                           onDragStart={e => onDragStart(e, sub.id)}
                           onDragEnd={onDragEnd}
@@ -1494,6 +1506,10 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                 options={assignees}
                 onChange={next => setEditForm(p => ({ ...p, assignees: next }))}
               />
+              <div className="task-assignees-selector">
+                <span className="task-assignees-label">Assigned by:</span>
+                <span style={{ fontSize: 12 }}>{editingTask.assignedBy || '—'}</span>
+              </div>
               <div className="task-form-row">
                 <input
                   className="form-input"

@@ -129,8 +129,6 @@ export default function CalendarView({ tasks, apiBase, onRefresh, currentUser })
     setCtxMenu({ x: e.clientX, y: e.clientY, task })
   }
   const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
-  const [dragId, setDragId] = useState(null)
-  const [dragOverDay, setDragOverDay] = useState(null)
   const [openDay, setOpenDay] = useState(null)   // ymd string of day modal
   const [editId, setEditId] = useState(null)     // task id being edited, or 'new'
   const [subParent, setSubParent] = useState(null) // parent task when adding a sub-task
@@ -157,21 +155,6 @@ export default function CalendarView({ tasks, apiBase, onRefresh, currentUser })
   for (let i = 0; i < firstDow; i++) cells.push(null)
   for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d))
   while (cells.length % 7 !== 0) cells.push(null)
-
-  async function reschedule(taskId, dateStr) {
-    await apiFetch(`${apiBase}/${taskId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ dueDate: dateStr }),
-    })
-    onRefresh()
-  }
-
-  function onDrop(dateStr) {
-    if (dragId) reschedule(dragId, dateStr)
-    setDragId(null)
-    setDragOverDay(null)
-  }
 
   function closeForm() {
     setEditId(null)
@@ -252,9 +235,7 @@ export default function CalendarView({ tasks, apiBase, onRefresh, currentUser })
           return (
             <div
               key={k}
-              className={`cal-cell${k === todayKey ? ' cal-cell--today' : ''}${dragOverDay === k ? ' cal-cell--drag-over' : ''}`}
-              onDragOver={e => { if (dragId) { e.preventDefault(); setDragOverDay(k) } }}
-              onDrop={e => { e.preventDefault(); onDrop(k) }}
+              className={`cal-cell${k === todayKey ? ' cal-cell--today' : ''}`}
               onClick={() => { setOpenDay(k); setEditId(null) }}
               style={{ cursor: 'pointer' }}
               title="Click to edit tasks"
@@ -265,10 +246,7 @@ export default function CalendarView({ tasks, apiBase, onRefresh, currentUser })
                   <div
                     key={t.id}
                     className="cal-task"
-                    draggable
                     onContextMenu={e => handleTaskContextMenu(e, t)}
-                    onDragStart={e => { e.stopPropagation(); setDragId(t.id) }}
-                    onDragEnd={() => { setDragId(null); setDragOverDay(null) }}
                     onClick={e => { e.stopPropagation(); setOpenDay(k); setEditId(t.id) }}
                     title={t.title}
                     style={{ borderLeftColor: PRIORITY_COLOR[t.priority] || '#64748b' }}
@@ -287,16 +265,13 @@ export default function CalendarView({ tasks, apiBase, onRefresh, currentUser })
 
       {unscheduled.length > 0 && (
         <div className="cal-unscheduled">
-          <div className="cal-unscheduled-title">Unscheduled ({unscheduled.length}) — drag onto a day to set a due date</div>
+          <div className="cal-unscheduled-title">Unscheduled ({unscheduled.length})</div>
           <div className="cal-unscheduled-list">
             {unscheduled.map(t => (
               <div
                 key={t.id}
                 className="cal-task cal-task--chip"
-                draggable
                 onContextMenu={e => handleTaskContextMenu(e, t)}
-                onDragStart={() => setDragId(t.id)}
-                onDragEnd={() => { setDragId(null); setDragOverDay(null) }}
                 style={{ borderLeftColor: PRIORITY_COLOR[t.priority] || '#64748b' }}
               >
                 {t.number && <span className="cal-task-num">#{t.number}</span>}

@@ -86,6 +86,27 @@ function buildTree(tasks, sortBy = 'newest') {
   return roots
 }
 
+// Build a pruned tree of the matched tasks plus every ancestor needed to reach
+// them, so a matched child is always shown under its parent. Ancestors that did
+// not themselves match are flagged `__context` for dimmed display.
+function buildFilteredTree(allTasks, matched, sortBy = 'newest') {
+  const byId = {}
+  allTasks.forEach(t => { byId[t.id] = t })
+  const matchedIds = new Set(matched.map(t => t.id))
+  const includeIds = new Set(matchedIds)
+  matched.forEach(t => {
+    let pid = t.parentId
+    while (pid && byId[pid] && !includeIds.has(pid)) {
+      includeIds.add(pid)
+      pid = byId[pid].parentId
+    }
+  })
+  const included = allTasks
+    .filter(t => includeIds.has(t.id))
+    .map(t => ({ ...t, __context: !matchedIds.has(t.id) }))
+  return buildTree(included, sortBy)
+}
+
 function blankForm() {
   return { title: '', description: '', status: 'todo', priority: 'medium', assignees: [], startDate: '', dueDate: '', numberOverride: '', attachments: [], cover: null }
 }
@@ -341,7 +362,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
   const dropZone = dnd?.dropTarget?.id === node.id ? dnd.dropTarget.zone : null
 
   return (
-    <div className="task-node" style={{ '--depth': depth }} data-depth={depth} data-group={hasChildren ? 'true' : undefined}>
+    <div className={`task-node${node.__context ? ' task-node--context' : ''}`} style={{ '--depth': depth }} data-depth={depth} data-group={hasChildren ? 'true' : undefined}>
       <div
         className={`task-row task-row--${localStatus}${localStatus === 'done' ? ' task-row-done' : ''}${dropZone ? ` task-row--drop-${dropZone}` : ''}`}
         onContextMenu={onContextMenu ? e => onContextMenu(e, node) : undefined}
@@ -361,7 +382,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
           >
             {expanded ? '▼' : '▶'}
           </button>
-          {node.seq != null && (
+          {node.seq != null && !hasChildren && (
             <span
               className={`task-id-badge${canEdit ? ' task-id-badge--editable' : ''}`}
               title={canEdit ? 'Click to edit task ID' : 'Task ID'}
@@ -382,6 +403,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
           >
             {node.title}
           </span>
+          {node.__context && <span className="task-context-tag" title="Shown as parent context">parent</span>}
           {node.cover?.dataUrl && (
             <img src={node.cover.dataUrl} alt="cover" className="task-row-cover" title="Cover image" />
           )}
@@ -676,6 +698,8 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
         return matchesSearch && matchesPerson && matchesStatus && matchesPriority && matchesStart && matchesDue
       }).sort(TASK_COMPARATORS[sortBy] || TASK_COMPARATORS.newest)
     : null
+  // Matched tasks plus their ancestors, nested so parents give context to matched children.
+  const filteredTree = filtered ? buildFilteredTree(liveTasks, filtered, sortBy) : null
 
   const statusOptions = (() => {
     const present = new Set(liveTasks.map(t => t.status || 'todo'))
@@ -799,8 +823,8 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
           <div className="empty-state-sm" style={{ padding: '24px 16px' }}>No tasks match the current filters.</div>
         ) : (
           <div className="task-list">
-            {filtered.map(t => (
-              <TaskNode key={t.id} node={{ ...t, children: [] }} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} />
+            {filteredTree.map(node => (
+              <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} />
             ))}
           </div>
         )
@@ -809,7 +833,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
       ) : (
         <div className="task-list">
           {tree.map(node => (
-            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={sortBy === 'order' ? dnd : null} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} />
+            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={null} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} />
           ))}
         </div>
       )}
