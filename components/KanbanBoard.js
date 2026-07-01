@@ -1020,7 +1020,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                           )}
                           {renderCardLabels(task)}
                           <div className="kanban-card-header">
-                            {task.seq != null && <span className="task-id-badge" style={{ fontSize: 10 }}>{taskPrefix ? `${taskPrefix}-${task.seq}` : `#${task.seq}`}</span>}
+                            {(task.seq != null || task.number) && <span className="task-id-badge" style={{ fontSize: 10 }}>{task.seq != null ? (taskPrefix ? `${taskPrefix}-${task.seq}` : `#${task.seq}`) : `#${task.number}`}</span>}
                             {task.number && <span className="task-number" style={{ fontSize: 10 }}>{task.number}</span>}
                             {canEditAll && (
                               <button

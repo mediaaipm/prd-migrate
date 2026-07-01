@@ -58,6 +58,7 @@ export default function AssigneeInput({ value = [], options = [], onChange }) {
           onChange={e => { setQuery(e.target.value); setOpen(true); setActive(0) }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
+          onBlur={() => { if (query.trim()) add(query.trim()) }}
         />
       </div>
       {open && matches.length > 0 && (

@@ -212,7 +212,9 @@
       "PowerShell(if \\($?\\) { \"OK script\" })",
       "Bash(xargs grep -l \"TaskContextMenu\\\\|TaskHistoryModal\")",
       "Bash(npx graphify *)",
-      "Bash(python -m graphify --help)"
+      "Bash(python -m graphify --help)",
+      "Bash(claude mcp *)",
+      "Bash(where graphify *)"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects"
