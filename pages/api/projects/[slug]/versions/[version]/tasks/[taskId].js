@@ -20,6 +20,11 @@ export default async function handler(req, res) {
     if (!before) return res.status(404).json({ error: 'Not found' });
     // Changing a task's display id is an admin-level action.
     if ('seq' in updates && !requireAdmin(req, res)) return;
+    // Flag/unflag the task for repeated delay reminders (see /api/cron/delayed-reminders).
+    if ('dueDate' in updates) {
+      updates.dueDelayed = !!(before.dueDate && updates.dueDate && new Date(updates.dueDate) > new Date(before.dueDate));
+    }
+    if (updates.status === 'done') updates.dueDelayed = false;
     let task;
     try {
       task = await updateTask(slug, version, taskId, updates);

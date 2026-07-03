@@ -9,7 +9,6 @@ const DEFAULT_COLUMNS = [
   { status: 'todo',        label: 'To Do',        color: '#3b82f6' },
   { status: 'in-progress', label: 'In Progress',  color: '#f59e0b' },
   { status: 'in-review',   label: 'In Review',    color: '#8b5cf6' },
-  { status: 'review',      label: 'Review',       color: '#d97706' },
   { status: 'blocked',     label: 'Blocked',      color: '#dc2626' },
   { status: 'done',        label: 'Done',         color: '#16a34a' },
 ]

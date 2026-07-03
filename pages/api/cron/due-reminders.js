@@ -1,6 +1,6 @@
 const { listProjects } = require('../../../lib/prd-store')
 const { listTasks } = require('../../../lib/task-store')
-const { addNotification } = require('../../../lib/notification-store')
+const { addNotification, listAdmins } = require('../../../lib/notification-store')
 
 // Daily scan: notify assignees of tasks that are overdue or due within 24h.
 // Runs once/day (see vercel.json) so each task yields at most one notification per day.
@@ -17,6 +17,8 @@ export default async function handler(req, res) {
   const soon = new Date(now)
   soon.setDate(now.getDate() + 1)
 
+  const admins = await listAdmins()
+
   let sent = 0
   const projects = await listProjects()
   for (const p of projects) {
@@ -28,10 +30,21 @@ export default async function handler(req, res) {
       const dueSoon = !overdue && due <= soon
       if (!overdue && !dueSoon) continue
       const link = `/projects/${p.slug}/tasks`
+      const assignees = Array.isArray(t.assignees) ? t.assignees : []
       const text = overdue ? `Task "${t.title}" is overdue` : `Task "${t.title}" is due soon`
-      for (const name of (Array.isArray(t.assignees) ? t.assignees : [])) {
+      for (const name of assignees) {
         await addNotification(name, { type: 'due', text, link })
         sent++
+      }
+      // Flag overdue tasks to admins so they can follow up with whoever owns them.
+      if (overdue) {
+        const who = assignees.length ? assignees.join(', ') : 'nobody'
+        const adminText = `Overdue: "${t.title}" (${who}) passed its due date`
+        for (const admin of admins) {
+          if (assignees.includes(admin)) continue // already notified above
+          await addNotification(admin, { type: 'due', text: adminText, link })
+          sent++
+        }
       }
     }
   }

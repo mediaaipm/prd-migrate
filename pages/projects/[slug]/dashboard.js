@@ -183,7 +183,7 @@ export default function ProjectDashboard({ currentUser }) {
           {Object.keys(statusCounts).length > 0 && (
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 12 }}>
               {Object.entries(statusCounts).sort(([,a],[,b]) => b - a).map(([status, count]) => {
-                const colorMap = { done: '#15803d', 'in-progress': '#1d4ed8', todo: '#94a3b8', blocked: '#dc2626', review: '#d97706' }
+                const colorMap = { done: '#15803d', 'in-progress': '#1d4ed8', todo: '#94a3b8', blocked: '#dc2626', 'in-review': '#7c3aed' }
                 return (
                   <span key={status} style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: colorMap[status] || '#cbd5e1', display: 'inline-block' }} />

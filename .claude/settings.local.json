@@ -214,7 +214,24 @@
       "Bash(npx graphify *)",
       "Bash(python -m graphify --help)",
       "Bash(claude mcp *)",
-      "Bash(where graphify *)"
+      "Bash(where graphify *)",
+      "Bash(uv --version)",
+      "Bash(pipx --version)",
+      "Bash(graphify --version)",
+      "Bash(claude --version)",
+      "PowerShell(Write-Output \"=py=\"; \\(Get-Command python -ErrorAction SilentlyContinue\\).Source; Write-Output \"=uv=\"; \\(Get-Command uv -ErrorAction SilentlyContinue\\).Source; Write-Output \"=pipx=\"; \\(Get-Command pipx -ErrorAction SilentlyContinue\\).Source; Write-Output \"=graphify=\"; \\(Get-Command graphify -ErrorAction SilentlyContinue\\).Source; Write-Output \"=winget=\"; \\(Get-Command winget -ErrorAction SilentlyContinue\\).Source)",
+      "PowerShell(winget install --id astral-sh.uv -e --accept-package-agreements --accept-source-agreements --disable-interactivity)",
+      "PowerShell($paths = @\\(\"$env:USERPROFILE\\\\.local\\\\bin\\\\uv.exe\",\"$env:LOCALAPPDATA\\\\Microsoft\\\\WinGet\\\\Links\\\\uv.exe\",\"$env:USERPROFILE\\\\.cargo\\\\bin\\\\uv.exe\"\\); foreach \\($p in $paths\\) { if \\(Test-Path $p\\) { Write-Output \"FOUND: $p\"; & $p --version } })",
+      "PowerShell(Get-ChildItem -Path \"$env:USERPROFILE\",\"$env:LOCALAPPDATA\" -Filter uv.exe -Recurse -ErrorAction SilentlyContinue -Depth 4 | Select-Object -First 5 -ExpandProperty FullName)",
+      "PowerShell($uv = \"C:\\\\Users\\\\hardik\\\\AppData\\\\Local\\\\Microsoft\\\\WinGet\\\\Packages\\\\astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe\\\\uv.exe\"; & $uv tool install \"graphifyy[mcp]\" 2>&1 | Select-Object -Last 30)",
+      "PowerShell($bin = \"C:\\\\Users\\\\hardik\\\\.local\\\\bin\"; Write-Output \"=version=\"; & \"$bin\\\\graphify.exe\" --version; Write-Output \"=mcp-help=\"; & \"$bin\\\\graphify-mcp.exe\" --help 2>&1 | Select-Object -First 30)",
+      "PowerShell(claude mcp add graphify --scope local -- \"C:\\\\Users\\\\hardik\\\\.local\\\\bin\\\\graphify-mcp.exe\" \"C:\\\\PRD_Manager\\\\graphify-out\\\\graph.json\")",
+      "PowerShell($ErrorActionPreference='SilentlyContinue'; $p = Start-Process -FilePath \"C:\\\\Users\\\\hardik\\\\.local\\\\bin\\\\graphify-mcp.exe\" -ArgumentList \"C:\\\\PRD_Manager\\\\graphify-out\\\\graph.json\" -NoNewWindow -PassThru -RedirectStandardError \"$env:TEMP\\\\gfx_err.txt\" -RedirectStandardOutput \"$env:TEMP\\\\gfx_out.txt\"; Start-Sleep -Seconds 4; if \\(-not $p.HasExited\\) { Write-Output \"STILL RUNNING \\(ok - stdio server waiting\\)\"; Stop-Process -Id $p.Id -Force } else { Write-Output \"EXITED code=$\\($p.ExitCode\\)\" }; Write-Output \"=STDERR=\"; Get-Content \"$env:TEMP\\\\gfx_err.txt\" -ErrorAction SilentlyContinue; Write-Output \"=STDOUT=\"; Get-Content \"$env:TEMP\\\\gfx_out.txt\" -ErrorAction SilentlyContinue)",
+      "PowerShell(winget install --id Python.Python.3.12 -e --accept-package-agreements --accept-source-agreements --disable-interactivity 2>&1)",
+      "PowerShell($py = Get-ChildItem -Path \"$env:LOCALAPPDATA\\\\Programs\\\\Python\",\"C:\\\\Program Files\\\\Python312\",\"C:\\\\Python312\" -Filter python.exe -Recurse -ErrorAction SilentlyContinue -Depth 1 | Where-Object { $_.FullName -notmatch 'Scripts' } | Select-Object -First 1 -ExpandProperty FullName; Write-Output \"PY=$py\"; & $py --version)",
+      "PowerShell($uv = \"C:\\\\Users\\\\hardik\\\\AppData\\\\Local\\\\Microsoft\\\\WinGet\\\\Packages\\\\astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe\\\\uv.exe\"; $py = \"C:\\\\Users\\\\hardik\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\"; & $uv tool install --python $py --force \"graphifyy[mcp]\" 2>&1 | Select-Object -Last 8)",
+      "PowerShell($ErrorActionPreference='SilentlyContinue'; Remove-Item \"$env:TEMP\\\\gfx_err.txt\",\"$env:TEMP\\\\gfx_out.txt\" -Force; $p = Start-Process -FilePath \"C:\\\\Users\\\\hardik\\\\.local\\\\bin\\\\graphify-mcp.exe\" -ArgumentList \"C:\\\\PRD_Manager\\\\graphify-out\\\\graph.json\" -NoNewWindow -PassThru -RedirectStandardError \"$env:TEMP\\\\gfx_err.txt\" -RedirectStandardOutput \"$env:TEMP\\\\gfx_out.txt\"; Start-Sleep -Seconds 5; if \\(-not $p.HasExited\\) { Write-Output \"STILL RUNNING \\(ok - stdio server waiting for client\\)\"; Stop-Process -Id $p.Id -Force } else { Write-Output \"EXITED code=$\\($p.ExitCode\\)\" }; Write-Output \"=STDERR=\"; Get-Content \"$env:TEMP\\\\gfx_err.txt\")",
+      "Bash(python scripts/generate_graph.py)"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects"

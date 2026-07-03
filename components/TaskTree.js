@@ -15,15 +15,90 @@ function readFileAsDataUrl(file) {
   })
 }
 
+// Multi-select checkbox dropdown. Fixed-position menu escapes the .section-card
+// overflow clip (same technique as the specific-due-dates picker).
+function FilterMultiSelect({ label, options, selected, onToggle, onClear }) {
+  const [open, setOpen] = useState(false)
+  const [pos, setPos] = useState(null)
+  const wrapRef = useRef(null)
+  const btnRef = useRef(null)
+
+  function openMenu() {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect()
+      setPos({ top: r.bottom + 4, left: r.left })
+    }
+    setOpen(true)
+  }
+
+  useEffect(() => {
+    if (!open) return
+    function onDocClick(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false)
+    }
+    function onDismiss() { setOpen(false) }
+    document.addEventListener('mousedown', onDocClick)
+    window.addEventListener('scroll', onDismiss, true)
+    window.addEventListener('resize', onDismiss)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      window.removeEventListener('scroll', onDismiss, true)
+      window.removeEventListener('resize', onDismiss)
+    }
+  }, [open])
+
+  return (
+    <div className="tt-due-picker" ref={wrapRef}>
+      <button
+        type="button"
+        ref={btnRef}
+        className={`form-input filter-select tt-due-picker-btn${selected.length ? ' active' : ''}`}
+        onClick={() => open ? setOpen(false) : openMenu()}
+        style={{ fontSize: 12, padding: '5px 8px' }}
+        title={label}
+      >
+        {selected.length ? `${label}: ${selected.length}` : `All ${label.toLowerCase()}`} ▾
+      </button>
+      {open && (
+        <div className="tt-due-picker-menu" style={pos ? { top: pos.top, left: pos.left } : undefined}>
+          <div className="tt-due-picker-head">
+            <span>{label}</span>
+            {selected.length > 0 && (
+              <button className="btn-ghost" style={{ fontSize: 11, padding: '2px 6px' }} onClick={onClear}>Clear</button>
+            )}
+          </div>
+          {options.map(o => (
+            <label key={o.value} className="tt-due-picker-item">
+              <input type="checkbox" checked={selected.includes(o.value)} onChange={() => onToggle(o.value)} />
+              <span>{o.label}</span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 const STATUS_CYCLE = ['todo', 'in-progress', 'done']
-const STATUS_LABEL = { 'backlog': 'Backlog', 'todo': 'To Do', 'in-progress': 'In Progress', 'in-review': 'In Review', 'review': 'Review', 'blocked': 'Blocked', 'done': 'Done' }
-const STATUS_ORDER = ['backlog', 'todo', 'in-progress', 'in-review', 'review', 'blocked', 'done']
-const STATUS_COLOR = { 'backlog': '#64748b', 'todo': '#2563eb', 'in-progress': '#f59e0b', 'in-review': '#9333ea', 'review': '#9333ea', 'blocked': '#dc2626', 'done': '#16a34a' }
+const STATUS_LABEL = { 'backlog': 'Backlog', 'todo': 'To Do', 'in-progress': 'In Progress', 'in-review': 'In Review', 'blocked': 'Blocked', 'done': 'Done' }
+const STATUS_ORDER = ['backlog', 'todo', 'in-progress', 'in-review', 'blocked', 'done']
+const STATUS_COLOR = { 'backlog': '#64748b', 'todo': '#2563eb', 'in-progress': '#f59e0b', 'in-review': '#9333ea', 'blocked': '#dc2626', 'done': '#16a34a' }
 // Statuses shown in the color legend (collapsed review variants).
 const STATUS_LEGEND = ['backlog', 'todo', 'in-progress', 'in-review', 'blocked', 'done']
 const PRIORITY_ORDER = ['critical', 'high', 'medium', 'low']
 const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
 const PRIORITY_LABEL = { low: 'Low', medium: 'Med', high: 'High', critical: 'Crit' }
+
+const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+// Format an ISO date string (YYYY-MM-DD) as "Jan 3, 2026". Falls back to raw value if unparseable.
+function formatDate(v) {
+  if (!v) return ''
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v)
+  if (!m) return v
+  const [, y, mo, d] = m
+  return `${MONTH_ABBR[+mo - 1]} ${+d}, ${y}`
+}
 
 function getInitials(name) {
   if (!name) return '?'
@@ -152,7 +227,7 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [] }) {
         <select className="form-input" value={form.status} onChange={f('status')}>
           <option value="todo">To Do</option>
           <option value="in-progress">In Progress</option>
-          <option value="review">Review</option>
+          <option value="in-review">In Review</option>
           <option value="blocked">Blocked</option>
           <option value="done">Done</option>
         </select>
@@ -410,8 +485,8 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
           {Array.isArray(node.attachments) && node.attachments.length > 0 && (
             <span className="task-meta-chip task-attach-chip" title={`${node.attachments.length} image(s)`}>🖼 {node.attachments.length}</span>
           )}
-          {node.startDate && <span className="task-meta-chip task-start" title="Start date">▶ {node.startDate}</span>}
-          {node.dueDate && <span className="task-meta-chip task-due" title="Due date">⏎ {node.dueDate}</span>}
+          {node.startDate && <span className="task-meta-chip task-start" title="Start date">▶ {formatDate(node.startDate)}</span>}
+          {node.dueDate && <span className="task-meta-chip task-due" title="Due date">⏎ {formatDate(node.dueDate)}</span>}
           {node.description && <span className="task-meta-chip task-desc" title={node.description}>{node.description.length > 40 ? node.description.slice(0, 40) + '…' : node.description}</span>}
           {node.priority && node.priority !== 'medium' && (
             <span className="task-priority-dot" style={{ background: PRIORITY_COLOR[node.priority] }} title={`${PRIORITY_LABEL[node.priority]} priority`} />
@@ -564,8 +639,8 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
                     )}
                   </div>
                   <div className="task-detail-field"><span className="task-detail-label">Priority</span><span>{PRIORITY_LABEL[node.priority] || node.priority || '—'}</span></div>
-                  <div className="task-detail-field"><span className="task-detail-label">Start</span><span>{node.startDate || '—'}</span></div>
-                  <div className="task-detail-field"><span className="task-detail-label">Due</span><span>{node.dueDate || '—'}</span></div>
+                  <div className="task-detail-field"><span className="task-detail-label">Start</span><span>{formatDate(node.startDate) || '—'}</span></div>
+                  <div className="task-detail-field"><span className="task-detail-label">Due</span><span>{formatDate(node.dueDate) || '—'}</span></div>
                 </div>
                 <div className="task-detail-field">
                   <span className="task-detail-label">Assignees</span>
@@ -636,12 +711,17 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
   const [sortBy, setSortBy] = useState('newest')
   const [search, setSearch] = useState('')
   const [filterPerson, setFilterPerson] = useState('')
-  const [filterStatus, setFilterStatus] = useState('')
-  const [filterPriority, setFilterPriority] = useState('')
+  const [filterStatuses, setFilterStatuses] = useState([])
+  const [filterPriorities, setFilterPriorities] = useState([])
   const [startFrom, setStartFrom] = useState('')
   const [startTo, setStartTo] = useState('')
   const [dueFrom, setDueFrom] = useState('')
   const [dueTo, setDueTo] = useState('')
+  const [dueDates, setDueDates] = useState([])   // specific YYYY-MM-DD picks
+  const [showDuePicker, setShowDuePicker] = useState(false)
+  const [duePickerPos, setDuePickerPos] = useState(null)  // {top,left} for fixed menu
+  const duePickerRef = useRef(null)
+  const dueBtnRef = useRef(null)
   const draggedId = useRef(null)
   const [dropTarget, setDropTarget] = useState(null)
 
@@ -674,9 +754,14 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
   const liveTasks = (tasks || []).filter(t => !t.archived)
   const tree = buildTree(liveTasks, sortBy)
 
+  // Distinct due dates present across tasks (YYYY-MM-DD), ascending.
+  const availableDueDates = [...new Set(
+    liveTasks.map(t => (t.dueDate || '').slice(0, 10)).filter(Boolean)
+  )].sort()
+
   const q = search.toLowerCase()
   const pq = filterPerson.toLowerCase().trim()
-  const isFiltering = q || pq || filterStatus || filterPriority || startFrom || startTo || dueFrom || dueTo
+  const isFiltering = q || pq || filterStatuses.length > 0 || filterPriorities.length > 0 || startFrom || startTo || dueFrom || dueTo || dueDates.length > 0
   const filtered = isFiltering
     ? liveTasks.filter(t => {
         const taskAssignees = Array.isArray(t.assignees) ? t.assignees : (t.assignee ? [t.assignee] : [])
@@ -689,13 +774,14 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
           (t.numberOverride || '').toString().includes(q)
         )
         const matchesPerson = !pq || taskAssignees.some(a => a.toLowerCase().includes(pq))
-        const matchesStatus = !filterStatus || (t.status || 'todo') === filterStatus
-        const matchesPriority = !filterPriority || (t.priority || 'medium') === filterPriority
+        const matchesStatus = filterStatuses.length === 0 || filterStatuses.includes(t.status || 'todo')
+        const matchesPriority = filterPriorities.length === 0 || filterPriorities.includes(t.priority || 'medium')
         const sd = t.startDate || ''
         const matchesStart = (!startFrom || (sd && sd >= startFrom)) && (!startTo || (sd && sd <= startTo))
         const dd = t.dueDate || ''
         const matchesDue = (!dueFrom || (dd && dd >= dueFrom)) && (!dueTo || (dd && dd <= dueTo))
-        return matchesSearch && matchesPerson && matchesStatus && matchesPriority && matchesStart && matchesDue
+        const matchesDueSet = dueDates.length === 0 || dueDates.includes(dd.slice(0, 10))
+        return matchesSearch && matchesPerson && matchesStatus && matchesPriority && matchesStart && matchesDue && matchesDueSet
       }).sort(TASK_COMPARATORS[sortBy] || TASK_COMPARATORS.newest)
     : null
   // Matched tasks plus their ancestors, nested so parents give context to matched children.
@@ -707,9 +793,48 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
   })()
 
   function clearFilters() {
-    setSearch(''); setFilterPerson(''); setFilterStatus(''); setFilterPriority('')
-    setStartFrom(''); setStartTo(''); setDueFrom(''); setDueTo('')
+    setSearch(''); setFilterPerson(''); setFilterStatuses([]); setFilterPriorities([])
+    setStartFrom(''); setStartTo(''); setDueFrom(''); setDueTo(''); setDueDates([])
   }
+
+  function toggleDueDate(d) {
+    setDueDates(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d])
+  }
+
+  function toggleStatus(s) {
+    setFilterStatuses(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])
+  }
+
+  function togglePriority(p) {
+    setFilterPriorities(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p])
+  }
+
+  function openDuePicker() {
+    // Anchor the fixed-position menu under the button (menu is fixed so it
+    // escapes the .section-card overflow:hidden clip).
+    if (dueBtnRef.current) {
+      const r = dueBtnRef.current.getBoundingClientRect()
+      setDuePickerPos({ top: r.bottom + 4, left: r.left })
+    }
+    setShowDuePicker(true)
+  }
+
+  // Close the specific-dates popover on outside click / scroll / resize.
+  useEffect(() => {
+    if (!showDuePicker) return
+    function onDocClick(e) {
+      if (duePickerRef.current && !duePickerRef.current.contains(e.target)) setShowDuePicker(false)
+    }
+    function onDismiss() { setShowDuePicker(false) }
+    document.addEventListener('mousedown', onDocClick)
+    window.addEventListener('scroll', onDismiss, true)
+    window.addEventListener('resize', onDismiss)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      window.removeEventListener('scroll', onDismiss, true)
+      window.removeEventListener('resize', onDismiss)
+    }
+  }, [showDuePicker])
 
   async function handleAddRoot(form) {
     await apiFetch(apiBase, {
@@ -767,16 +892,22 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
           </select>
         )}
         {liveTasks.length > 0 && (
-          <select className="form-input filter-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-            <option value="">All statuses</option>
-            {statusOptions.map(s => <option key={s} value={s}>{STATUS_LABEL[s] || s}</option>)}
-          </select>
+          <FilterMultiSelect
+            label="Status"
+            options={statusOptions.map(s => ({ value: s, label: STATUS_LABEL[s] || s }))}
+            selected={filterStatuses}
+            onToggle={toggleStatus}
+            onClear={() => setFilterStatuses([])}
+          />
         )}
         {liveTasks.length > 0 && (
-          <select className="form-input filter-select" value={filterPriority} onChange={e => setFilterPriority(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-            <option value="">All priorities</option>
-            {PRIORITY_ORDER.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
-          </select>
+          <FilterMultiSelect
+            label="Priority"
+            options={PRIORITY_ORDER.map(p => ({ value: p, label: p.charAt(0).toUpperCase() + p.slice(1) }))}
+            selected={filterPriorities}
+            onToggle={togglePriority}
+            onClear={() => setFilterPriorities([])}
+          />
         )}
         {liveTasks.length > 0 && (
           <div className="tt-date-filter" title="Filter by start date">
@@ -792,6 +923,36 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
             <input type="date" className="form-input tt-date-input" value={dueFrom} onChange={e => setDueFrom(e.target.value)} title="Due date from" />
             <span className="tt-date-filter-sep">–</span>
             <input type="date" className="form-input tt-date-input" value={dueTo} onChange={e => setDueTo(e.target.value)} title="Due date to" />
+          </div>
+        )}
+        {liveTasks.length > 0 && availableDueDates.length > 0 && (
+          <div className="tt-due-picker" ref={duePickerRef}>
+            <button
+              type="button"
+              ref={dueBtnRef}
+              className={`form-input filter-select tt-due-picker-btn${dueDates.length ? ' active' : ''}`}
+              onClick={() => showDuePicker ? setShowDuePicker(false) : openDuePicker()}
+              style={{ fontSize: 12, padding: '5px 8px' }}
+              title="Pick specific due dates"
+            >
+              {dueDates.length ? `${dueDates.length} date${dueDates.length !== 1 ? 's' : ''}` : 'Pick dates'} ▾
+            </button>
+            {showDuePicker && (
+              <div className="tt-due-picker-menu" style={duePickerPos ? { top: duePickerPos.top, left: duePickerPos.left } : undefined}>
+                <div className="tt-due-picker-head">
+                  <span>Due dates</span>
+                  {dueDates.length > 0 && (
+                    <button className="btn-ghost" style={{ fontSize: 11, padding: '2px 6px' }} onClick={() => setDueDates([])}>Clear</button>
+                  )}
+                </div>
+                {availableDueDates.map(d => (
+                  <label key={d} className="tt-due-picker-item">
+                    <input type="checkbox" checked={dueDates.includes(d)} onChange={() => toggleDueDate(d)} />
+                    <span>{formatDate(d)}</span>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
         )}
         {isFiltering && (

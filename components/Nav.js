@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import Image from 'next/image'
 import { apiFetch } from '../lib/api-fetch'
+
+const CHIME_URL = 'https://cdn.pixabay.com/download/audio/2025/05/06/audio_2fd68b9a9a.mp3?filename=alexis_gaming_cam-bell-notification-337658.mp3'
 
 export default function Nav() {
   const router = useRouter()
@@ -12,6 +14,15 @@ export default function Nav() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [notifs, setNotifs] = useState([])
   const [showNotifs, setShowNotifs] = useState(false)
+  const seenNotifIds = useRef(null) // null until first load; then a Set of ids we've already chimed for
+
+  function playChime() {
+    try {
+      const a = new Audio(CHIME_URL)
+      a.volume = 0.5
+      a.play().catch(() => {}) // browsers may block autoplay before user interaction — best effort
+    } catch {}
+  }
 
   useEffect(() => {
     try {
@@ -28,7 +39,17 @@ export default function Nav() {
     function load() {
       apiFetch('/api/notifications')
         .then(r => r.ok ? r.json() : [])
-        .then(d => { if (alive) setNotifs(Array.isArray(d) ? d : []) })
+        .then(d => {
+          if (!alive) return
+          const arr = Array.isArray(d) ? d : []
+          setNotifs(arr)
+          // Chime on login (first load w/ unread) and whenever a new unread arrives (e.g. 4h delay reminder).
+          const unreadIds = arr.filter(n => !n.read).map(n => n.id)
+          const firstLoad = seenNotifIds.current === null
+          const hasNew = firstLoad ? unreadIds.length > 0 : unreadIds.some(id => !seenNotifIds.current.has(id))
+          seenNotifIds.current = new Set(arr.map(n => n.id))
+          if (hasNew) playChime()
+        })
         .catch(() => {})
     }
     load()
@@ -72,7 +93,6 @@ export default function Nav() {
           Project Dashboard
         </Link>
       )}
-      <a href="/graphify/graph.html" target="_blank" rel="noreferrer" className="nav-link">Graph</a>
       <Link href="/admin" className={`nav-link${pathname === '/admin' ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>Admin</Link>
       <div className="nav-notif">
         <button className="nav-notif-bell" onClick={() => setShowNotifs(v => !v)} title="Notifications" aria-label="Notifications">

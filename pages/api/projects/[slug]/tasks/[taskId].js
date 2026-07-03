@@ -32,6 +32,11 @@ export default async function handler(req, res) {
     if ('seq' in updates && !hasPermission(req, 'task:update')) {
       return res.status(403).json({ error: 'Permission denied: task:update' });
     }
+    // Flag/unflag the task for repeated delay reminders (see /api/cron/delayed-reminders).
+    if ('dueDate' in updates) {
+      updates.dueDelayed = !!(before.dueDate && updates.dueDate && new Date(updates.dueDate) > new Date(before.dueDate));
+    }
+    if (updates.status === 'done') updates.dueDelayed = false;
     let task;
     try {
       task = await updateTask(slug, v, taskId, updates);

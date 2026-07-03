@@ -85,6 +85,8 @@ def load_projects():
                     v = json.loads(open(vf, encoding='utf-8').read())
                 except Exception:
                     continue
+                if not isinstance(v, dict):
+                    continue  # skip non-version payloads (e.g. *-tasks.json arrays)
                 ver = v.get('version', os.path.splitext(os.path.basename(vf))[0])
                 ver_id = f"ver:{slug}:{ver}"
                 nodes[ver_id] = {
@@ -107,6 +109,8 @@ def load_projects():
                 try:
                     p = json.loads(open(pf, encoding='utf-8').read())
                 except Exception:
+                    continue
+                if not isinstance(p, dict):
                     continue
                 pid = p.get('id', os.path.splitext(os.path.basename(pf))[0])
                 prop_id = f"prop:{slug}:{pid}"

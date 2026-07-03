@@ -50,15 +50,24 @@
       }
     },
     {
-      "id": "prop:aipm:prop-1779174565744",
-      "label": "Sanatan Sansaar User",
-      "type": "proposal:pending",
+      "id": "proj:sanatan-sansaar",
+      "label": "Sanatan Sansaar",
+      "type": "project",
       "meta": {
-        "project": "aipm",
-        "status": "pending",
+        "slug": "sanatan-sansaar",
         "description": "",
-        "createdAt": "2026-05-19T07:09:25.744Z",
-        "promotedToVersion": null
+        "createdAt": "2026-05-19T07:59:10.452Z"
+      }
+    },
+    {
+      "id": "ver:sanatan-sansaar:1.0.0",
+      "label": "v1.0.0",
+      "type": "version",
+      "meta": {
+        "project": "sanatan-sansaar",
+        "version": "1.0.0",
+        "createdAt": "2026-05-19T07:59:10.453Z",
+        "updatedAt": "2026-05-19T08:01:54.142Z"
       }
     }
   ],
@@ -79,15 +88,15 @@
       "type": "has_version"
     },
     {
-      "from": "proj:aipm",
-      "to": "prop:aipm:prop-1779174565744",
-      "type": "has_proposal"
+      "from": "proj:sanatan-sansaar",
+      "to": "ver:sanatan-sansaar:1.0.0",
+      "type": "has_version"
     }
   ],
   "meta": {
-    "projects": 1,
-    "versions": 1,
-    "proposals": 1,
+    "projects": 2,
+    "versions": 2,
+    "proposals": 0,
     "prds": 3
   }
 }

@@ -7,7 +7,7 @@ import TaskHistoryModal from './TaskHistoryModal'
 const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-const STATUSES = ['backlog', 'todo', 'in-progress', 'in-review', 'review', 'blocked', 'done']
+const STATUSES = ['backlog', 'todo', 'in-progress', 'in-review', 'blocked', 'done']
 const MAX_ATTACH_BYTES = 1024 * 1024 // 1MB cap per image (stored inline as data URL in Redis)
 
 function readFileAsDataUrl(file) {
