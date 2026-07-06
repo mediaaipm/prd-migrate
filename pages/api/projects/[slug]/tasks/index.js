@@ -15,8 +15,9 @@ export default async function handler(req, res) {
     if (!requirePermission('task:create')(req, res)) return;
     const { title, description, status, priority, assignee, assignees, startDate, dueDate, parentId, numberOverride } = req.body || {};
     if (!title) return res.status(400).json({ error: 'title is required' });
-    let assignedBy = null;
-    try { assignedBy = (JSON.parse(req.headers['x-user'] || '{}').name) || null; } catch {}
+    // Prefer a name the creator typed in the form; fall back to the logged-in user.
+    let assignedBy = (req.body && typeof req.body.assignedBy === 'string' && req.body.assignedBy.trim()) || null;
+    if (!assignedBy) { try { assignedBy = (JSON.parse(req.headers['x-user'] || '{}').name) || null; } catch {} }
     const task = await createTask(slug, v, { title, description, status, priority, assignee, assignees, assignedBy, startDate, dueDate, parentId, numberOverride });
     await logAudit(req, 'create_task', 'task', { slug, version: v, taskId: task.id, title, parentId });
     await recordTaskCreate(slug, v, task.id, getAuditUser(req), task);

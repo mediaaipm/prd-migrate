@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { apiFetch } from '../lib/api-fetch'
+import { hasPerm, isSuperAdmin } from '../lib/client-permissions'
 import AssigneeInput from './AssigneeInput'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
@@ -162,11 +163,16 @@ function buildTree(tasks, sortBy = 'newest') {
 }
 
 // Build a pruned tree of the matched tasks plus every ancestor needed to reach
-// them, so a matched child is always shown under its parent. Ancestors that did
-// not themselves match are flagged `__context` for dimmed display.
+// them, so a matched child is always shown under its parent, plus every
+// descendant of a matched task so a matched parent shows its whole subtree.
+// Tasks that did not themselves match are flagged `__context` for dimmed display.
 function buildFilteredTree(allTasks, matched, sortBy = 'newest') {
   const byId = {}
-  allTasks.forEach(t => { byId[t.id] = t })
+  const childrenOf = {}
+  allTasks.forEach(t => {
+    byId[t.id] = t
+    if (t.parentId) (childrenOf[t.parentId] = childrenOf[t.parentId] || []).push(t.id)
+  })
   const matchedIds = new Set(matched.map(t => t.id))
   const includeIds = new Set(matchedIds)
   matched.forEach(t => {
@@ -176,6 +182,14 @@ function buildFilteredTree(allTasks, matched, sortBy = 'newest') {
       pid = byId[pid].parentId
     }
   })
+  // Pull in the full subtree under each matched task.
+  const queue = [...matchedIds]
+  while (queue.length) {
+    const id = queue.shift()
+    for (const cid of childrenOf[id] || []) {
+      if (!includeIds.has(cid)) { includeIds.add(cid); queue.push(cid) }
+    }
+  }
   const included = allTasks
     .filter(t => includeIds.has(t.id))
     .map(t => ({ ...t, __context: !matchedIds.has(t.id) }))
@@ -183,12 +197,23 @@ function buildFilteredTree(allTasks, matched, sortBy = 'newest') {
 }
 
 function blankForm() {
-  return { title: '', description: '', status: 'todo', priority: 'medium', assignees: [], startDate: '', dueDate: '', numberOverride: '', attachments: [], cover: null }
+  return { title: '', description: '', status: 'todo', priority: 'medium', assignees: [], assignedBy: '', startDate: '', dueDate: '', numberOverride: '', attachments: [], cover: null }
 }
 
-function TaskForm({ initial, onSave, onCancel, label, assignees = [] }) {
+function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreator = false }) {
   const [form, setForm] = useState(initial || blankForm())
   const f = (k) => e => setForm(p => ({ ...p, [k]: e.target.value }))
+  // Text typed in the assignee box but not yet turned into a token. Held in a ref
+  // (not state) so it's always current at save time without a blur→re-render race.
+  const pendingAssignee = useRef('')
+
+  function submit() {
+    if (!form.title.trim()) return
+    const pending = pendingAssignee.current.trim()
+    const cur = Array.isArray(form.assignees) ? form.assignees : []
+    const assigneesFinal = pending && !cur.includes(pending) ? [...cur, pending] : cur
+    onSave({ ...form, assignees: assigneesFinal })
+  }
 
   async function addImages(fileList) {
     const files = Array.from(fileList || [])
@@ -242,7 +267,11 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [] }) {
         value={form.assignees}
         options={assignees}
         onChange={next => setForm(p => ({ ...p, assignees: next }))}
+        onQueryChange={v => { pendingAssignee.current = v }}
       />
+      {showCreator && (
+        <input className="form-input" placeholder="Your name (added by)" value={form.assignedBy || ''} onChange={f('assignedBy')} />
+      )}
       <div className="task-form-images">
         {(form.attachments || []).length > 0 && (
           <div className="task-form-thumbs">
@@ -276,7 +305,7 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [] }) {
         </label>
         <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
           <button className="btn-ghost" type="button" onClick={onCancel} style={{ fontSize: 12 }}>Cancel</button>
-          <button className="btn-primary" type="button" onClick={() => form.title.trim() && onSave(form)} style={{ fontSize: 12 }} disabled={!form.title.trim()}>
+          <button className="btn-primary" type="button" onClick={submit} style={{ fontSize: 12 }} disabled={!form.title.trim()}>
             {label || 'Save'}
           </button>
         </div>
@@ -301,14 +330,16 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
 
   const nodeAssignees = Array.isArray(node.assignees) ? node.assignees : (node.assignee ? [node.assignee] : [])
 
-  const isAdmin = !!currentUser?.isAdmin
   const isMine = !!currentUser?.name && nodeAssignees.some(a => (typeof a === 'object' ? a?.name : a) === currentUser.name)
-  // Full edit for admins; assignees may only change status of their own tasks.
-  const canEdit = isAdmin
-  const canChangeStatus = isAdmin || isMine
-  // Project ACL: which statuses a non-admin assignee may set (admins unrestricted).
+  // Capability gates, keyed to real permissions (superadmin + subadmins).
+  const canEdit = hasPerm(currentUser, 'task:update')   // full edit / assign / reorder
+  const canCreate = hasPerm(currentUser, 'task:create') // add sub-task
+  const canDelete = isSuperAdmin(currentUser) // superadmin only, by policy
+  // Regular users (assignees) may still change the status of their own tasks.
+  const canChangeStatus = canEdit || isMine
+  // Project ACL: which statuses a non-admin assignee may set (task:update unrestricted).
   const statusAllowed = status => {
-    if (isAdmin) return true
+    if (canEdit) return true
     if (taskAcl?.assigneeCanChangeStatus === false) return false
     const list = taskAcl?.assigneeStatuses
     if (!Array.isArray(list)) return true
@@ -516,11 +547,17 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
           {canEdit && <>
             <button className="task-action-btn task-action-btn--move" onClick={() => handleMove('up')} title="Move up">↑</button>
             <button className="task-action-btn task-action-btn--move" onClick={() => handleMove('down')} title="Move down">↓</button>
+          </>}
+          {canCreate && (
             <button className="task-action-btn" onClick={() => { setAddingChild(v => !v); setEditing(false) }} title="Add sub-task">+ sub</button>
+          )}
+          {canEdit && <>
             <button className="task-action-btn" onClick={() => { setEditing(v => !v); setAddingChild(false); setShowUpdates(false) }} title="Edit task">Edit</button>
             <button className={`task-action-btn ${showUpdates ? 'active' : ''}`} onClick={() => { setShowUpdates(v => !v); setEditing(false); setAddingChild(false) }} title="Updates">Updates</button>
-            <button className="task-action-btn danger" onClick={handleDelete} title="Delete task">✕</button>
           </>}
+          {canDelete && (
+            <button className="task-action-btn danger" onClick={handleDelete} title="Delete task">✕</button>
+          )}
         </div>
       </div>
 
@@ -594,7 +631,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
 
       {addingChild && (
         <div className="task-inline-form">
-          <TaskForm onSave={handleAddChild} onCancel={() => setAddingChild(false)} label="Add Sub-task" assignees={assignees} />
+          <TaskForm onSave={handleAddChild} onCancel={() => setAddingChild(false)} label="Add Sub-task" assignees={assignees} showCreator />
         </div>
       )}
 
@@ -849,9 +886,11 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
   return (
     <div className="task-tree">
       <div className="task-tree-toolbar">
-        <button className="btn-primary" style={{ fontSize: 12, padding: '5px 12px' }} onClick={() => setAddingRoot(v => !v)}>
-          {addingRoot ? 'Cancel' : '+ Add Task'}
-        </button>
+        {hasPerm(currentUser, 'task:create') && (
+          <button className="btn-primary" style={{ fontSize: 12, padding: '5px 12px' }} onClick={() => setAddingRoot(v => !v)}>
+            {addingRoot ? 'Cancel' : '+ Add Task'}
+          </button>
+        )}
         {liveTasks.length > 0 && (
           <div className="search-bar" style={{ marginBottom: 0, flex: 1, maxWidth: 320 }}>
             <input
@@ -975,7 +1014,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
 
       {addingRoot && (
         <div className="task-inline-form" style={{ marginTop: 8 }}>
-          <TaskForm onSave={handleAddRoot} onCancel={() => setAddingRoot(false)} label="Add Task" assignees={assignees} />
+          <TaskForm onSave={handleAddRoot} onCancel={() => setAddingRoot(false)} label="Add Task" assignees={assignees} showCreator />
         </div>
       )}
 

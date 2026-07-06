@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { apiFetch } from '../lib/api-fetch'
+import { hasPerm, isSuperAdmin } from '../lib/client-permissions'
 import AssigneeInput from './AssigneeInput'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
@@ -121,9 +122,11 @@ export default function CalendarView({ tasks, apiBase, onRefresh, currentUser })
   const today = new Date()
   const [ctxMenu, setCtxMenu] = useState(null)   // { x, y, task }
   const [historyTask, setHistoryTask] = useState(null)
-  const isAdmin = !!currentUser?.isAdmin
+  const canCreate = hasPerm(currentUser, 'task:create')
+  const canEdit = hasPerm(currentUser, 'task:update')
+  const canDelete = isSuperAdmin(currentUser) // superadmin only, by policy
   function handleTaskContextMenu(e, task) {
-    if (!isAdmin) return
+    if (!canEdit) return
     e.preventDefault()
     e.stopPropagation()
     setCtxMenu({ x: e.clientX, y: e.clientY, task })
@@ -337,14 +340,14 @@ export default function CalendarView({ tasks, apiBase, onRefresh, currentUser })
                           <span style={{ flex: 1, fontSize: 13, textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>{t.title}</span>
                           {!t.cover?.dataUrl && Array.isArray(t.attachments) && t.attachments.length > 0 && <span style={{ fontSize: 11 }} title={`${t.attachments.length} image(s)`}>🖼 {t.attachments.length}</span>}
                           <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 10, background: '#f1f5f9', color: '#475569' }}>{t.status}</span>
-                          {!isChild && <button className="btn-ghost" style={{ fontSize: 12, padding: '3px 8px' }} title="Add sub-task" onClick={() => { setSubParent(t.id); setEditId('new') }}>+ sub</button>}
-                          <button className="btn-ghost" style={{ fontSize: 12, padding: '3px 10px' }} onClick={() => setEditId(t.id)}>Edit</button>
-                          <button className="btn-ghost" style={{ fontSize: 12, padding: '3px 8px', color: '#dc2626' }} onClick={() => deleteTask(t.id)}>✕</button>
+                          {!isChild && canCreate && <button className="btn-ghost" style={{ fontSize: 12, padding: '3px 8px' }} title="Add sub-task" onClick={() => { setSubParent(t.id); setEditId('new') }}>+ sub</button>}
+                          {canEdit && <button className="btn-ghost" style={{ fontSize: 12, padding: '3px 10px' }} onClick={() => setEditId(t.id)}>Edit</button>}
+                          {canDelete && <button className="btn-ghost" style={{ fontSize: 12, padding: '3px 8px', color: '#dc2626' }} onClick={() => deleteTask(t.id)}>✕</button>}
                         </div>
                       ))}
                     </div>
                   )}
-                  <button className="btn-primary" style={{ fontSize: 13, padding: '7px 16px' }} onClick={() => { setSubParent(null); setEditId('new') }}>+ Add task on this day</button>
+                  {canCreate && <button className="btn-primary" style={{ fontSize: 13, padding: '7px 16px' }} onClick={() => { setSubParent(null); setEditId('new') }}>+ Add task on this day</button>}
                 </>
               )}
             </div>

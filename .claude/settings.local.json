@@ -231,7 +231,9 @@
       "PowerShell($py = Get-ChildItem -Path \"$env:LOCALAPPDATA\\\\Programs\\\\Python\",\"C:\\\\Program Files\\\\Python312\",\"C:\\\\Python312\" -Filter python.exe -Recurse -ErrorAction SilentlyContinue -Depth 1 | Where-Object { $_.FullName -notmatch 'Scripts' } | Select-Object -First 1 -ExpandProperty FullName; Write-Output \"PY=$py\"; & $py --version)",
       "PowerShell($uv = \"C:\\\\Users\\\\hardik\\\\AppData\\\\Local\\\\Microsoft\\\\WinGet\\\\Packages\\\\astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe\\\\uv.exe\"; $py = \"C:\\\\Users\\\\hardik\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\"; & $uv tool install --python $py --force \"graphifyy[mcp]\" 2>&1 | Select-Object -Last 8)",
       "PowerShell($ErrorActionPreference='SilentlyContinue'; Remove-Item \"$env:TEMP\\\\gfx_err.txt\",\"$env:TEMP\\\\gfx_out.txt\" -Force; $p = Start-Process -FilePath \"C:\\\\Users\\\\hardik\\\\.local\\\\bin\\\\graphify-mcp.exe\" -ArgumentList \"C:\\\\PRD_Manager\\\\graphify-out\\\\graph.json\" -NoNewWindow -PassThru -RedirectStandardError \"$env:TEMP\\\\gfx_err.txt\" -RedirectStandardOutput \"$env:TEMP\\\\gfx_out.txt\"; Start-Sleep -Seconds 5; if \\(-not $p.HasExited\\) { Write-Output \"STILL RUNNING \\(ok - stdio server waiting for client\\)\"; Stop-Process -Id $p.Id -Force } else { Write-Output \"EXITED code=$\\($p.ExitCode\\)\" }; Write-Output \"=STDERR=\"; Get-Content \"$env:TEMP\\\\gfx_err.txt\")",
-      "Bash(python scripts/generate_graph.py)"
+      "Bash(python scripts/generate_graph.py)",
+      "Bash(ls \"C:/Users/hardik/.claude/projects/c--PRD-Manager/memory/\" 2>/dev/null && echo \"---\" && cat \"C:/Users/hardik/.claude/projects/c--PRD-Manager/memory/MEMORY.md\" 2>/dev/null || echo \"no MEMORY.md yet\")",
+      "Read(//c/Users/hardik/.claude/projects/c--PRD-Manager/**)"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects"

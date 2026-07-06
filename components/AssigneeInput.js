@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
-export default function AssigneeInput({ value = [], options = [], onChange }) {
+export default function AssigneeInput({ value = [], options = [], onChange, onQueryChange }) {
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
@@ -21,6 +21,7 @@ export default function AssigneeInput({ value = [], options = [], onChange }) {
     if (!name || value.includes(name)) return
     onChange([...value, name])
     setQuery('')
+    onQueryChange?.('')
     setActive(0)
     setOpen(false)
   }
@@ -55,7 +56,7 @@ export default function AssigneeInput({ value = [], options = [], onChange }) {
           className="assignee-input-text"
           placeholder={value.length ? '' : 'Type a name…'}
           value={query}
-          onChange={e => { setQuery(e.target.value); setOpen(true); setActive(0) }}
+          onChange={e => { setQuery(e.target.value); onQueryChange?.(e.target.value); setOpen(true); setActive(0) }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
           onBlur={() => { if (query.trim()) add(query.trim()) }}

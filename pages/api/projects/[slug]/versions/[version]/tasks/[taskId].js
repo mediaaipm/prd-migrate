@@ -3,7 +3,9 @@ const { logAudit, getAuditUser } = require('../../../../../../../lib/audit-log')
 const { recordTaskUpdate } = require('../../../../../../../lib/task-history-store');
 const { notifyTaskChange } = require('../../../../../../../lib/notification-store');
 const { requireAdmin } = require('../../../../../../../lib/require-admin');
-const { requireProjectAccess } = require('../../../../../../../lib/require-permission');
+const { requireSuperAdmin } = require('../../../../../../../lib/require-superadmin');
+const { requireProjectAccess, hasPermission, isAssignee, assigneeStatusAllowed } = require('../../../../../../../lib/require-permission');
+const { getProject } = require('../../../../../../../lib/prd-store');
 
 export default async function handler(req, res) {
   const { slug, version, taskId } = req.query;
@@ -18,6 +20,15 @@ export default async function handler(req, res) {
     const updates = req.body || {};
     const before = await getTask(slug, version, taskId);
     if (!before) return res.status(404).json({ error: 'Not found' });
+    // Regular users may change ONLY the status of tasks they're on (subject to the
+    // project ACL). Full edits require task:update — held by subadmins/superadmin.
+    const statusOnly = Object.keys(updates).length > 0 && Object.keys(updates).every(k => k === 'status');
+    let allowed = hasPermission(req, 'task:update');
+    if (!allowed && statusOnly && isAssignee(req, before)) {
+      const project = await getProject(slug);
+      allowed = assigneeStatusAllowed(project?.taskAcl, updates.status);
+    }
+    if (!allowed) return res.status(403).json({ error: 'Permission denied: task:update' });
     // Changing a task's display id is an admin-level action.
     if ('seq' in updates && !requireAdmin(req, res)) return;
     // Flag/unflag the task for repeated delay reminders (see /api/cron/delayed-reminders).
@@ -38,7 +49,8 @@ export default async function handler(req, res) {
     return res.status(200).json(task);
   }
   if (req.method === 'DELETE') {
-    if (!requireAdmin(req, res)) return;
+    // Deletion is superadmin-only. Subadmins can create/edit/assign but never delete.
+    if (!requireSuperAdmin(req, res)) return;
     const count = await deleteTask(slug, version, taskId);
     await logAudit(req, 'delete_task', 'task', { slug, version, taskId, deletedCount: count });
     return res.status(200).json({ deleted: count });

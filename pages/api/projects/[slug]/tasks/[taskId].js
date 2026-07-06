@@ -3,6 +3,7 @@ const { logAudit, getAuditUser } = require('../../../../../lib/audit-log');
 const { recordTaskUpdate } = require('../../../../../lib/task-history-store');
 const { notifyTaskChange } = require('../../../../../lib/notification-store');
 const { requirePermission, requireProjectAccess, hasPermission, isAssignee, assigneeStatusAllowed } = require('../../../../../lib/require-permission');
+const { requireSuperAdmin } = require('../../../../../lib/require-superadmin');
 const { getProject } = require('../../../../../lib/prd-store');
 
 export default async function handler(req, res) {
@@ -19,8 +20,8 @@ export default async function handler(req, res) {
     const updates = req.body || {};
     const before = await getTask(slug, v, taskId);
     if (!before) return res.status(404).json({ error: 'Not found' });
-    // Assignees may change ONLY the status of tasks they're on, even without task:update —
-    // and only to statuses the project ACL permits (admins/task:update are unrestricted).
+    // Regular users may change ONLY the status of tasks they're on (subject to the
+    // project ACL). Full edits require task:update — held by subadmins/superadmin.
     const statusOnly = Object.keys(updates).length > 0 && Object.keys(updates).every(k => k === 'status');
     let allowed = hasPermission(req, 'task:update');
     if (!allowed && statusOnly && isAssignee(req, before)) {
@@ -52,7 +53,8 @@ export default async function handler(req, res) {
     return res.status(200).json(task);
   }
   if (req.method === 'DELETE') {
-    if (!requirePermission('task:delete')(req, res)) return;
+    // Deletion is superadmin-only. Subadmins can create/edit/assign but never delete.
+    if (!requireSuperAdmin(req, res)) return;
     const count = await deleteTask(slug, v, taskId);
     await logAudit(req, 'delete_task', 'task', { slug, version: v, taskId, deletedCount: count });
     return res.status(200).json({ deleted: count });
