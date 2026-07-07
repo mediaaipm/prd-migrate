@@ -1860,6 +1860,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   border: 1px solid transparent; white-space: nowrap;
 }
 .kanban-label-chip--toggle { cursor: pointer; background: transparent; }
+.kanban-add-labels { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 
 /* Card cover image */
 .kanban-card-cover {

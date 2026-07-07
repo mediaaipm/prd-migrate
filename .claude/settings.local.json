@@ -235,7 +235,18 @@
       "Bash(ls \"C:/Users/hardik/.claude/projects/c--PRD-Manager/memory/\" 2>/dev/null && echo \"---\" && cat \"C:/Users/hardik/.claude/projects/c--PRD-Manager/memory/MEMORY.md\" 2>/dev/null || echo \"no MEMORY.md yet\")",
       "Read(//c/Users/hardik/.claude/projects/c--PRD-Manager/**)",
       "PowerShell(Get-Command npm -ErrorAction SilentlyContinue)",
-      "PowerShell(Get-Command node)"
+      "PowerShell(Get-Command node)",
+      "Bash(curl -s -H 'X-User: {\"name\":\"Admin\",\"username\":\"admin\",\"isAdmin\":true,\"role\":\"superadmin\"}' http://localhost:3000/api/projects)",
+      "Bash(curl -s -H 'X-User: {\"name\":\"Admin\",\"username\":\"admin\",\"isAdmin\":true,\"role\":\"superadmin\"}' http://localhost:3000/api/projects/sanatan-sansaar/tasks)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(len\\(d\\),'tasks'\\); [print\\(t['id'],'|',t.get\\('parentId'\\),'|',t['status'],'|',t['title'][:30]\\) for t in d[:6]]\")",
+      "Bash(curl -s -w '\\\\nHTTP %{http_code}\\\\n' -X POST -H 'X-User: {\"name\":\"Admin\",\"username\":\"admin\",\"isAdmin\":true,\"role\":\"superadmin\"}' -H 'Content-Type: application/json' -d '{\"title\":\"CLAUDE TEST SUB\",\"priority\":\"medium\",\"status\":\"in-review\",\"parentId\":\"g-1.0\"}' http://localhost:3000/api/projects/sanatan-sansaar/tasks)",
+      "Bash(curl -s -X DELETE -H 'X-User: {\"name\":\"Admin\",\"username\":\"admin\",\"isAdmin\":true,\"role\":\"superadmin\"}' http://localhost:3000/api/projects/sanatan-sansaar/tasks/task-1783410961350 -w ' del:%{http_code}\\\\n' -o /dev/null)",
+      "Bash(curl -s -H 'X-User: {\"name\":\"Admin\",\"username\":\"admin\",\"isAdmin\":true,\"role\":\"superadmin\"}' http://localhost:3000/api/admin/users)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(u.get\\('username'\\),'|role=',u.get\\('role'\\),'|perms=',u.get\\('permissions'\\)\\) for u in \\(d if isinstance\\(d,list\\) else d.get\\('users',[]\\)\\)]\")",
+      "Read(//c/Users/hardik/AppData/Local/Temp/claude/c--PRD-Manager/16389d5a-9fb2-4555-9f0a-34261c5e4000/scratchpad/**)",
+      "Bash(curl -s -o /dev/null -w \"tasks page: %{http_code}\\\\n\" \"http://localhost:3000/projects/sanatan-sansaar/tasks\")",
+      "Bash(curl -s -w '\\\\nHTTP %{http_code}\\\\n' -X POST -H 'X-User: {\"name\":\"SomeUser\",\"username\":\"someuser\",\"isAdmin\":false,\"role\":\"\",\"permissions\":[\"task:create\"]}' -H 'Content-Type: application/json' -d '{\"title\":\"REG TEST\",\"priority\":\"medium\",\"status\":\"todo\",\"parentId\":\"g-1.0\"}' http://localhost:3000/api/projects/sanatan-sansaar/tasks)",
+      "Bash(curl -s -o /dev/null -w \"tasks page after edit: %{http_code}\\\\n\" \"http://localhost:3000/projects/sanatan-sansaar/tasks\")"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects"

@@ -357,7 +357,14 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
 
   function startAdding(status) {
     setAddingFor(status)
-    setAddForm({ title: '', status, priority: 'medium', children: [] })
+    setAddForm({ title: '', status, priority: 'medium', labelIds: [], children: [] })
+  }
+
+  function toggleAddLabel(id) {
+    setAddForm(p => {
+      const ids = Array.isArray(p.labelIds) ? p.labelIds : []
+      return { ...p, labelIds: ids.includes(id) ? ids.filter(l => l !== id) : [...ids, id] }
+    })
   }
 
   async function saveNew() {
@@ -372,7 +379,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
           title: node.title.trim(),
           priority: node.priority || 'medium',
           status,
-          ...(parentId ? { parentId } : {}),
+          ...(parentId ? { parentId } : { labelIds: node.labelIds || [] }),
         }),
       })
       const created = await res.json()
@@ -740,17 +747,36 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
     return sortBoard(visibleTasks.filter(t => !t.parentId && t.status === status))
   }
 
+  // Walk parentId chain to the top-level card. Grandchildren (sub-of-sub) must
+  // group under their top-level ancestor, else the board (which only draws
+  // top-level cards) never renders them anywhere.
+  function topAncestorId(taskId) {
+    let cur = taskById[taskId]
+    const seen = new Set()
+    while (cur && cur.parentId && taskById[cur.parentId] && !seen.has(cur.id)) {
+      seen.add(cur.id)
+      cur = taskById[cur.parentId]
+    }
+    return cur ? cur.id : taskId
+  }
+
+  // All transitive descendants of a top-level card (not just direct children),
+  // so deeply nested sub-tasks show up in the progress badge and on the board.
   function getChildrenOf(taskId) {
-    return boardTasks.filter(t => t.parentId === taskId).sort((a, b) => a.order - b.order)
+    return boardTasks
+      .filter(t => t.parentId && topAncestorId(t.id) === taskId)
+      .sort((a, b) => a.order - b.order)
   }
 
   function getChildrenInCol(taskId, colStatus) {
-    return visibleTasks.filter(t => t.parentId === taskId && t.status === colStatus).sort((a, b) => a.order - b.order)
+    return visibleTasks
+      .filter(t => t.parentId && t.status === colStatus && topAncestorId(t.id) === taskId)
+      .sort((a, b) => a.order - b.order)
   }
 
   function getOrphanSubsInCol(colStatus) {
     return visibleTasks
-      .filter(t => t.parentId && t.status === colStatus && taskById[t.parentId]?.status !== colStatus)
+      .filter(t => t.parentId && t.status === colStatus && taskById[topAncestorId(t.id)]?.status !== colStatus)
       .sort((a, b) => a.order - b.order)
   }
 
@@ -984,6 +1010,22 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                         disabled={saving || !addForm.title.trim()}
                       >Add</button>
                     </div>
+                    {labels.length > 0 && (
+                      <div className="kanban-add-labels">
+                        {labels.map(l => {
+                          const on = (addForm.labelIds || []).includes(l.id)
+                          return (
+                            <button
+                              key={l.id}
+                              type="button"
+                              className="kanban-label-chip kanban-label-chip--toggle"
+                              style={{ background: on ? l.color : 'transparent', color: on ? '#fff' : l.color, borderColor: l.color }}
+                              onClick={() => toggleAddLabel(l.id)}
+                            >{on ? '✓ ' : ''}{l.name}</button>
+                          )
+                        })}
+                      </div>
+                    )}
                     {renderSubFormChildren(addForm.children || [], [])}
                     <button
                       className="kanban-add-subtask-btn"
