@@ -48,6 +48,19 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 }
 .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
 
+.btn-add-task {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,.15), 0 0 0 1px rgba(255,255,255,.08) inset;
+  transition: background .15s, box-shadow .15s, transform .05s;
+}
+.btn-add-task:hover:not(:disabled) {
+  background: var(--accent-hover);
+  box-shadow: 0 2px 6px rgba(0,0,0,.22);
+}
+.btn-add-task:active:not(:disabled) { transform: translateY(1px); }
+
 .btn-ghost {
   background: transparent;
   color: var(--text);
@@ -857,6 +870,11 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   align-items: center;
   flex-wrap: wrap;
 }
+.task-form-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+.task-form-hint strong { color: var(--text, #fff); font-weight: 600; }
 .task-form-date {
   display: flex;
   flex-direction: column;

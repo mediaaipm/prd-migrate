@@ -4,6 +4,7 @@ function getKv() { if (!_kv) _kv = new Redis({ url: process.env.UPSTASH_REDIS_RE
 const { logAudit } = require('../../../../lib/audit-log')
 const { requireSuperAdmin } = require('../../../../lib/require-superadmin')
 const { ALL_PERMISSIONS } = require('../../../../lib/permissions')
+const { findUsersByUsername } = require('../../../../lib/user-lookup')
 
 export default async function handler(req, res) {
   if (!requireSuperAdmin(req, res)) return
@@ -19,6 +20,10 @@ export default async function handler(req, res) {
 
   if (req.method === 'PUT') {
     const { username, password, permissions, assignedProjects } = req.body || {}
+    if (username !== undefined) {
+      const dupes = await findUsersByUsername(username, name)
+      if (dupes.length) return res.status(409).json({ error: 'Username already in use.' })
+    }
     const existing = await getKv().hgetall(`user:${name}`) || {}
     const perms = Array.isArray(permissions) ? permissions : ALL_PERMISSIONS
     const newAssigned = assignedProjects !== undefined

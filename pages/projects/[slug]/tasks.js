@@ -482,6 +482,40 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
   )
 }
 
+const STATUS_COUNT_COLUMNS = [
+  { status: 'backlog',     label: 'Backlog',     color: '#94a3b8' },
+  { status: 'todo',        label: 'To Do',       color: '#3b82f6' },
+  { status: 'in-progress', label: 'In Progress', color: '#f59e0b' },
+  { status: 'in-review',   label: 'In Review',   color: '#8b5cf6' },
+  { status: 'blocked',     label: 'Blocked',     color: '#dc2626' },
+  { status: 'done',        label: 'Done',        color: '#16a34a' },
+]
+
+function StatusCounts({ tasks }) {
+  const counts = tasks.reduce((acc, t) => {
+    if (t.archived) return acc
+    const s = t.status || 'todo'
+    acc[s] = (acc[s] || 0) + 1
+    return acc
+  }, {})
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+      {STATUS_COUNT_COLUMNS.map(c => (
+        <span key={c.status} style={{
+          display: 'inline-flex', alignItems: 'center', gap: 5,
+          padding: '2px 9px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+          background: `${c.color}18`, color: c.color, border: `1px solid ${c.color}40`,
+          whiteSpace: 'nowrap',
+        }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: c.color, flexShrink: 0 }} />
+          {c.label}
+          <span style={{ fontWeight: 800 }}>{counts[c.status] || 0}</span>
+        </span>
+      ))}
+    </div>
+  )
+}
+
 function TaskSkeleton() {
   return (
     <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -765,6 +799,7 @@ export default function TasksPage({ currentUser }) {
             <span>{contextLabel}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               {!loading && <span className="badge">{tasks.length}</span>}
+              {!loading && <StatusCounts tasks={tasks} />}
               {currentUser?.isAdmin && slug && (
                 <button className="btn-ghost" style={{ whiteSpace: 'nowrap', fontSize: 12 }} onClick={openIdSettings} title="Set task ID prefix & start number">
                   ⚙ Task IDs

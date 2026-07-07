@@ -233,7 +233,9 @@
       "PowerShell($ErrorActionPreference='SilentlyContinue'; Remove-Item \"$env:TEMP\\\\gfx_err.txt\",\"$env:TEMP\\\\gfx_out.txt\" -Force; $p = Start-Process -FilePath \"C:\\\\Users\\\\hardik\\\\.local\\\\bin\\\\graphify-mcp.exe\" -ArgumentList \"C:\\\\PRD_Manager\\\\graphify-out\\\\graph.json\" -NoNewWindow -PassThru -RedirectStandardError \"$env:TEMP\\\\gfx_err.txt\" -RedirectStandardOutput \"$env:TEMP\\\\gfx_out.txt\"; Start-Sleep -Seconds 5; if \\(-not $p.HasExited\\) { Write-Output \"STILL RUNNING \\(ok - stdio server waiting for client\\)\"; Stop-Process -Id $p.Id -Force } else { Write-Output \"EXITED code=$\\($p.ExitCode\\)\" }; Write-Output \"=STDERR=\"; Get-Content \"$env:TEMP\\\\gfx_err.txt\")",
       "Bash(python scripts/generate_graph.py)",
       "Bash(ls \"C:/Users/hardik/.claude/projects/c--PRD-Manager/memory/\" 2>/dev/null && echo \"---\" && cat \"C:/Users/hardik/.claude/projects/c--PRD-Manager/memory/MEMORY.md\" 2>/dev/null || echo \"no MEMORY.md yet\")",
-      "Read(//c/Users/hardik/.claude/projects/c--PRD-Manager/**)"
+      "Read(//c/Users/hardik/.claude/projects/c--PRD-Manager/**)",
+      "PowerShell(Get-Command npm -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Command node)"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects"

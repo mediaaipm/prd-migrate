@@ -3,6 +3,7 @@ let _kv;
 function getKv() { if (!_kv) _kv = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN }); return _kv; }
 const { logAudit } = require('../../../lib/audit-log')
 const { ALL_PERMISSIONS } = require('../../../lib/permissions')
+const { findUsersByUsername } = require('../../../lib/user-lookup')
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
@@ -19,10 +20,14 @@ export default async function handler(req, res) {
   }
 
   // Check against stored user profiles
-  const members = await getKv().smembers('assignees')
-  for (const name of (members || [])) {
-    const profile = await getKv().hgetall(`user:${name}`) || {}
-    if (profile.username && profile.username === username && profile.password === password) {
+  const matches = await findUsersByUsername(username)
+  if (matches.length > 1) {
+    await logAudit(req, 'login_failed', 'auth', { username, reason: 'duplicate_username' })
+    return res.status(409).json({ error: 'Duplicate username. Contact an administrator.' })
+  }
+  if (matches.length === 1) {
+    const { name, profile } = matches[0]
+    if (profile.password === password) {
       const role = profile.role || ''
       let permissions = ALL_PERMISSIONS
       if (role === 'admin' && profile.permissions) {

@@ -200,8 +200,13 @@ function blankForm() {
   return { title: '', description: '', status: 'todo', priority: 'medium', assignees: [], assignedBy: '', startDate: '', dueDate: '', numberOverride: '', attachments: [], cover: null }
 }
 
-function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreator = false }) {
-  const [form, setForm] = useState(initial || blankForm())
+function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreator = false, currentUser = null }) {
+  const [form, setForm] = useState(() => {
+    const base = initial || blankForm()
+    // Auto-attribute the creator from the logged-in user; no manual entry.
+    if (showCreator && !base.assignedBy && currentUser?.name) return { ...base, assignedBy: currentUser.name }
+    return base
+  })
   const f = (k) => e => setForm(p => ({ ...p, [k]: e.target.value }))
   // Text typed in the assignee box but not yet turned into a token. Held in a ref
   // (not state) so it's always current at save time without a blur→re-render race.
@@ -270,7 +275,9 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreato
         onQueryChange={v => { pendingAssignee.current = v }}
       />
       {showCreator && (
-        <input className="form-input" placeholder="Your name (added by)" value={form.assignedBy || ''} onChange={f('assignedBy')} />
+        form.assignedBy
+          ? <div className="task-form-hint">Assigned by <strong>{form.assignedBy}</strong></div>
+          : <input className="form-input" placeholder="Your name (added by)" value={form.assignedBy || ''} onChange={f('assignedBy')} />
       )}
       <div className="task-form-images">
         {(form.attachments || []).length > 0 && (
@@ -631,7 +638,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
 
       {addingChild && (
         <div className="task-inline-form">
-          <TaskForm onSave={handleAddChild} onCancel={() => setAddingChild(false)} label="Add Sub-task" assignees={assignees} showCreator />
+          <TaskForm onSave={handleAddChild} onCancel={() => setAddingChild(false)} label="Add Sub-task" assignees={assignees} showCreator currentUser={currentUser} />
         </div>
       )}
 
@@ -887,7 +894,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
     <div className="task-tree">
       <div className="task-tree-toolbar">
         {hasPerm(currentUser, 'task:create') && (
-          <button className="btn-primary" style={{ fontSize: 12, padding: '5px 12px' }} onClick={() => setAddingRoot(v => !v)}>
+          <button className="btn-add-task" style={{ fontSize: 12, padding: '5px 12px' }} onClick={() => setAddingRoot(v => !v)}>
             {addingRoot ? 'Cancel' : '+ Add Task'}
           </button>
         )}
@@ -1014,7 +1021,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
 
       {addingRoot && (
         <div className="task-inline-form" style={{ marginTop: 8 }}>
-          <TaskForm onSave={handleAddRoot} onCancel={() => setAddingRoot(false)} label="Add Task" assignees={assignees} showCreator />
+          <TaskForm onSave={handleAddRoot} onCancel={() => setAddingRoot(false)} label="Add Task" assignees={assignees} showCreator currentUser={currentUser} />
         </div>
       )}
 
