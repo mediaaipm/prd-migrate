@@ -641,7 +641,15 @@ function UserRow({ user, onRemove, onSaved }) {
         padding: '10px 16px',
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={{ fontSize: 14, color: 'var(--fg)', fontWeight: 500 }}>&#128100; {user.name}</span>
+          <span style={{ fontSize: 14, color: 'var(--fg)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+            &#128100; {user.name}
+            {(user.role === 'admin' || user.role === 'superadmin') && (
+              <span style={{
+                fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.4,
+                color: 'var(--accent)', border: '1px solid var(--accent)', borderRadius: 4, padding: '1px 5px',
+              }}>{user.role === 'superadmin' ? 'Super Admin' : 'Admin'}</span>
+            )}
+          </span>
           <span style={{ fontSize: 12, color: 'var(--muted)' }}>
             {user.username ? `@${user.username}` : <em>no username set</em>}
             {' · '}

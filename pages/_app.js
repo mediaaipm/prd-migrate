@@ -5,21 +5,23 @@ function LoginScreen({ onLogin }) {
   const [form, setForm] = useState({ username: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [accountOptions, setAccountOptions] = useState(null)
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  async function attemptLogin(selectedName) {
     setError('')
     setLoading(true)
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: form.username, password: form.password }),
+        body: JSON.stringify({ username: form.username, password: form.password, selectedName }),
       })
       const data = await res.json()
       if (res.ok && data.ok) {
         localStorage.setItem('ss_auth', JSON.stringify(data.user))
         onLogin(data.user)
+      } else if (res.ok && data.chooseAccount) {
+        setAccountOptions(data.options)
       } else {
         setError(data.error || 'Invalid username or password.')
       }
@@ -28,6 +30,11 @@ function LoginScreen({ onLogin }) {
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    attemptLogin()
   }
 
   return (
@@ -47,6 +54,35 @@ function LoginScreen({ onLogin }) {
             <div style={{ fontSize: 12, color: 'var(--muted)' }}>Projects PRD</div>
           </div>
         </div>
+        {accountOptions ? (
+          <>
+            <p style={{ fontSize: 13, color: 'var(--muted)', margin: 0 }}>
+              This username has multiple accounts. Sign in as:
+            </p>
+            {accountOptions.map(opt => (
+              <button
+                key={opt.name}
+                type="button"
+                className="btn-primary"
+                disabled={loading}
+                onClick={() => attemptLogin(opt.name)}
+                style={{ textAlign: 'left' }}
+              >
+                {opt.name} · <span style={{ opacity: 0.8, textTransform: 'capitalize' }}>{opt.role || 'user'}</span>
+              </button>
+            ))}
+            {error && <p style={{ color: '#f87171', fontSize: 13, margin: 0 }}>{error}</p>}
+            <button
+              type="button"
+              className="btn-ghost"
+              disabled={loading}
+              onClick={() => { setAccountOptions(null); setError('') }}
+            >
+              Back
+            </button>
+          </>
+        ) : (
+          <>
         <input
           className="form-input"
           placeholder="Username"
@@ -69,6 +105,8 @@ function LoginScreen({ onLogin }) {
         <button className="btn-primary" type="submit" disabled={loading} style={{ marginTop: 4 }}>
           {loading ? 'Signing in…' : 'Sign in'}
         </button>
+          </>
+        )}
       </form>
     </div>
   )

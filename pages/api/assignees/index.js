@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     const names = (members || []).sort()
     const profiles = await Promise.all(names.map(async name => {
       const profile = await getKv().hgetall(`user:${name}`) || {}
-      return { name, username: profile.username || '', hasPassword: !!profile.password }
+      return { name, username: profile.username || '', hasPassword: !!profile.password, role: profile.role || '' }
     }))
     return res.json(profiles)
   }
