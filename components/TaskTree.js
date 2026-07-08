@@ -211,13 +211,19 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreato
   // Text typed in the assignee box but not yet turned into a token. Held in a ref
   // (not state) so it's always current at save time without a blur→re-render race.
   const pendingAssignee = useRef('')
+  const [saving, setSaving] = useState(false)
 
-  function submit() {
-    if (!form.title.trim()) return
+  async function submit() {
+    if (!form.title.trim() || saving) return
     const pending = pendingAssignee.current.trim()
     const cur = Array.isArray(form.assignees) ? form.assignees : []
     const assigneesFinal = pending && !cur.includes(pending) ? [...cur, pending] : cur
-    onSave({ ...form, assignees: assigneesFinal })
+    setSaving(true)
+    try {
+      await onSave({ ...form, assignees: assigneesFinal })
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function addImages(fileList) {
@@ -312,8 +318,8 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreato
         </label>
         <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
           <button className="btn-ghost" type="button" onClick={onCancel} style={{ fontSize: 12 }}>Cancel</button>
-          <button className="btn-primary" type="button" onClick={submit} style={{ fontSize: 12 }} disabled={!form.title.trim()}>
-            {label || 'Save'}
+          <button className="btn-primary" type="button" onClick={submit} style={{ fontSize: 12 }} disabled={!form.title.trim() || saving}>
+            {saving ? 'Saving…' : (label || 'Save')}
           </button>
         </div>
       </div>

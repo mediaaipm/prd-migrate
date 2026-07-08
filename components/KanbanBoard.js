@@ -1008,7 +1008,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                         style={{ fontSize: 12, padding: '4px 10px' }}
                         onClick={saveNew}
                         disabled={saving || !addForm.title.trim()}
-                      >Add</button>
+                      >{saving ? 'Adding…' : 'Add'}</button>
                     </div>
                     {labels.length > 0 && (
                       <div className="kanban-add-labels">
@@ -1637,7 +1637,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                     className="btn-primary"
                     onClick={saveEdit}
                     disabled={saving || !editForm.title.trim()}
-                  >Save</button>
+                  >{saving ? 'Saving…' : 'Save'}</button>
                 </div>
               </div>
             </div>
