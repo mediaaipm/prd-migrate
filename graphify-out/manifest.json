@@ -1,447 +1,532 @@
 {
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/vercel.json": {
-    "mtime": 1781791295.3124049,
-    "ast_hash": "bd5d87c057ed9b3c60daa68d7022531b",
-    "semantic_hash": "bd5d87c057ed9b3c60daa68d7022531b"
+  ".claude/settings.local.json": {
+    "mtime": 1783595457.6076312,
+    "ast_hash": "0e85223207481afc3261a2342f08c0af",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/next.config.js": {
-    "mtime": 1779196393.239,
-    "ast_hash": "73c8846edc2f5021b1337d3a2be52204",
-    "semantic_hash": "73c8846edc2f5021b1337d3a2be52204"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/install.ps1": {
-    "mtime": 1779707083.655,
-    "ast_hash": "d92e3dea93dde87e72657efb601f5db5",
-    "semantic_hash": "d92e3dea93dde87e72657efb601f5db5"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/package.json": {
-    "mtime": 1780922290.113,
-    "ast_hash": "b5bba6f9fbbb71e9026329efa0f7aab7",
-    "semantic_hash": "b5bba6f9fbbb71e9026329efa0f7aab7"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/.vercel/project.json": {
-    "mtime": 1781707022.948423,
-    "ast_hash": "75ef320151ab4070457e092b0528bc0f",
-    "semantic_hash": "75ef320151ab4070457e092b0528bc0f"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/.claude/settings.local.json": {
-    "mtime": 1782308179.9845243,
-    "ast_hash": "723c4ee296ff159671436e324cc81b3b",
-    "semantic_hash": "723c4ee296ff159671436e324cc81b3b"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/prds/sanatan-sansaar/tasks.json": {
-    "mtime": 1779187606.331,
-    "ast_hash": "136a47d03238ed5d1f2b133f1d9d4dfd",
-    "semantic_hash": "136a47d03238ed5d1f2b133f1d9d4dfd"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/prds/sanatan-sansaar/meta.json": {
-    "mtime": 1779177550.452,
-    "ast_hash": "488c15cb6faa8233361c3363de6c4c16",
-    "semantic_hash": "488c15cb6faa8233361c3363de6c4c16"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/prds/sanatan-sansaar/versions/1.0.0-tasks.json": {
-    "mtime": 1779186692.609,
-    "ast_hash": "faa022910cd7a14eec672deaa44b38ba",
-    "semantic_hash": "faa022910cd7a14eec672deaa44b38ba"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/prds/sanatan-sansaar/versions/1.0.0.json": {
-    "mtime": 1779177714.139,
-    "ast_hash": "69eed8f571318b7f93b3dbd27cb8fc17",
-    "semantic_hash": "69eed8f571318b7f93b3dbd27cb8fc17"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/prds/aipm/meta.json": {
-    "mtime": 1779174530.455,
-    "ast_hash": "5a72c6c303a9388063ef6884e5b37c36",
-    "semantic_hash": "5a72c6c303a9388063ef6884e5b37c36"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/prds/aipm/versions/1.0.0.json": {
-    "mtime": 1779174530.455,
-    "ast_hash": "f6a0a42a7d8d84150ed3c95ddc6267ef",
-    "semantic_hash": "f6a0a42a7d8d84150ed3c95ddc6267ef"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/components/AssigneeInput.js": {
-    "mtime": 1781793022.5882037,
-    "ast_hash": "fc6d99cf533c7d1bf0a437afbd733bc2",
-    "semantic_hash": "fc6d99cf533c7d1bf0a437afbd733bc2"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/components/DiffViewer.js": {
-    "mtime": 1779187582.698,
-    "ast_hash": "1c20521d81c7ad05ab60121c965c2b3c",
-    "semantic_hash": "1c20521d81c7ad05ab60121c965c2b3c"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/components/KanbanBoard.js": {
-    "mtime": 1782373753.3817046,
-    "ast_hash": "d5900d6723bbe1e7703f1e454105fdc6",
-    "semantic_hash": "d5900d6723bbe1e7703f1e454105fdc6"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/components/CalendarView.js": {
-    "mtime": 1782214004.0579114,
-    "ast_hash": "badf6c5d623d05a0539eb424f48686d2",
-    "semantic_hash": "badf6c5d623d05a0539eb424f48686d2"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/components/Editor.js": {
-    "mtime": 1779280875.051,
-    "ast_hash": "b38c967f8ae8390d57bbe904b0709174",
-    "semantic_hash": "b38c967f8ae8390d57bbe904b0709174"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/components/TaskTree.js": {
-    "mtime": 1782373795.8096254,
-    "ast_hash": "06a4899e57166d8ef265ff8907896925",
-    "semantic_hash": "06a4899e57166d8ef265ff8907896925"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/components/Nav.js": {
-    "mtime": 1781791732.232375,
-    "ast_hash": "3f48021611be9efdaf628c36f615fde9",
-    "semantic_hash": "3f48021611be9efdaf628c36f615fde9"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/public/graphify/graph.json": {
-    "mtime": 1779177291.332,
-    "ast_hash": "b45bbd7bf5d7d1093c1add51523c9c4c",
-    "semantic_hash": "b45bbd7bf5d7d1093c1add51523c9c4c"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/scripts/generate_graph.py": {
-    "mtime": 1779177285.867,
-    "ast_hash": "4a273eaa64843777f7eb4d92e8269c67",
-    "semantic_hash": "4a273eaa64843777f7eb4d92e8269c67"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/scripts/seed-kv.js": {
-    "mtime": 1779193270.422,
-    "ast_hash": "d388784f9cf3e2ad308157b8f80fc2e6",
-    "semantic_hash": "d388784f9cf3e2ad308157b8f80fc2e6"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/scripts/seed-tasks.js": {
-    "mtime": 1779181483.385,
-    "ast_hash": "e6ac09ebe97f986467d4583fcdf2a122",
-    "semantic_hash": "e6ac09ebe97f986467d4583fcdf2a122"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/scripts/migrate-redis.js": {
-    "mtime": 1780922841.751,
-    "ast_hash": "2895cd049bbbec6bd09a6a8257303da6",
-    "semantic_hash": "2895cd049bbbec6bd09a6a8257303da6"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/lib/audit-log.js": {
-    "mtime": 1780407151.314,
-    "ast_hash": "fa0453abe8ad30fbb9c2cec0942e2933",
-    "semantic_hash": "fa0453abe8ad30fbb9c2cec0942e2933"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/lib/require-superadmin.js": {
-    "mtime": 1779891161.318,
-    "ast_hash": "6aad61f1d0406c27a6a8686e5d504f93",
-    "semantic_hash": "6aad61f1d0406c27a6a8686e5d504f93"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/lib/prd-store.js": {
-    "mtime": 1782373613.125913,
-    "ast_hash": "63b1bfd6eb407bdc086eab4c842e501f",
-    "semantic_hash": "63b1bfd6eb407bdc086eab4c842e501f"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/lib/require-permission.js": {
-    "mtime": 1782373602.8810003,
-    "ast_hash": "81b00756feb5aa5c2bca254da04ed49c",
-    "semantic_hash": "81b00756feb5aa5c2bca254da04ed49c"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/lib/notification-store.js": {
-    "mtime": 1781791205.7043846,
-    "ast_hash": "c8d136f3568e5d101f8b8d827ca33c6f",
-    "semantic_hash": "c8d136f3568e5d101f8b8d827ca33c6f"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/lib/sprint-store.js": {
-    "mtime": 1780407148.721,
-    "ast_hash": "ff9cf8468a95880bdb809993077b20bc",
-    "semantic_hash": "ff9cf8468a95880bdb809993077b20bc"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/lib/snapshot-store.js": {
-    "mtime": 1780407152.253,
-    "ast_hash": "3a057b35c1ca2ebe5505865356081866",
-    "semantic_hash": "3a057b35c1ca2ebe5505865356081866"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/lib/api-fetch.js": {
-    "mtime": 1779898003.056,
-    "ast_hash": "e72a3de11d92609778f85cc2db113eb3",
-    "semantic_hash": "e72a3de11d92609778f85cc2db113eb3"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/lib/task-store.js": {
-    "mtime": 1782312917.6551235,
-    "ast_hash": "796e6a8fa25af770993d7d4fbd2d9f45",
-    "semantic_hash": "796e6a8fa25af770993d7d4fbd2d9f45"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/lib/permissions.js": {
-    "mtime": 1779889051.875,
-    "ast_hash": "22ce7aac1384734b1a20bb2ef6bb99aa",
-    "semantic_hash": "22ce7aac1384734b1a20bb2ef6bb99aa"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/lib/require-admin.js": {
-    "mtime": 1779888589.569,
-    "ast_hash": "7f84e2d35f149d9335ae1fe337fbe849",
-    "semantic_hash": "7f84e2d35f149d9335ae1fe337fbe849"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/api/save_prd.js": {
+  "api/save_prd.js": {
     "mtime": 1778943264.72,
     "ast_hash": "3c408bebb34b6bb0df83b6d95baa1b01",
-    "semantic_hash": "3c408bebb34b6bb0df83b6d95baa1b01"
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/api/webhook.js": {
+  "api/webhook.js": {
     "mtime": 1778943264.72,
     "ast_hash": "68be74a9e338126a5b3ff0bcaf775bb3",
-    "semantic_hash": "68be74a9e338126a5b3ff0bcaf775bb3"
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/graphify/graph.json": {
-    "mtime": 1779177291.332,
-    "ast_hash": "b45bbd7bf5d7d1093c1add51523c9c4c",
-    "semantic_hash": "b45bbd7bf5d7d1093c1add51523c9c4c"
+  "components/AssigneeInput.js": {
+    "mtime": 1783317847.4767678,
+    "ast_hash": "63813e023e380117c2e633c957a69a88",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/_app.js": {
-    "mtime": 1779888643.209,
-    "ast_hash": "fb9854d4b318a20430044e30545a3f58",
-    "semantic_hash": "fb9854d4b318a20430044e30545a3f58"
+  "components/CalendarView.js": {
+    "mtime": 1783577585.6774452,
+    "ast_hash": "f80e881bcd53b3152d7d96d26c778710",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/index.js": {
-    "mtime": 1782210985.1397245,
-    "ast_hash": "afb4e99d3f4f0bfa35d060b4b104e03c",
-    "semantic_hash": "afb4e99d3f4f0bfa35d060b4b104e03c"
+  "components/DiffViewer.js": {
+    "mtime": 1779187582.698,
+    "ast_hash": "1c20521d81c7ad05ab60121c965c2b3c",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/editor.js": {
-    "mtime": 1779174365.975,
-    "ast_hash": "fdc3405404211d946b4a90b7dfa3134d",
-    "semantic_hash": "fdc3405404211d946b4a90b7dfa3134d"
+  "components/Editor.js": {
+    "mtime": 1783579405.029122,
+    "ast_hash": "77e4a2ebde731438ce7ecf38109214bb",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/admin.js": {
-    "mtime": 1780926637.567,
-    "ast_hash": "ce58908d6b0c57d62173339daac1e71a",
-    "semantic_hash": "ce58908d6b0c57d62173339daac1e71a"
+  "components/KanbanBoard.js": {
+    "mtime": 1783580400.813376,
+    "ast_hash": "b1310a3680f0bc556583d7570149d768",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/dashboard.js": {
-    "mtime": 1782211018.9124207,
-    "ast_hash": "695a5b0788f84cae43300504720d2ef7",
-    "semantic_hash": "695a5b0788f84cae43300504720d2ef7"
+  "components/Nav.js": {
+    "mtime": 1783579258.1280742,
+    "ast_hash": "473946918741daeb335bb9d5a03ee9fa",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/projects/[slug]/index.js": {
-    "mtime": 1779967337.418,
-    "ast_hash": "481b4eb18607992d67bfd4dce6165b62",
-    "semantic_hash": "481b4eb18607992d67bfd4dce6165b62"
+  "components/SubmitButton.js": {
+    "mtime": 1783578550.832881,
+    "ast_hash": "b894fcf35f6a9d1ce2fe5cfdac3dab4e",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/projects/[slug]/tasks.js": {
-    "mtime": 1782373665.803088,
-    "ast_hash": "1f63189b9d9fe9045d3517a283c1eae1",
-    "semantic_hash": "1f63189b9d9fe9045d3517a283c1eae1"
+  "components/SyncStatus.js": {
+    "mtime": 1783578555.9433289,
+    "ast_hash": "0c1cd4b5db81369d25a3ce75f582ffdc",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/projects/[slug]/dashboard.js": {
-    "mtime": 1779967330.796,
-    "ast_hash": "21ddc8269b8e5f6e4e3f8f0096a5aee3",
-    "semantic_hash": "21ddc8269b8e5f6e4e3f8f0096a5aee3"
+  "components/TaskContextMenu.js": {
+    "mtime": 1782741837.422,
+    "ast_hash": "ee08e66c37c729dadb364cc4954798a0",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/projects/[slug]/diff.js": {
-    "mtime": 1779965576.908,
-    "ast_hash": "de47d6cc7e34e4e7c8c985c6ee5b9030",
-    "semantic_hash": "de47d6cc7e34e4e7c8c985c6ee5b9030"
+  "components/TaskHistoryModal.js": {
+    "mtime": 1782826858.1463957,
+    "ast_hash": "9b73994597365300ddca49857fe0cc7b",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/assignees/[name].js": {
-    "mtime": 1780408132.327,
-    "ast_hash": "8f142444766e23f4ef0a11e4964215b8",
-    "semantic_hash": "8f142444766e23f4ef0a11e4964215b8"
+  "components/TaskTree.js": {
+    "mtime": 1783581369.581714,
+    "ast_hash": "e60683f9a6c3398ed926fb4275dd3d0b",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/assignees/index.js": {
-    "mtime": 1780408132.298,
-    "ast_hash": "8ceceb1359e63e094aa4b81f7c2dfdeb",
-    "semantic_hash": "8ceceb1359e63e094aa4b81f7c2dfdeb"
+  "graphify/graph.json": {
+    "mtime": 1783064441.2434847,
+    "ast_hash": "db393837c785d343d8e3a6e566148e27",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/auth/logout.js": {
-    "mtime": 1779350032.925,
-    "ast_hash": "0362a727243427611e410da522207f80",
-    "semantic_hash": "0362a727243427611e410da522207f80"
+  "install.ps1": {
+    "mtime": 1779707083.655,
+    "ast_hash": "d92e3dea93dde87e72657efb601f5db5",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/auth/login.js": {
-    "mtime": 1781015941.716,
-    "ast_hash": "046140dc7bef084983ce26974ae745a5",
-    "semantic_hash": "046140dc7bef084983ce26974ae745a5"
+  "lib/api-fetch.js": {
+    "mtime": 1779898003.056,
+    "ast_hash": "e72a3de11d92609778f85cc2db113eb3",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/projects/index.js": {
-    "mtime": 1781102599.809,
-    "ast_hash": "cbb5fbfb5d00f73952632cc748376239",
-    "semantic_hash": "cbb5fbfb5d00f73952632cc748376239"
+  "lib/audit-log.js": {
+    "mtime": 1783347195.6097937,
+    "ast_hash": "c1227df8a45067f3b8459530ef4ad983",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/projects/[slug].js": {
-    "mtime": 1782373619.3362222,
-    "ast_hash": "c113fdabaa85bf1f5b8b4e0cd3d26a6b",
-    "semantic_hash": "c113fdabaa85bf1f5b8b4e0cd3d26a6b"
+  "lib/client-permissions.js": {
+    "mtime": 1783488375.6042726,
+    "ast_hash": "179e7384660f20d03ef92ffe459a5b63",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/projects/[slug]/export.js": {
-    "mtime": 1781531746.51,
-    "ast_hash": "5d28a91435bcb6e0045627fad75cc747",
-    "semantic_hash": "5d28a91435bcb6e0045627fad75cc747"
+  "lib/notification-store.js": {
+    "mtime": 1782914818.0066216,
+    "ast_hash": "be8279ad710644e88aa87711033c61de",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/projects/[slug]/labels.js": {
-    "mtime": 1781791215.9146476,
-    "ast_hash": "4b55e94e8505ce8ead6a0143fc412554",
-    "semantic_hash": "4b55e94e8505ce8ead6a0143fc412554"
+  "lib/optimistic.js": {
+    "mtime": 1783576833.4316747,
+    "ast_hash": "de0548643c2656e382eddc18ab008b03",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/projects/[slug]/import.js": {
-    "mtime": 1781531761.643,
-    "ast_hash": "9ec5bcdfb7b30ef8d4913e3d891d8563",
-    "semantic_hash": "9ec5bcdfb7b30ef8d4913e3d891d8563"
+  "lib/permissions.js": {
+    "mtime": 1783337469.8016741,
+    "ast_hash": "195d2a4baeeabb578fe6606dc07a76fe",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/projects/[slug]/sprint.js": {
-    "mtime": 1779964099.728,
-    "ast_hash": "9163e71501b45d3ff3ad0008ce97789a",
-    "semantic_hash": "9163e71501b45d3ff3ad0008ce97789a"
+  "lib/prd-store.js": {
+    "mtime": 1783576539.3125958,
+    "ast_hash": "16878f096b086c6cc44bb551a2984d69",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/projects/[slug]/dashboard.js": {
-    "mtime": 1780408132.422,
-    "ast_hash": "5f61311cc91fb58496b3e31b6c337a61",
-    "semantic_hash": "5f61311cc91fb58496b3e31b6c337a61"
+  "lib/rename-user.js": {
+    "mtime": 1783580549.5439413,
+    "ast_hash": "8f0591fff1e18e7dc0bc897033c77a82",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/projects/[slug]/diff.js": {
-    "mtime": 1779964095.236,
-    "ast_hash": "3ea90e1db9bd3a4e33d294e03c8a04c4",
-    "semantic_hash": "3ea90e1db9bd3a4e33d294e03c8a04c4"
+  "lib/require-admin.js": {
+    "mtime": 1779888589.569,
+    "ast_hash": "7f84e2d35f149d9335ae1fe337fbe849",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/projects/[slug]/tasks/index.js": {
-    "mtime": 1782312924.663158,
-    "ast_hash": "dd1e77548e5960f4b925356754d9fe9a",
-    "semantic_hash": "dd1e77548e5960f4b925356754d9fe9a"
+  "lib/require-permission.js": {
+    "mtime": 1783488371.9097314,
+    "ast_hash": "484919444f8234cd4380be661b0efd67",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/projects/[slug]/tasks/[taskId].js": {
-    "mtime": 1782373631.5518548,
-    "ast_hash": "d241596a8fe70865e1edb698c84b3451",
-    "semantic_hash": "d241596a8fe70865e1edb698c84b3451"
+  "lib/require-superadmin.js": {
+    "mtime": 1779891161.318,
+    "ast_hash": "6aad61f1d0406c27a6a8686e5d504f93",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/projects/[slug]/versions/[version].js": {
-    "mtime": 1779964108.492,
-    "ast_hash": "aab2421e064b56b3a38d0199b31302a5",
-    "semantic_hash": "aab2421e064b56b3a38d0199b31302a5"
+  "lib/slugify.js": {
+    "mtime": 1783576530.0023224,
+    "ast_hash": "0d3c2cd41a9e478e724f3f759f6c954a",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/projects/[slug]/versions/index.js": {
-    "mtime": 1779964105.746,
-    "ast_hash": "870f9d418ad6d76b4063f13aed36295b",
-    "semantic_hash": "870f9d418ad6d76b4063f13aed36295b"
+  "lib/snapshot-store.js": {
+    "mtime": 1780407152.253,
+    "ast_hash": "3a057b35c1ca2ebe5505865356081866",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/projects/[slug]/versions/[version]/tasks/index.js": {
-    "mtime": 1779964110.532,
-    "ast_hash": "353cbeb9ce74164002ae8185a35ee589",
-    "semantic_hash": "353cbeb9ce74164002ae8185a35ee589"
+  "lib/sprint-store.js": {
+    "mtime": 1780407148.721,
+    "ast_hash": "ff9cf8468a95880bdb809993077b20bc",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/projects/[slug]/versions/[version]/tasks/[taskId].js": {
-    "mtime": 1781791263.8457985,
-    "ast_hash": "c015af40040c43ded05f612f9df251d9",
-    "semantic_hash": "c015af40040c43ded05f612f9df251d9"
+  "lib/submit-queue.js": {
+    "mtime": 1783579248.749993,
+    "ast_hash": "f828eeabc3dcc6f7ea49789ba9144d31",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/projects/[slug]/proposals/[id].js": {
-    "mtime": 1779964098.701,
-    "ast_hash": "862590767d055e3e86b760db21f3461a",
-    "semantic_hash": "862590767d055e3e86b760db21f3461a"
+  "lib/task-draft.js": {
+    "mtime": 1783576782.5807023,
+    "ast_hash": "8e507dfa4225eb28cfd2a6339028d8fc",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/projects/[slug]/proposals/index.js": {
-    "mtime": 1779964097.661,
-    "ast_hash": "8f980141c3ff3a470b8b5906418f18c3",
-    "semantic_hash": "8f980141c3ff3a470b8b5906418f18c3"
+  "lib/task-history-store.js": {
+    "mtime": 1783347197.4735162,
+    "ast_hash": "69bd65165951dad5e97a4b6fda600e05",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/projects/[slug]/proposals/[id]/promote.js": {
-    "mtime": 1779964107.028,
-    "ast_hash": "1bc7c01209db3b4ab5c654b720bd31f9",
-    "semantic_hash": "1bc7c01209db3b4ab5c654b720bd31f9"
+  "lib/task-store.js": {
+    "mtime": 1783576458.84805,
+    "ast_hash": "a136d82c25c5f7998f4f4356d8c26ae0",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/admin/users/[name].js": {
-    "mtime": 1780408132.27,
-    "ast_hash": "c58abee9a8d1c6f7253095c2c8704fda",
-    "semantic_hash": "c58abee9a8d1c6f7253095c2c8704fda"
+  "lib/use-submit-queue.js": {
+    "mtime": 1783576399.865713,
+    "ast_hash": "d2b14fdedab67522868766b584975a6f",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/admin/users/index.js": {
-    "mtime": 1780408132.237,
-    "ast_hash": "f21a20bd1d9548c335ec82710ed71971",
-    "semantic_hash": "f21a20bd1d9548c335ec82710ed71971"
+  "lib/user-lookup.js": {
+    "mtime": 1783400672.154716,
+    "ast_hash": "7729b6ee1750a45be6b437477fedc47c",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/dashboard/index.js": {
-    "mtime": 1780408132.357,
-    "ast_hash": "9cf0b5292e000bb6c65234b65f57a7cc",
-    "semantic_hash": "9cf0b5292e000bb6c65234b65f57a7cc"
+  "next.config.js": {
+    "mtime": 1783487976.1927483,
+    "ast_hash": "902f6de8cb8a47579843bd802b2fe893",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/audit/index.js": {
+  "package.json": {
+    "mtime": 1782802842.1958773,
+    "ast_hash": "4face119f37af2f455be863b5dae9263",
+    "semantic_hash": ""
+  },
+  "pages/_app.js": {
+    "mtime": 1783576550.4368162,
+    "ast_hash": "f13e9323c7ffb0564baba24b4051ed16",
+    "semantic_hash": ""
+  },
+  "pages/admin.js": {
+    "mtime": 1783580636.3045287,
+    "ast_hash": "57166971cae110b7bf5915760031740c",
+    "semantic_hash": ""
+  },
+  "pages/api/admin/users/[name].js": {
+    "mtime": 1783595161.8005712,
+    "ast_hash": "0e5050b7901129ddce6c74625541a8fb",
+    "semantic_hash": ""
+  },
+  "pages/api/admin/users/bulk-permissions.js": {
+    "mtime": 1782817736.0165148,
+    "ast_hash": "180ebcfb823e2c3cf8ef5686f39759bd",
+    "semantic_hash": ""
+  },
+  "pages/api/admin/users/index.js": {
+    "mtime": 1783595160.2097871,
+    "ast_hash": "94955b9b73c1e56480106d784488c8b4",
+    "semantic_hash": ""
+  },
+  "pages/api/assignees/[name].js": {
+    "mtime": 1783580563.9397304,
+    "ast_hash": "33183b69a1556c694a5f5a74e5299d54",
+    "semantic_hash": ""
+  },
+  "pages/api/assignees/index.js": {
+    "mtime": 1783401048.5613854,
+    "ast_hash": "237706a1f5b129becbb53a179887e764",
+    "semantic_hash": ""
+  },
+  "pages/api/audit/index.js": {
     "mtime": 1780381861.031,
     "ast_hash": "4a4cd35c6ae0dfc3ff873c59b5f99e96",
-    "semantic_hash": "4a4cd35c6ae0dfc3ff873c59b5f99e96"
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/notifications/[id].js": {
-    "mtime": 1781791276.957687,
+  "pages/api/auth/login.js": {
+    "mtime": 1783400927.873319,
+    "ast_hash": "816bee694ee51046c0de9a09c58ccf67",
+    "semantic_hash": ""
+  },
+  "pages/api/auth/logout.js": {
+    "mtime": 1779350032.925,
+    "ast_hash": "0362a727243427611e410da522207f80",
+    "semantic_hash": ""
+  },
+  "pages/api/cron/delayed-reminders.js": {
+    "mtime": 1782914658.9781272,
+    "ast_hash": "1ece1763b10e59d44f927d4640042ac9",
+    "semantic_hash": ""
+  },
+  "pages/api/cron/due-reminders.js": {
+    "mtime": 1782914837.803466,
+    "ast_hash": "d2283dcaf35a67adc3646691079d3df0",
+    "semantic_hash": ""
+  },
+  "pages/api/dashboard/index.js": {
+    "mtime": 1780408132.357,
+    "ast_hash": "9cf0b5292e000bb6c65234b65f57a7cc",
+    "semantic_hash": ""
+  },
+  "pages/api/notifications/[id].js": {
+    "mtime": 1781791276.957,
     "ast_hash": "8d59d7f7cbfbb416e8829692df95daf3",
-    "semantic_hash": "8d59d7f7cbfbb416e8829692df95daf3"
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/notifications/index.js": {
-    "mtime": 1781791271.4189737,
+  "pages/api/notifications/index.js": {
+    "mtime": 1781791271.418,
     "ast_hash": "0069f826073892d424bf358e60dd6108",
-    "semantic_hash": "0069f826073892d424bf358e60dd6108"
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/pages/api/cron/due-reminders.js": {
-    "mtime": 1781791286.8576455,
-    "ast_hash": "d4ada0bcd11ada35bd3b2a6758f2ae80",
-    "semantic_hash": "d4ada0bcd11ada35bd3b2a6758f2ae80"
+  "pages/api/projects/[slug].js": {
+    "mtime": 1782814435.8359108,
+    "ast_hash": "e815cc675f58444f7f2de7155e5086b4",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/PRD.md": {
-    "mtime": 1778941996.081,
-    "ast_hash": "5eb9aa1c5749309858198684651dd2f0",
-    "semantic_hash": "5eb9aa1c5749309858198684651dd2f0"
+  "pages/api/projects/[slug]/dashboard.js": {
+    "mtime": 1780408132.422,
+    "ast_hash": "5f61311cc91fb58496b3e31b6c337a61",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/README-ui.md": {
-    "mtime": 1780927085.558,
-    "ast_hash": "39136ce3fa6546bef48ca935f17d18e6",
-    "semantic_hash": "39136ce3fa6546bef48ca935f17d18e6"
+  "pages/api/projects/[slug]/diff.js": {
+    "mtime": 1779964095.236,
+    "ast_hash": "3ea90e1db9bd3a4e33d294e03c8a04c4",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/requirements.txt": {
-    "mtime": 1778943591.831,
-    "ast_hash": "76ad3722db4fd7e9cb28245ddfe9b959",
-    "semantic_hash": "76ad3722db4fd7e9cb28245ddfe9b959"
+  "pages/api/projects/[slug]/export.js": {
+    "mtime": 1781531746.51,
+    "ast_hash": "5d28a91435bcb6e0045627fad75cc747",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/dev-out.txt": {
-    "mtime": 1779181830.748,
-    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
-    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  "pages/api/projects/[slug]/import.js": {
+    "mtime": 1781531761.643,
+    "ast_hash": "9ec5bcdfb7b30ef8d4913e3d891d8563",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/README-graphify.md": {
-    "mtime": 1778943264.699,
-    "ast_hash": "aeabdf2937a49fba9491d20a942d7187",
-    "semantic_hash": "aeabdf2937a49fba9491d20a942d7187"
+  "pages/api/projects/[slug]/labels.js": {
+    "mtime": 1781791215.914,
+    "ast_hash": "4b55e94e8505ce8ead6a0143fc412554",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/README.md": {
-    "mtime": 1779528564.587,
-    "ast_hash": "cfa10e157ab8af135b9b6f6c36357fdf",
-    "semantic_hash": "cfa10e157ab8af135b9b6f6c36357fdf"
+  "pages/api/projects/[slug]/proposals/[id].js": {
+    "mtime": 1779964098.701,
+    "ast_hash": "862590767d055e3e86b760db21f3461a",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/dev-err.txt": {
-    "mtime": 1779181830.75,
-    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
-    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  "pages/api/projects/[slug]/proposals/[id]/promote.js": {
+    "mtime": 1779964107.028,
+    "ast_hash": "1bc7c01209db3b4ab5c654b720bd31f9",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/.vercel/README.txt": {
-    "mtime": 1781707022.9488103,
-    "ast_hash": "2b13c79d37d6ed82a3255b83b6815034",
-    "semantic_hash": "2b13c79d37d6ed82a3255b83b6815034"
+  "pages/api/projects/[slug]/proposals/index.js": {
+    "mtime": 1779964097.661,
+    "ast_hash": "8f980141c3ff3a470b8b5906418f18c3",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/.claude/claude.md": {
+  "pages/api/projects/[slug]/sprint.js": {
+    "mtime": 1783576652.8136437,
+    "ast_hash": "c7a78fb98e8501ff006a8a34f7b2a95c",
+    "semantic_hash": ""
+  },
+  "pages/api/projects/[slug]/tasks/[taskId].js": {
+    "mtime": 1783519764.591552,
+    "ast_hash": "a07e849d4e3311612b5c1c4ff474a0f2",
+    "semantic_hash": ""
+  },
+  "pages/api/projects/[slug]/tasks/[taskId]/history.js": {
+    "mtime": 1782826830.329396,
+    "ast_hash": "ea8f934142d61b362a97582b06802eb1",
+    "semantic_hash": ""
+  },
+  "pages/api/projects/[slug]/tasks/index.js": {
+    "mtime": 1783576479.717758,
+    "ast_hash": "c7b4ad429ed7c24e05a5a2f53beff2f2",
+    "semantic_hash": ""
+  },
+  "pages/api/projects/[slug]/versions/[version].js": {
+    "mtime": 1783497980.2022054,
+    "ast_hash": "1a650762c01ab00cd737367c1cc6cddd",
+    "semantic_hash": ""
+  },
+  "pages/api/projects/[slug]/versions/[version]/tasks/[taskId].js": {
+    "mtime": 1783519776.5576978,
+    "ast_hash": "c79b884f075c6f6feb07055459b13c46",
+    "semantic_hash": ""
+  },
+  "pages/api/projects/[slug]/versions/[version]/tasks/[taskId]/history.js": {
+    "mtime": 1782740866.634,
+    "ast_hash": "59d26ccd7fdc6d4e4298165416582451",
+    "semantic_hash": ""
+  },
+  "pages/api/projects/[slug]/versions/[version]/tasks/index.js": {
+    "mtime": 1783576493.7157762,
+    "ast_hash": "01dcbfee384dd3a058ce75088790fd26",
+    "semantic_hash": ""
+  },
+  "pages/api/projects/[slug]/versions/index.js": {
+    "mtime": 1779964105.746,
+    "ast_hash": "870f9d418ad6d76b4063f13aed36295b",
+    "semantic_hash": ""
+  },
+  "pages/api/projects/index.js": {
+    "mtime": 1782814425.7793994,
+    "ast_hash": "24413338e55a2ebb346ffbc145a5711b",
+    "semantic_hash": ""
+  },
+  "pages/dashboard.js": {
+    "mtime": 1782211018.912,
+    "ast_hash": "695a5b0788f84cae43300504720d2ef7",
+    "semantic_hash": ""
+  },
+  "pages/editor.js": {
+    "mtime": 1779174365.975,
+    "ast_hash": "fdc3405404211d946b4a90b7dfa3134d",
+    "semantic_hash": ""
+  },
+  "pages/index.js": {
+    "mtime": 1783579217.3677287,
+    "ast_hash": "85ec4c774290434cfc13bd89fcf22a31",
+    "semantic_hash": ""
+  },
+  "pages/projects/[slug]/dashboard.js": {
+    "mtime": 1782917172.55633,
+    "ast_hash": "1da9e9deb644ccfc8db66043bc6ae0cb",
+    "semantic_hash": ""
+  },
+  "pages/projects/[slug]/diff.js": {
+    "mtime": 1779965576.908,
+    "ast_hash": "de47d6cc7e34e4e7c8c985c6ee5b9030",
+    "semantic_hash": ""
+  },
+  "pages/projects/[slug]/index.js": {
+    "mtime": 1783577661.7530303,
+    "ast_hash": "68a91356322a4f530393d412d243d39f",
+    "semantic_hash": ""
+  },
+  "pages/projects/[slug]/tasks.js": {
+    "mtime": 1783577599.0483952,
+    "ast_hash": "2a2a068f6cdfc646043467e581d8f294",
+    "semantic_hash": ""
+  },
+  "prds/aipm/meta.json": {
+    "mtime": 1779174530.455,
+    "ast_hash": "5a72c6c303a9388063ef6884e5b37c36",
+    "semantic_hash": ""
+  },
+  "prds/aipm/versions/1.0.0.json": {
+    "mtime": 1779174530.455,
+    "ast_hash": "f6a0a42a7d8d84150ed3c95ddc6267ef",
+    "semantic_hash": ""
+  },
+  "prds/sanatan-sansaar/meta.json": {
+    "mtime": 1779177550.452,
+    "ast_hash": "488c15cb6faa8233361c3363de6c4c16",
+    "semantic_hash": ""
+  },
+  "prds/sanatan-sansaar/tasks.json": {
+    "mtime": 1779187606.331,
+    "ast_hash": "136a47d03238ed5d1f2b133f1d9d4dfd",
+    "semantic_hash": ""
+  },
+  "prds/sanatan-sansaar/versions/1.0.0-tasks.json": {
+    "mtime": 1779186692.609,
+    "ast_hash": "faa022910cd7a14eec672deaa44b38ba",
+    "semantic_hash": ""
+  },
+  "prds/sanatan-sansaar/versions/1.0.0.json": {
+    "mtime": 1779177714.139,
+    "ast_hash": "69eed8f571318b7f93b3dbd27cb8fc17",
+    "semantic_hash": ""
+  },
+  "public/graphify/graph.json": {
+    "mtime": 1783064441.2434847,
+    "ast_hash": "db393837c785d343d8e3a6e566148e27",
+    "semantic_hash": ""
+  },
+  "scripts/generate_graph.py": {
+    "mtime": 1783064434.0340466,
+    "ast_hash": "4913bf2870f333c47275edf0d7efaeff",
+    "semantic_hash": ""
+  },
+  "scripts/grant-all-admin-permissions.js": {
+    "mtime": 1782817806.573203,
+    "ast_hash": "dd80730d98cfe904874fb4216bb28747",
+    "semantic_hash": ""
+  },
+  "scripts/migrate-redis.js": {
+    "mtime": 1780922841.751,
+    "ast_hash": "2895cd049bbbec6bd09a6a8257303da6",
+    "semantic_hash": ""
+  },
+  "scripts/seed-kv.js": {
+    "mtime": 1779193270.422,
+    "ast_hash": "d388784f9cf3e2ad308157b8f80fc2e6",
+    "semantic_hash": ""
+  },
+  "scripts/seed-tasks.js": {
+    "mtime": 1779181483.385,
+    "ast_hash": "e6ac09ebe97f986467d4583fcdf2a122",
+    "semantic_hash": ""
+  },
+  "vercel.json": {
+    "mtime": 1783075706.7909384,
+    "ast_hash": "f7c431c3486d9a4c66242cbfb8fb35a3",
+    "semantic_hash": ""
+  },
+  ".claude/claude.md": {
     "mtime": 1781104151.047,
     "ast_hash": "5e16817c793c830776c694cacd59be69",
-    "semantic_hash": "5e16817c793c830776c694cacd59be69"
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/prds/USER-001.md": {
-    "mtime": 1778943759.831,
-    "ast_hash": "625b3f4451a451ff924afa8f43264f2c",
-    "semantic_hash": "625b3f4451a451ff924afa8f43264f2c"
+  ".gitlab-ci.yml": {
+    "mtime": 1782800375.1117513,
+    "ast_hash": "19564a88665a204f95b644c5eaeaf7d1",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/prds/AUTH-001.md": {
-    "mtime": 1778943757.362,
-    "ast_hash": "7665939b229d37d70e470ab2a4873d80",
-    "semantic_hash": "7665939b229d37d70e470ab2a4873d80"
+  "PRD.md": {
+    "mtime": 1778941996.081,
+    "ast_hash": "5eb9aa1c5749309858198684651dd2f0",
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/docs/github-schema.md": {
+  "README-graphify.md": {
+    "mtime": 1778943264.699,
+    "ast_hash": "aeabdf2937a49fba9491d20a942d7187",
+    "semantic_hash": ""
+  },
+  "README-ui.md": {
+    "mtime": 1780927085.558,
+    "ast_hash": "39136ce3fa6546bef48ca935f17d18e6",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1779528564.587,
+    "ast_hash": "cfa10e157ab8af135b9b6f6c36357fdf",
+    "semantic_hash": ""
+  },
+  "dev-err.txt": {
+    "mtime": 1779181830.75,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "dev-out.txt": {
+    "mtime": 1779181830.748,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "docs/github-schema.md": {
     "mtime": 1778943096.638,
     "ast_hash": "b8d449da9f42963458178f29c11234c5",
-    "semantic_hash": "b8d449da9f42963458178f29c11234c5"
+    "semantic_hash": ""
   },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/public/graphify/graph.html": {
-    "mtime": 1779177251.72,
-    "ast_hash": "8441c8cd26e70f79798d4bcfb71e0b01",
-    "semantic_hash": "8441c8cd26e70f79798d4bcfb71e0b01"
-  },
-  "/Users/macmini6/Library/CloudStorage/GoogleDrive-hardik@aipmcorp.com/Other computers/My Computer/HVWork/gitlab/PRD_Manager/graphify/graph.html": {
+  "graphify/graph.html": {
     "mtime": 1778942666.829,
     "ast_hash": "7905911978fd765deab141d6b0a782db",
-    "semantic_hash": "7905911978fd765deab141d6b0a782db"
+    "semantic_hash": ""
+  },
+  "prds/AUTH-001.md": {
+    "mtime": 1778943757.362,
+    "ast_hash": "7665939b229d37d70e470ab2a4873d80",
+    "semantic_hash": ""
+  },
+  "prds/USER-001.md": {
+    "mtime": 1778943759.831,
+    "ast_hash": "625b3f4451a451ff924afa8f43264f2c",
+    "semantic_hash": ""
+  },
+  "public/graphify/graph.html": {
+    "mtime": 1779177251.72,
+    "ast_hash": "8441c8cd26e70f79798d4bcfb71e0b01",
+    "semantic_hash": ""
+  },
+  "requirements.txt": {
+    "mtime": 1778943591.831,
+    "ast_hash": "76ad3722db4fd7e9cb28245ddfe9b959",
+    "semantic_hash": ""
   }
 }

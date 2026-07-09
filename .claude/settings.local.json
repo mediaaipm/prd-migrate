@@ -262,7 +262,13 @@
       "Bash(sed \"s|from './submit-queue'|from './submit-queue.js'|\" lib/optimistic.js)",
       "Bash(sed -e 's|file:///c:/PRD_Manager/lib/submit-queue.js|file:///c:/PRD_Manager/.qtest/submit-queue.js|' -e 's|file:///c:/PRD_Manager/lib/optimistic.js|file:///c:/PRD_Manager/.qtest/optimistic.js|' __TRACKED_VAR__/test-queue.mjs)",
       "Bash(node .qtest/run.mjs)",
-      "Bash(python -c \"import json;print\\(json.load\\(open\\('package.json'\\)\\).get\\('scripts'\\)\\)\")"
+      "Bash(python -c \"import json;print\\(json.load\\(open\\('package.json'\\)\\).get\\('scripts'\\)\\)\")",
+      "Bash(node \"C:/Users/hardik/AppData/Local/Temp/claude/c--PRD-Manager/a282a0cb-520b-4611-a84b-d2e321ab63d9/scratchpad/list-users.js\")",
+      "Bash(node \"C:/Users/hardik/AppData/Local/Temp/claude/c--PRD-Manager/a282a0cb-520b-4611-a84b-d2e321ab63d9/scratchpad/promote.js\")",
+      "Bash(ls -la \"/c/Users/hardik/.local/bin/\" 2>/dev/null | grep -i graphify; echo \"--- out:\"; ls -la /c/PRD_Manager/graphify-out/ 2>/dev/null || echo \"no graphify-out\")",
+      "Read(//c/Users/hardik/.local/bin//**)",
+      "Bash(\"/c/Users/hardik/.local/bin/graphify.exe\" --help)",
+      "Bash(\"/c/Users/hardik/.local/bin/graphify.exe\" update *)"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects",

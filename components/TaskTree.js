@@ -452,6 +452,17 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
     })
   }
 
+  function handleArchive() {
+    const childCount = countDescendants(node)
+    // Only this task is archived. buildTree() re-roots orphaned children, so its
+    // sub-tasks stay on the board rather than disappearing with the parent.
+    const msg = childCount > 0
+      ? `Archive "${node.title}"? Its ${childCount} sub-task(s) stay on the list as top-level tasks.`
+      : `Archive "${node.title}"?`
+    if (!confirm(msg)) return
+    enqueueUpdate({ archived: true, archivedAt: new Date().toISOString() }, `Archive “${node.title}”`)
+  }
+
   function handleAddChild(form) {
     const draft = taskDraft({ ...form, parentId: node.id, numberOverride: form.numberOverride || null })
     enqueue({
@@ -571,6 +582,9 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
             <button className="task-action-btn" onClick={() => { setEditing(v => !v); setAddingChild(false); setShowUpdates(false) }} title="Edit task">Edit</button>
             <button className={`task-action-btn ${showUpdates ? 'active' : ''}`} onClick={() => { setShowUpdates(v => !v); setEditing(false); setAddingChild(false) }} title="Updates">Updates</button>
           </>}
+          {canEdit && (
+            <button className="task-action-btn" onClick={handleArchive} title="Archive task">📦</button>
+          )}
           {canDelete && (
             <button className="task-action-btn danger" onClick={handleDelete} title="Delete task">✕</button>
           )}

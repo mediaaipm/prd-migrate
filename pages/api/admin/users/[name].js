@@ -49,7 +49,8 @@ export default async function handler(req, res) {
     await getKv().hset(`user:${target}`, {
       username: username !== undefined ? username.trim() : (existing.username || ''),
       password: password && password !== '' ? password : (existing.password || ''),
-      role: 'admin',
+      // Preserve superadmin; editing a superadmin must not silently demote them.
+      role: existing.role === 'superadmin' ? 'superadmin' : 'admin',
       permissions: JSON.stringify(perms),
       assignedProjects: newAssigned,
     })

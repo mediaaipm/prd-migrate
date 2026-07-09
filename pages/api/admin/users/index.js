@@ -31,7 +31,7 @@ export default async function handler(req, res) {
       }
       return { name, username: profile.username || '', hasPassword: !!profile.password, role: profile.role || '', permissions, assignedProjects }
     }))
-    return res.json(profiles.filter(p => p.role === 'admin'))
+    return res.json(profiles.filter(p => p.role === 'admin' || p.role === 'superadmin'))
   }
 
   if (req.method === 'POST') {
