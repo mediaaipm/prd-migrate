@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { apiFetch } from '../lib/api-fetch'
+import { enqueue, onSync } from '../lib/submit-queue'
+import { taskDraft, taskCreateBody } from '../lib/task-draft'
 import AssigneeInput from './AssigneeInput'
+import SubmitButton from './SubmitButton'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
 
@@ -91,7 +93,7 @@ function slugify(label, existingStatuses) {
   return `${base}-${i}`
 }
 
-export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUser, taskAcl, onAclChange, taskPrefix, onPrefixChange, taskSeqStart, onSeqStartChange }) {
+export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl, onAclChange, taskPrefix, onPrefixChange, taskSeqStart, onSeqStartChange }) {
   const storageKey = `kanban-cols:${apiBase}`
 
   // Full edit for admins; assignees may only change status of their own tasks.
@@ -152,7 +154,6 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
   const [editForm, setEditForm] = useState(null)
   const [assignees, setAssignees] = useState([])
   const [labels, setLabels] = useState([])
-  const [saving, setSaving] = useState(false)
   const [animatingOut, setAnimatingOut] = useState(new Set())
   const [kbSearch, setKbSearch] = useState('')
   const [kbPriority, setKbPriority] = useState('')
@@ -183,7 +184,6 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
   // Permissions (ACL) manager — admin sets which statuses assignees may set
   const [showAclMgr, setShowAclMgr] = useState(false)
   const [aclDraft, setAclDraft] = useState(null)
-  const [savingAcl, setSavingAcl] = useState(false)
 
   // Column management
   const [addingCol, setAddingCol] = useState(false)
@@ -237,7 +237,19 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
   }
 
   const hasKbFilters = kbSearch || kbPriority || kbStatus || kbDate || kbPerson || kbLabel
-  const visibleTasks = hasKbFilters ? boardTasks.filter(matchesFilters) : boardTasks
+  // A match on a parent OR any descendant (child, grandchild) should surface the
+  // whole card family — so filtering by a person/name works regardless of which
+  // level of the tree carries the assignee/title.
+  const matchIds = new Set(boardTasks.filter(matchesFilters).map(t => t.id))
+  const familyMatch = new Set() // top-ancestor ids whose family has ≥1 direct match
+  boardTasks.forEach(t => { if (matchIds.has(t.id)) familyMatch.add(topAncestorId(t.id)) })
+  function isVisible(t) {
+    if (!hasKbFilters) return true
+    if (matchIds.has(t.id)) return true
+    if (!t.parentId) return familyMatch.has(t.id)   // top card: show if any descendant matches
+    return matchIds.has(topAncestorId(t.id))        // child: show if its top card matched
+  }
+  const visibleTasks = boardTasks.filter(isVisible)
 
   function onBoardMouseDown(e) {
     if (e.target.closest('.kanban-card') || e.target.closest('.kanban-subtask-row') ||
@@ -288,30 +300,25 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
   }
   useEffect(() => { loadLabels() }, [labelsApi]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Labels are few and rarely edited, so rather than maintain an optimistic overlay
+  // for them, just refetch when a queued label write reaches the server.
+  useEffect(() => onSync(item => {
+    if (labelsApi && item.url.startsWith(labelsApi)) loadLabels()
+  }), [labelsApi]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // --- Label management ---
-  async function createLabel() {
+  function createLabel() {
     if (!newLabel.name.trim() || !labelsApi) return
-    await apiFetch(labelsApi, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newLabel),
-    })
+    enqueue({ url: labelsApi, method: 'POST', body: newLabel, label: `Create label “${newLabel.name.trim()}”` })
     setNewLabel({ name: '', color: COL_COLORS[1] })
-    loadLabels()
   }
-  async function updateLabel(id, updates) {
+  function updateLabel(id, updates) {
     if (!labelsApi) return
-    await apiFetch(`${labelsApi}?id=${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates),
-    })
-    loadLabels()
+    enqueue({ url: `${labelsApi}?id=${id}`, method: 'PUT', body: updates, label: 'Update label' })
   }
-  async function deleteLabel(id) {
+  function deleteLabel(id) {
     if (!labelsApi) return
-    await apiFetch(`${labelsApi}?id=${id}`, { method: 'DELETE' })
-    loadLabels()
+    enqueue({ url: `${labelsApi}?id=${id}`, method: 'DELETE', label: 'Delete label' })
   }
 
   // --- Permissions (ACL) management ---
@@ -334,21 +341,20 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
         : [...d.assigneeStatuses, status],
     }))
   }
-  async function saveAcl() {
+  function saveAcl() {
     if (!slug || !aclDraft) return
-    setSavingAcl(true)
     const payload = {
       assigneeCanChangeStatus: aclDraft.assigneeCanChangeStatus,
       assigneeStatuses: aclDraft.assigneeStatuses,
     }
     const prefix = (aclDraft.taskPrefix || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8)
     const start = Math.max(1, parseInt(aclDraft.taskSeqStart, 10) || 1)
-    await apiFetch(`/api/projects/${slug}`, {
+    enqueue({
+      url: `/api/projects/${slug}`,
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ taskAcl: payload, taskPrefix: prefix, taskSeqStart: start }),
+      body: { taskAcl: payload, taskPrefix: prefix, taskSeqStart: start },
+      label: 'Save task settings',
     })
-    setSavingAcl(false)
     onAclChange?.(payload)
     onPrefixChange?.(prefix)
     onSeqStartChange?.(start)
@@ -367,62 +373,63 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
     })
   }
 
-  async function saveNew() {
+  // Queue a task create and return the draft, so callers can reference the new id
+  // immediately — before the POST has been sent, let alone answered.
+  function enqueueCreate(fields, label) {
+    const draft = taskDraft(fields)
+    enqueue({
+      url: apiBase,
+      method: 'POST',
+      body: taskCreateBody(draft),
+      label: label || `Add card “${draft.title}”`,
+      optimistic: { entity: 'task', op: 'create', scope: apiBase, data: draft },
+    })
+    return draft
+  }
+
+  function saveNew() {
     if (!addForm?.title.trim()) return
-    setSaving(true)
     const status = addForm.status
-    async function createTree(node, parentId) {
-      const res = await apiFetch(apiBase, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: node.title.trim(),
-          priority: node.priority || 'medium',
-          status,
-          ...(parentId ? { parentId } : { labelIds: node.labelIds || [] }),
-        }),
+
+    // Children used to wait on their parent's POST to learn its id. Now the id is
+    // generated up front, so the whole subtree is queued in one synchronous pass and
+    // the FIFO drain guarantees a parent is committed before its children reference it.
+    function queueTree(node, parentId) {
+      const draft = enqueueCreate({
+        title: node.title,
+        priority: node.priority,
+        status,
+        ...(parentId ? { parentId } : { labelIds: node.labelIds || [] }),
       })
-      const created = await res.json()
       for (const child of (node.children || [])) {
-        if (child.title.trim()) await createTree(child, created.id)
+        if (child.title.trim()) queueTree(child, draft.id)
       }
     }
-    await createTree(addForm, null)
-    setSaving(false)
+    queueTree(addForm, null)
+
     setAddingFor(null)
     setAddForm(null)
-    onRefresh()
   }
 
   // Quick-add (Trello-style inline card composer)
-  async function quickAdd(status) {
+  function quickAdd(status) {
     if (!quickAddTitle.trim()) return
-    await apiFetch(apiBase, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: quickAddTitle.trim(), status, priority: 'medium' }),
-    })
+    enqueueCreate({ title: quickAddTitle, status, priority: 'medium' })
     setQuickAddTitle('')
-    onRefresh()
   }
 
   // Add a sub-task to an existing card on the board. Inherits the parent's status
   // so it renders nested under the parent.
-  async function addSubtask(parent) {
+  function addSubtask(parent) {
     if (!subAddForm.title.trim()) return
-    await apiFetch(apiBase, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: subAddForm.title.trim(),
-        priority: subAddForm.priority || 'medium',
-        status: parent.status,
-        parentId: parent.id,
-      }),
-    })
+    enqueueCreate({
+      title: subAddForm.title,
+      priority: subAddForm.priority || 'medium',
+      status: parent.status,
+      parentId: parent.id,
+    }, `Add sub-task “${subAddForm.title.trim()}”`)
     setSubAddFor(null)
     setSubAddForm({ title: '', priority: 'medium' })
-    onRefresh()
   }
 
   function renderSubFormChildren(children, path) {
@@ -475,33 +482,34 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
     setCommentText('')
   }
 
-  async function saveEdit() {
+  // Queue a partial update to a task on this board.
+  function enqueueUpdate(taskId, patch, label) {
+    enqueue({
+      url: `${apiBase}/${taskId}`,
+      method: 'PUT',
+      body: patch,
+      label,
+      optimistic: { entity: 'task', op: 'update', scope: apiBase, id: taskId, patch },
+    })
+  }
+
+  function saveEdit() {
     if (!editForm?.title.trim() || !editingTask) return
-    setSaving(true)
-    await apiFetch(`${apiBase}/${editingTask.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(editForm),
-    })
-    setSaving(false)
+    enqueueUpdate(editingTask.id, editForm, `Save card “${editForm.title.trim()}”`)
     closeEdit()
-    onRefresh()
   }
 
-  async function archiveTask() {
+  function archiveTask() {
     if (!editingTask) return
-    setSaving(true)
-    await apiFetch(`${apiBase}/${editingTask.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ archived: true, archivedAt: new Date().toISOString() }),
-    })
-    setSaving(false)
+    enqueueUpdate(
+      editingTask.id,
+      { archived: true, archivedAt: new Date().toISOString() },
+      `Archive card “${editingTask.title}”`,
+    )
     closeEdit()
-    onRefresh()
   }
 
-  async function postComment() {
+  function postComment() {
     if (!commentText.trim() || !editingTask) return
     const newUpdate = {
       id: `upd-${Date.now()}`,
@@ -513,12 +521,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
     const nextUpdates = [...(editForm.updates || []), newUpdate]
     setEditForm(p => ({ ...p, updates: nextUpdates }))
     setCommentText('')
-    await apiFetch(`${apiBase}/${editingTask.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ updates: nextUpdates }),
-    })
-    onRefresh()
+    enqueueUpdate(editingTask.id, { updates: nextUpdates }, 'Post comment')
   }
 
   // --- Attachments / cover ---
@@ -566,27 +569,23 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
       alert('You are not allowed to move tasks to this status.')
       return
     }
+    // The wait here is the card's leave animation, not the database.
     setAnimatingOut(prev => new Set([...prev, taskId]))
-    await Promise.all([
-      apiFetch(`${apiBase}/${taskId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      }),
-      new Promise(r => setTimeout(r, 180)),
-    ])
+    enqueueUpdate(taskId, { status: newStatus }, `Move “${task.title}” to ${newStatus}`)
+    await new Promise(r => setTimeout(r, 180))
     setAnimatingOut(prev => { const s = new Set(prev); s.delete(taskId); return s })
-    onRefresh()
   }
 
-  async function reorderColumn(status, orderedIds) {
+  function reorderColumn(status, orderedIds) {
     const draggedId = orderedIds[0] // any id in this column works as the path param
-    await apiFetch(`${apiBase}/${draggedId}`, {
+    const patches = Object.fromEntries(orderedIds.map((id, i) => [id, { boardOrder: i }]))
+    enqueue({
+      url: `${apiBase}/${draggedId}`,
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'boardReorder', status, orderedIds }),
+      body: { action: 'boardReorder', status, orderedIds },
+      label: 'Reorder column',
+      optimistic: { entity: 'task', op: 'updateMany', scope: apiBase, patches },
     })
-    onRefresh()
   }
 
   // Task drag
@@ -1003,12 +1002,13 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
                         <option value="critical">Critical</option>
                       </select>
                       <button className="btn-ghost" style={{ fontSize: 12, padding: '4px 10px' }} onClick={() => setAddingFor(null)}>Cancel</button>
-                      <button
+                      <SubmitButton
                         className="btn-primary"
                         style={{ fontSize: 12, padding: '4px 10px' }}
+                        busyLabel="Adding…"
                         onClick={saveNew}
-                        disabled={saving || !addForm.title.trim()}
-                      >{saving ? 'Adding…' : 'Add'}</button>
+                        disabled={!addForm.title.trim()}
+                      >Add</SubmitButton>
                     </div>
                     {labels.length > 0 && (
                       <div className="kanban-add-labels">
@@ -1476,7 +1476,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
               )}
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
                 <button className="btn-ghost" onClick={() => setShowAclMgr(false)}>Cancel</button>
-                <button className="btn-primary" onClick={saveAcl} disabled={savingAcl}>Save</button>
+                <SubmitButton className="btn-primary" onClick={saveAcl}>Save</SubmitButton>
               </div>
             </div>
           </div>
@@ -1630,14 +1630,14 @@ export default function KanbanBoard({ tasks, apiBase, slug, onRefresh, currentUs
               </div>
 
               <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-                <button className="btn-ghost" style={{ color: '#dc2626' }} onClick={archiveTask} disabled={saving} title="Archive this card">Archive</button>
+                <SubmitButton className="btn-ghost" style={{ color: '#dc2626' }} busyLabel="Archiving…" onClick={archiveTask} title="Archive this card">Archive</SubmitButton>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button className="btn-ghost" onClick={closeEdit}>Cancel</button>
-                  <button
+                  <SubmitButton
                     className="btn-primary"
                     onClick={saveEdit}
-                    disabled={saving || !editForm.title.trim()}
-                  >{saving ? 'Saving…' : 'Save'}</button>
+                    disabled={!editForm.title.trim()}
+                  >Save</SubmitButton>
                 </div>
               </div>
             </div>

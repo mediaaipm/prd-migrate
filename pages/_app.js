@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import SyncStatus from '../components/SyncStatus'
 import '../styles/globals.css'
 
 function LoginScreen({ onLogin }) {
@@ -140,5 +141,11 @@ export default function App({ Component, pageProps }) {
 
   if (authed === null) return null
   if (!authed) return <LoginScreen onLogin={handleLogin} />
-  return <Component {...pageProps} currentUser={currentUser} />
+  return (
+    <>
+      <Component {...pageProps} currentUser={currentUser} />
+      {/* Owns the unsaved-work guard and is the only surface for a failed write. */}
+      <SyncStatus />
+    </>
+  )
 }

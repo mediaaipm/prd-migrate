@@ -2,7 +2,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import Nav from '../../../components/Nav'
+import SubmitButton from '../../../components/SubmitButton'
 import { apiFetch } from '../../../lib/api-fetch'
+import { enqueue, newId, onSync } from '../../../lib/submit-queue'
+import { useOptimistic } from '../../../lib/optimistic'
 import TaskTree from '../../../components/TaskTree'
 import KanbanBoard from '../../../components/KanbanBoard'
 import CalendarView from '../../../components/CalendarView'
@@ -80,11 +83,10 @@ function daysLeft(endDate) {
 }
 
 function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger }) {
-  const [sprints, setSprints]             = useState([])
+  const [serverSprints, setServerSprints] = useState([])
   const [loadingS, setLoadingS]           = useState(true)
   const [showModal, setShowModal]         = useState(false)
   const [editingSprint, setEditingSprint] = useState(null)
-  const [acting, setActing]               = useState(null)
   const [showCompleted, setShowCompleted] = useState(false)
 
   const [formName, setFormName]       = useState('')
@@ -93,15 +95,20 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
   const [formTaskIds, setFormTaskIds] = useState([])
   const [formStatus, setFormStatus]   = useState('active')
 
+  const sprints = useOptimistic(serverSprints, { entity: 'sprint', scope: `/api/projects/${slug}/sprint` })
+
   const loadSprints = useCallback(() => {
     if (!slug) return
     apiFetch(`/api/projects/${slug}/sprint`)
       .then(r => r.ok ? r.json() : [])
-      .then(data => { setSprints(Array.isArray(data) ? data : []); setLoadingS(false) })
+      .then(data => { setServerSprints(Array.isArray(data) ? data : []); setLoadingS(false) })
       .catch(() => setLoadingS(false))
   }, [slug])
 
   useEffect(() => { loadSprints() }, [loadSprints])
+  useEffect(() => onSync(item => {
+    if (item.optimistic?.entity === 'sprint') loadSprints()
+  }), [loadSprints])
   useEffect(() => { if (refreshTrigger > 0) loadSprints() }, [refreshTrigger]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function openNew() {
@@ -120,50 +127,66 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
     setShowModal(true)
   }
 
-  async function handleSave(e) {
+  const sprintScope = `/api/projects/${slug}/sprint`
+
+  function handleSave(e) {
     e.preventDefault()
     const body = { name: formName, startDate: formStart || null, endDate: formEnd || null, taskIds: formTaskIds, status: formStatus }
     if (editingSprint) {
-      await apiFetch(`/api/projects/${slug}/sprint?id=${editingSprint.id}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      enqueue({
+        url: `${sprintScope}?id=${editingSprint.id}`,
+        method: 'PUT',
+        body,
+        label: `Update sprint “${formName}”`,
+        optimistic: { entity: 'sprint', op: 'update', scope: sprintScope, id: editingSprint.id, patch: body },
       })
     } else {
-      await apiFetch(`/api/projects/${slug}/sprint`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      const id = newId('sprint')
+      enqueue({
+        url: sprintScope,
+        method: 'POST',
+        body: { ...body, id },
+        label: `Create sprint “${formName}”`,
+        // `tasks` is what the hydrated GET returns; seed it so the card renders.
+        optimistic: { entity: 'sprint', op: 'create', scope: sprintScope, data: { ...body, id, tasks: [], createdAt: new Date().toISOString() } },
       })
     }
     setShowModal(false)
-    loadSprints()
     onSprintChange?.()
   }
 
-  async function completeSprint(sprint) {
+  // The sprint PUT replaces the whole record, so every status flip has to resend the
+  // fields it is not changing.
+  function setSprintStatus(sprint, status) {
+    const body = { name: sprint.name, startDate: sprint.startDate, endDate: sprint.endDate, taskIds: sprint.taskIds, status }
+    enqueue({
+      url: `${sprintScope}?id=${sprint.id}`,
+      method: 'PUT',
+      body,
+      label: `${status === 'completed' ? 'Complete' : 'Start'} sprint “${sprint.name}”`,
+      optimistic: { entity: 'sprint', op: 'update', scope: sprintScope, id: sprint.id, patch: { status } },
+    })
+    onSprintChange?.()
+  }
+
+  function completeSprint(sprint) {
     if (!confirm(`Mark "${sprint.name}" as completed?`)) return
-    setActing(sprint.id)
-    await apiFetch(`/api/projects/${slug}/sprint?id=${sprint.id}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: sprint.name, startDate: sprint.startDate, endDate: sprint.endDate, taskIds: sprint.taskIds, status: 'completed' }),
-    })
-    setActing(null)
-    loadSprints(); onSprintChange?.()
+    setSprintStatus(sprint, 'completed')
   }
 
-  async function handleDelete(sprint) {
+  function startSprint(sprint) {
+    setSprintStatus(sprint, 'active')
+  }
+
+  function handleDelete(sprint) {
     if (!confirm(`Delete "${sprint.name}"? This cannot be undone.`)) return
-    setActing(sprint.id)
-    await apiFetch(`/api/projects/${slug}/sprint?id=${sprint.id}`, { method: 'DELETE' })
-    setActing(null)
-    loadSprints(); onSprintChange?.()
-  }
-
-  async function startSprint(sprint) {
-    setActing(sprint.id)
-    await apiFetch(`/api/projects/${slug}/sprint?id=${sprint.id}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: sprint.name, startDate: sprint.startDate, endDate: sprint.endDate, taskIds: sprint.taskIds, status: 'active' }),
+    enqueue({
+      url: `${sprintScope}?id=${sprint.id}`,
+      method: 'DELETE',
+      label: `Delete sprint “${sprint.name}”`,
+      optimistic: { entity: 'sprint', op: 'delete', scope: sprintScope, id: sprint.id },
     })
-    setActing(null)
-    loadSprints(); onSprintChange?.()
+    onSprintChange?.()
   }
 
   function toggleTask(id) {
@@ -264,11 +287,11 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
                   padding: '5px 12px', borderRadius: 7, border: '1px solid #c7d2fe',
                   background: '#fff', color: '#4338ca', fontSize: 12, fontWeight: 600, cursor: 'pointer',
                 }}>Manage</button>
-                <button onClick={() => completeSprint(sprint)} disabled={acting === sprint.id} style={{
+                <button onClick={() => completeSprint(sprint)} style={{
                   padding: '5px 12px', borderRadius: 7, border: '1px solid #bbf7d0',
                   background: '#fff', color: '#15803d', fontSize: 12, fontWeight: 600, cursor: 'pointer',
                 }}>Complete</button>
-                <button onClick={() => handleDelete(sprint)} disabled={acting === sprint.id} style={{
+                <button onClick={() => handleDelete(sprint)} style={{
                   padding: '5px 12px', borderRadius: 7, border: '1px solid #fecaca',
                   background: '#fff', color: '#dc2626', fontSize: 12, fontWeight: 600, cursor: 'pointer',
                 }}>Delete</button>
@@ -312,7 +335,7 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
                   )}
                   <span style={{ fontSize: 12, color: '#94a3b8' }}>{allItems.length} tasks</span>
                   <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
-                    <button onClick={() => startSprint(sprint)} disabled={acting === sprint.id} style={{
+                    <button onClick={() => startSprint(sprint)} style={{
                       padding: '4px 10px', borderRadius: 6, border: '1px solid #6366f1',
                       background: '#6366f1', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer',
                     }}>▶ Start</button>
@@ -320,7 +343,7 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
                       padding: '4px 10px', borderRadius: 6, border: '1px solid #e2e8f0',
                       background: '#fff', color: '#475569', fontSize: 11, fontWeight: 600, cursor: 'pointer',
                     }}>Edit</button>
-                    <button onClick={() => handleDelete(sprint)} disabled={acting === sprint.id} style={{
+                    <button onClick={() => handleDelete(sprint)} style={{
                       padding: '4px 10px', borderRadius: 6, border: '1px solid #fecaca',
                       background: '#fff', color: '#dc2626', fontSize: 11, fontWeight: 600, cursor: 'pointer',
                     }}>Delete</button>
@@ -366,7 +389,7 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
                       )}
                       <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>{doneTasks}/{allItems.length} done</span>
                       <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
-                        <button onClick={() => handleDelete(sprint)} disabled={acting === sprint.id} style={{
+                        <button onClick={() => handleDelete(sprint)} style={{
                           padding: '3px 8px', borderRadius: 6, border: '1px solid #fecaca',
                           background: '#fff', color: '#dc2626', fontSize: 11, fontWeight: 600, cursor: 'pointer',
                         }}>Delete</button>
@@ -469,10 +492,11 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingTop: 4 }}>
                 <button type="button" onClick={() => setShowModal(false)} className="btn-ghost" style={{ fontSize: 13, padding: '7px 16px' }}>Cancel</button>
-                <button type="submit" style={{
+                <SubmitButton type="submit" onClick={handleSave} className="" style={{
                   padding: '7px 20px', borderRadius: 8, border: 'none',
                   background: '#6366f1', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                }}>{editingSprint ? 'Save Changes' : 'Create Sprint'}</button>
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                }}>{editingSprint ? 'Save Changes' : 'Create Sprint'}</SubmitButton>
               </div>
             </form>
           </div>
@@ -540,8 +564,7 @@ export default function TasksPage({ currentUser }) {
   const [taskSeqStart, setTaskSeqStart] = useState(1)
   const [showIdSettings, setShowIdSettings] = useState(false)
   const [idDraft, setIdDraft] = useState({ prefix: '', start: '1' })
-  const [savingId, setSavingId] = useState(false)
-  const [tasks, setTasks] = useState([])
+  const [serverTasks, setServerTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [versions, setVersions] = useState([])
   const [viewMode, setViewMode] = useState('list')
@@ -562,6 +585,12 @@ export default function TasksPage({ currentUser }) {
       : `/api/projects/${slug}/tasks`
     : null
 
+  // Single choke point for the board, tree and calendar: every queued task mutation
+  // for this apiBase is replayed on top of whatever the server last returned. A
+  // refetch therefore cannot make a just-created card blink out of existence while
+  // its POST is still in flight.
+  const tasks = useOptimistic(serverTasks, { entity: 'task', scope: apiBase, cascade: true })
+
   const loadTasks = useCallback((opts = {}) => {
     if (!apiBase) return
     // Skeleton only on initial load. Background refreshes (status change, drag,
@@ -569,32 +598,34 @@ export default function TasksPage({ currentUser }) {
     if (!opts.background) setLoading(true)
     fetch(apiBase)
       .then(r => r.ok ? r.json() : [])
-      .then(data => { setTasks(data); setLoading(false); setSprintRefreshTrigger(n => n + 1) })
+      .then(data => { setServerTasks(data); setLoading(false); setSprintRefreshTrigger(n => n + 1) })
       .catch(() => setLoading(false))
   }, [apiBase])
 
   const refreshTasks = useCallback(() => loadTasks({ background: true }), [loadTasks])
 
+  // Fold in server-assigned fields (seq, number, order) once a queued write lands.
+  useEffect(() => onSync(item => {
+    if (item.optimistic?.entity === 'task' && item.optimistic.scope === apiBase) refreshTasks()
+  }), [apiBase, refreshTasks])
+
   function openIdSettings() {
     setIdDraft({ prefix: taskPrefix || '', start: String(taskSeqStart || 1) })
     setShowIdSettings(true)
   }
-  async function saveIdSettings() {
+  function saveIdSettings() {
     if (!slug) return
-    setSavingId(true)
     const prefix = (idDraft.prefix || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8)
     const start = Math.max(1, parseInt(idDraft.start, 10) || 1)
-    const res = await apiFetch(`/api/projects/${slug}`, {
+    enqueue({
+      url: `/api/projects/${slug}`,
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ taskPrefix: prefix, taskSeqStart: start }),
+      body: { taskPrefix: prefix, taskSeqStart: start },
+      label: 'Save task ID settings',
     })
-    setSavingId(false)
-    if (res.ok) {
-      setTaskPrefix(prefix)
-      setTaskSeqStart(start)
-      setShowIdSettings(false)
-    }
+    setTaskPrefix(prefix)
+    setTaskSeqStart(start)
+    setShowIdSettings(false)
   }
 
   useEffect(() => {
@@ -672,19 +703,25 @@ export default function TasksPage({ currentUser }) {
 
   const archivedTasks = tasks.filter(t => t.archived)
 
-  async function restoreTask(id) {
-    await apiFetch(`${apiBase}/${id}`, {
+  function restoreTask(id) {
+    const patch = { archived: false, archivedAt: null }
+    enqueue({
+      url: `${apiBase}/${id}`,
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ archived: false, archivedAt: null }),
+      body: patch,
+      label: 'Restore card',
+      optimistic: { entity: 'task', op: 'update', scope: apiBase, id, patch },
     })
-    loadTasks()
   }
 
-  async function permaDeleteTask(id) {
+  function permaDeleteTask(id) {
     if (!confirm('Permanently delete this card and its sub-tasks? This cannot be undone.')) return
-    await apiFetch(`${apiBase}/${id}`, { method: 'DELETE' })
-    loadTasks()
+    enqueue({
+      url: `${apiBase}/${id}`,
+      method: 'DELETE',
+      label: 'Delete card',
+      optimistic: { entity: 'task', op: 'delete', scope: apiBase, id },
+    })
   }
 
   const contextLabel = version ? `v${version} Tasks` : 'Project Tasks'
@@ -825,9 +862,9 @@ export default function TasksPage({ currentUser }) {
             </div>
           </div>
           {loading ? <TaskSkeleton /> : viewMode === 'kanban' ? (
-            <KanbanBoard key={apiBase} tasks={tasks} apiBase={apiBase} slug={slug} onRefresh={refreshTasks} currentUser={currentUser} taskAcl={taskAcl} onAclChange={setTaskAcl} taskPrefix={taskPrefix} onPrefixChange={setTaskPrefix} taskSeqStart={taskSeqStart} onSeqStartChange={setTaskSeqStart} />
+            <KanbanBoard key={apiBase} tasks={tasks} apiBase={apiBase} slug={slug} currentUser={currentUser} taskAcl={taskAcl} onAclChange={setTaskAcl} taskPrefix={taskPrefix} onPrefixChange={setTaskPrefix} taskSeqStart={taskSeqStart} onSeqStartChange={setTaskSeqStart} />
           ) : viewMode === 'calendar' ? (
-            <CalendarView tasks={tasks} apiBase={apiBase} onRefresh={refreshTasks} currentUser={currentUser} />
+            <CalendarView tasks={tasks} apiBase={apiBase} currentUser={currentUser} />
           ) : (
             <TaskTree tasks={tasks} apiBase={apiBase} onRefresh={refreshTasks} currentUser={currentUser} taskAcl={taskAcl} taskPrefix={taskPrefix} />
           )}
@@ -891,7 +928,7 @@ export default function TasksPage({ currentUser }) {
                 </p>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
                   <button className="btn-ghost" onClick={() => setShowIdSettings(false)}>Cancel</button>
-                  <button className="btn-primary" onClick={saveIdSettings} disabled={savingId}>{savingId ? 'Saving…' : 'Save'}</button>
+                  <SubmitButton className="btn-primary" onClick={saveIdSettings}>Save</SubmitButton>
                 </div>
               </div>
             </div>

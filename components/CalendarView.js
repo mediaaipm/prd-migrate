@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
-import { apiFetch } from '../lib/api-fetch'
+import { enqueue } from '../lib/submit-queue'
+import { taskDraft, taskCreateBody } from '../lib/task-draft'
 import { hasPerm, isSuperAdmin } from '../lib/client-permissions'
 import AssigneeInput from './AssigneeInput'
+import SubmitButton from './SubmitButton'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
 
@@ -97,9 +99,9 @@ function DayTaskForm({ initial, onSave, onCancel, label, assignees }) {
         <input className="form-input" type="date" title="Due date" value={form.dueDate} onChange={f('dueDate')} />
         <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
           <button className="btn-ghost" type="button" onClick={onCancel} style={{ fontSize: 12 }}>Cancel</button>
-          <button className="btn-primary" type="button" onClick={() => form.title.trim() && onSave(form)} style={{ fontSize: 12 }} disabled={!form.title.trim()}>
+          <SubmitButton className="btn-primary" onClick={() => form.title.trim() && onSave(form)} style={{ fontSize: 12 }} disabled={!form.title.trim()}>
             {label || 'Save'}
-          </button>
+          </SubmitButton>
         </div>
       </div>
     </div>
@@ -118,7 +120,7 @@ function dueKey(task) {
   return ymd(d)
 }
 
-export default function CalendarView({ tasks, apiBase, onRefresh, currentUser }) {
+export default function CalendarView({ tasks, apiBase, currentUser }) {
   const today = new Date()
   const [ctxMenu, setCtxMenu] = useState(null)   // { x, y, task }
   const [historyTask, setHistoryTask] = useState(null)
@@ -164,38 +166,42 @@ export default function CalendarView({ tasks, apiBase, onRefresh, currentUser })
     setSubParent(null)
   }
 
-  async function saveTask(form) {
+  function saveTask(form) {
     if (editId === 'new') {
-      await apiFetch(apiBase, {
+      const draft = taskDraft({ ...form, parentId: subParent || null })
+      enqueue({
+        url: apiBase,
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: form.title, description: form.description, status: form.status,
-          priority: form.priority, assignees: form.assignees || [],
-          startDate: form.startDate || null, dueDate: form.dueDate || null, parentId: subParent || null,
-          attachments: form.attachments || [], cover: form.cover || null,
-        }),
+        body: taskCreateBody(draft),
+        label: `Add task “${draft.title}”`,
+        optimistic: { entity: 'task', op: 'create', scope: apiBase, data: draft },
       })
     } else {
-      await apiFetch(`${apiBase}/${editId}`, {
+      const patch = {
+        title: form.title, description: form.description, status: form.status,
+        priority: form.priority, assignees: form.assignees || [],
+        startDate: form.startDate || null, dueDate: form.dueDate || null,
+        attachments: form.attachments || [], cover: form.cover || null,
+      }
+      enqueue({
+        url: `${apiBase}/${editId}`,
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: form.title, description: form.description, status: form.status,
-          priority: form.priority, assignees: form.assignees || [],
-          startDate: form.startDate || null, dueDate: form.dueDate || null,
-          attachments: form.attachments || [], cover: form.cover || null,
-        }),
+        body: patch,
+        label: `Save “${form.title}”`,
+        optimistic: { entity: 'task', op: 'update', scope: apiBase, id: editId, patch },
       })
     }
     closeForm()
-    onRefresh()
   }
 
-  async function deleteTask(id) {
+  function deleteTask(id) {
     if (!confirm('Delete this task?')) return
-    await apiFetch(`${apiBase}/${id}`, { method: 'DELETE' })
-    onRefresh()
+    enqueue({
+      url: `${apiBase}/${id}`,
+      method: 'DELETE',
+      label: 'Delete task',
+      optimistic: { entity: 'task', op: 'delete', scope: apiBase, id },
+    })
   }
 
   const todayKey = ymd(today)

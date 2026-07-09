@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { apiFetch } from '../lib/api-fetch'
+import { enqueue } from '../lib/submit-queue'
+import { taskDraft, taskCreateBody } from '../lib/task-draft'
 import { hasPerm, isSuperAdmin } from '../lib/client-permissions'
 import AssigneeInput from './AssigneeInput'
+import SubmitButton from './SubmitButton'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
 
@@ -211,19 +214,15 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreato
   // Text typed in the assignee box but not yet turned into a token. Held in a ref
   // (not state) so it's always current at save time without a blur→re-render race.
   const pendingAssignee = useRef('')
-  const [saving, setSaving] = useState(false)
 
-  async function submit() {
-    if (!form.title.trim() || saving) return
+  // onSave only enqueues now, so there is no response to await. SubmitButton owns the
+  // busy state and the double-click guard.
+  function submit() {
+    if (!form.title.trim()) return
     const pending = pendingAssignee.current.trim()
     const cur = Array.isArray(form.assignees) ? form.assignees : []
     const assigneesFinal = pending && !cur.includes(pending) ? [...cur, pending] : cur
-    setSaving(true)
-    try {
-      await onSave({ ...form, assignees: assigneesFinal })
-    } finally {
-      setSaving(false)
-    }
+    onSave({ ...form, assignees: assigneesFinal })
   }
 
   async function addImages(fileList) {
@@ -318,9 +317,9 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreato
         </label>
         <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
           <button className="btn-ghost" type="button" onClick={onCancel} style={{ fontSize: 12 }}>Cancel</button>
-          <button className="btn-primary" type="button" onClick={submit} style={{ fontSize: 12 }} disabled={!form.title.trim() || saving}>
-            {saving ? 'Saving…' : (label || 'Save')}
-          </button>
+          <SubmitButton className="btn-primary" onClick={submit} style={{ fontSize: 12 }} disabled={!form.title.trim()}>
+            {label || 'Save'}
+          </SubmitButton>
         </div>
       </div>
     </div>
@@ -334,7 +333,6 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
   const [showUpdates, setShowUpdates] = useState(false)
   const [updateText, setUpdateText] = useState('')
   const [updateAuthor, setUpdateAuthor] = useState('')
-  const [savingUpdate, setSavingUpdate] = useState(false)
   const [localStatus, setLocalStatus] = useState(node.status)
   const [showDetail, setShowDetail] = useState(false)
   const [detailEditing, setDetailEditing] = useState(false)
@@ -361,18 +359,24 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
 
   const hasChildren = node.children && node.children.length > 0
 
-  async function setStatus(next) {
-    if (!canChangeStatus || next === localStatus) return
-    if (!statusAllowed(next)) { alert('You are not allowed to set this status.'); return }
-    setLocalStatus(next)
-    apiFetch(`${apiBase}/${node.id}`, {
+  function enqueueUpdate(patch, label) {
+    enqueue({
+      url: `${apiBase}/${node.id}`,
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: next }),
+      body: patch,
+      label,
+      optimistic: { entity: 'task', op: 'update', scope: apiBase, id: node.id, patch },
     })
   }
 
-  async function cycleStatus() {
+  function setStatus(next) {
+    if (!canChangeStatus || next === localStatus) return
+    if (!statusAllowed(next)) { alert('You are not allowed to set this status.'); return }
+    setLocalStatus(next)
+    enqueueUpdate({ status: next }, `Set “${node.title}” to ${next}`)
+  }
+
+  function cycleStatus() {
     if (!canChangeStatus) return
     // Advance to the next status in the cycle the user is actually allowed to set.
     const start = STATUS_CYCLE.indexOf(localStatus)
@@ -383,27 +387,24 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
     }
   }
 
-  async function handleSaveEdit(form) {
-    await apiFetch(`${apiBase}/${node.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: form.title,
-        description: form.description,
-        status: form.status,
-        priority: form.priority,
-        assignees: form.assignees || [],
-        startDate: form.startDate || null,
-        dueDate: form.dueDate || null,
-        numberOverride: form.numberOverride || null,
-        attachments: form.attachments || [],
-        cover: form.cover || null,
-      }),
-    })
+  function handleSaveEdit(form) {
+    enqueueUpdate({
+      title: form.title,
+      description: form.description,
+      status: form.status,
+      priority: form.priority,
+      assignees: form.assignees || [],
+      startDate: form.startDate || null,
+      dueDate: form.dueDate || null,
+      numberOverride: form.numberOverride || null,
+      attachments: form.attachments || [],
+      cover: form.cover || null,
+    }, `Save “${form.title}”`)
     setEditing(false)
-    onRefresh()
   }
 
+  // Deliberately NOT queued. The server is the only thing that knows whether a task ID
+  // number is already taken, and the user has to be told before the dialog closes.
   async function handleEditId() {
     const input = window.prompt(`Set task ID number for "${node.title}".\nCurrent: ${taskPrefix}-${node.seq}\nIDs are unique per project and won't change unless edited here.`, String(node.seq ?? ''))
     if (input == null) return
@@ -424,9 +425,8 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
     onRefresh()
   }
 
-  async function handleAddUpdate() {
+  function handleAddUpdate() {
     if (!updateText.trim()) return
-    setSavingUpdate(true)
     const existing = Array.isArray(node.updates) ? node.updates : []
     const newUpdate = {
       id: `upd-${Date.now()}`,
@@ -434,44 +434,47 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
       author: updateAuthor.trim() || null,
       createdAt: new Date().toISOString(),
     }
-    await apiFetch(`${apiBase}/${node.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ updates: [...existing, newUpdate] }),
-    })
+    enqueueUpdate({ updates: [...existing, newUpdate] }, 'Post update')
     setUpdateText('')
-    setSavingUpdate(false)
-    onRefresh()
   }
 
-  async function handleDelete() {
+  function handleDelete() {
     const childCount = countDescendants(node)
     const msg = childCount > 0
       ? `Delete "${node.title}" and its ${childCount} sub-task(s)?`
       : `Delete "${node.title}"?`
     if (!confirm(msg)) return
-    await apiFetch(`${apiBase}/${node.id}`, { method: 'DELETE' })
-    onRefresh()
+    enqueue({
+      url: `${apiBase}/${node.id}`,
+      method: 'DELETE',
+      label: `Delete “${node.title}”`,
+      optimistic: { entity: 'task', op: 'delete', scope: apiBase, id: node.id },
+    })
   }
 
-  async function handleAddChild(form) {
-    await apiFetch(apiBase, {
+  function handleAddChild(form) {
+    const draft = taskDraft({ ...form, parentId: node.id, numberOverride: form.numberOverride || null })
+    enqueue({
+      url: apiBase,
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, parentId: node.id, numberOverride: form.numberOverride || null }),
+      body: taskCreateBody(draft),
+      label: `Add sub-task “${draft.title}”`,
+      optimistic: { entity: 'task', op: 'create', scope: apiBase, data: draft },
     })
     setAddingChild(false)
     setExpanded(true)
-    onRefresh()
   }
 
-  async function handleMove(direction) {
-    await apiFetch(`${apiBase}/${node.id}`, {
+  // Reorder swaps `order` with a sibling the client does not hold a reference to, so
+  // there is no descriptor to replay — the move shows up when the queued PATCH lands
+  // and tasks.js refetches. Still off the click path.
+  function handleMove(direction) {
+    enqueue({
+      url: `${apiBase}/${node.id}`,
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ direction }),
+      body: { direction },
+      label: `Move “${node.title}” ${direction}`,
     })
-    onRefresh()
   }
 
   const statusClass = localStatus === 'done' ? 'task-status done' : localStatus === 'in-progress' ? 'task-status in-progress' : localStatus === 'blocked' ? 'task-status blocked' : (localStatus === 'review' || localStatus === 'in-review') ? 'task-status review' : localStatus === 'backlog' ? 'task-status backlog' : 'task-status todo'
@@ -501,13 +504,6 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
           >
             {expanded ? '▼' : '▶'}
           </button>
-          {node.seq != null && !hasChildren && (
-            <span
-              className={`task-id-badge${canEdit ? ' task-id-badge--editable' : ''}`}
-              title={canEdit ? 'Click to edit task ID' : 'Task ID'}
-              onClick={canEdit ? handleEditId : undefined}
-            >{taskPrefix ? `${taskPrefix}-${node.seq}` : `#${node.seq}`}</span>
-          )}
           <span className="task-number" title={node.autoNumber !== node.number ? `Auto: ${node.autoNumber}` : 'Auto-numbered'}>
             {node.number}
           </span>
@@ -556,6 +552,13 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
             </span>
           )}
         </div>
+        {node.seq != null && !hasChildren && (
+          <span
+            className={`task-id-badge${canEdit ? ' task-id-badge--editable' : ''}`}
+            title={canEdit ? 'Click to edit task ID' : 'Task ID'}
+            onClick={canEdit ? handleEditId : undefined}
+          >{taskPrefix ? `${taskPrefix}-${node.seq}` : `#${node.seq}`}</span>
+        )}
         <div className="task-row-actions">
           {canEdit && <>
             <button className="task-action-btn task-action-btn--move" onClick={() => handleMove('up')} title="Move up">↑</button>
@@ -630,14 +633,15 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleAddUpdate()}
               style={{ flex: 1, fontSize: 12 }}
             />
-            <button
+            <SubmitButton
               className="btn-primary"
               onClick={handleAddUpdate}
-              disabled={!updateText.trim() || savingUpdate}
+              disabled={!updateText.trim()}
+              busyLabel="Posting…"
               style={{ fontSize: 12, padding: '5px 12px', whiteSpace: 'nowrap' }}
             >
               Post
-            </button>
+            </SubmitButton>
           </div>
         </div>
       )}
@@ -774,6 +778,31 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
   const dueBtnRef = useRef(null)
   const draggedId = useRef(null)
   const [dropTarget, setDropTarget] = useState(null)
+  const [undoStack, setUndoStack] = useState([])   // snapshots of task positions, newest last
+  const canReorder = hasPerm(currentUser, 'task:update')
+
+  // Snapshot every task's parentId/order so a move can be reverted exactly.
+  function snapshotPositions() {
+    return (tasks || []).map(t => ({ id: t.id, parentId: t.parentId || null, order: t.order }))
+  }
+
+  function handleUndo() {
+    setUndoStack(prev => {
+      if (prev.length === 0) return prev
+      const positions = prev[prev.length - 1]
+      // The snapshot already is the target layout for every task, so it replays
+      // directly as an optimistic multi-row update.
+      const patches = Object.fromEntries(positions.map(p => [p.id, { parentId: p.parentId, order: p.order }]))
+      enqueue({
+        url: `${apiBase}/${positions[0]?.id || 'undo'}`,
+        method: 'PATCH',
+        body: { action: 'restorePositions', positions },
+        label: 'Undo move',
+        optimistic: { entity: 'task', op: 'updateMany', scope: apiBase, patches },
+      })
+      return prev.slice(0, -1)
+    })
+  }
 
   const dnd = {
     dropTarget,
@@ -788,14 +817,35 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
       draggedId.current = null
       setDropTarget(null)
       if (!sourceId || sourceId === nodeId || !zone) return
-      apiFetch(`${apiBase}/${sourceId}`, {
+      // Capture layout before mutating so Ctrl+Z / Undo can revert it.
+      const snapshot = snapshotPositions()
+      setUndoStack(prev => [...prev, snapshot].slice(-50))
+      // The server recomputes parentId/order for the moved node and its new siblings;
+      // reproducing that here would mean duplicating moveTask(). The drag is queued
+      // instead, and the tree settles when the refetch lands.
+      enqueue({
+        url: `${apiBase}/${sourceId}`,
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'move', targetId: nodeId, position: zone }),
-      }).then(() => onRefresh())
+        body: { action: 'move', targetId: nodeId, position: zone },
+        label: 'Move task',
+      })
     },
     onDragEnd() { draggedId.current = null; setDropTarget(null) },
   }
+
+  // Ctrl+Z / Cmd+Z undoes the last drag-move (ignored while typing in a field).
+  useEffect(() => {
+    if (!canReorder) return
+    function onKey(e) {
+      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.key.toLowerCase() !== 'z') return
+      const tag = (e.target.tagName || '').toLowerCase()
+      if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) return
+      e.preventDefault()
+      handleUndo()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [canReorder, apiBase, onRefresh])
 
   useEffect(() => {
     fetch('/api/assignees').then(r => r.ok ? r.json() : []).then(setAssignees).catch(() => {})
@@ -886,14 +936,16 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
     }
   }, [showDuePicker])
 
-  async function handleAddRoot(form) {
-    await apiFetch(apiBase, {
+  function handleAddRoot(form) {
+    const draft = taskDraft({ ...form, parentId: null, numberOverride: form.numberOverride || null })
+    enqueue({
+      url: apiBase,
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, parentId: null, numberOverride: form.numberOverride || null }),
+      body: taskCreateBody(draft),
+      label: `Add task “${draft.title}”`,
+      optimistic: { entity: 'task', op: 'create', scope: apiBase, data: draft },
     })
     setAddingRoot(false)
-    onRefresh()
   }
 
   return (
@@ -902,6 +954,17 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
         {hasPerm(currentUser, 'task:create') && (
           <button className="btn-add-task" style={{ fontSize: 12, padding: '5px 12px' }} onClick={() => setAddingRoot(v => !v)}>
             {addingRoot ? 'Cancel' : '+ Add Task'}
+          </button>
+        )}
+        {canReorder && (
+          <button
+            className="btn-ghost"
+            onClick={handleUndo}
+            disabled={undoStack.length === 0}
+            style={{ fontSize: 12, padding: '5px 10px' }}
+            title="Undo last drag move (Ctrl+Z)"
+          >
+            ↶ Undo{undoStack.length ? ` (${undoStack.length})` : ''}
           </button>
         )}
         {liveTasks.length > 0 && (
@@ -1046,7 +1109,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
       ) : (
         <div className="task-list">
           {tree.map(node => (
-            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={null} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} />
+            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={canReorder ? dnd : null} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} />
           ))}
         </div>
       )}

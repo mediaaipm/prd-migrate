@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Nav from '../components/Nav'
-import { apiFetch, apiFetchOrLogout } from '../lib/api-fetch'
+import { apiFetch } from '../lib/api-fetch'
 import { ALL_PERMISSIONS, PERMISSION_LABELS } from '../lib/permissions'
+import SubmitButton from '../components/SubmitButton'
+import { enqueue, onSync } from '../lib/submit-queue'
+import { useOptimistic } from '../lib/optimistic'
 
 const ACTION_LABELS = {
   login: 'Logged in',
@@ -216,7 +219,6 @@ function AdminPermissionEditor({ admin, onSaved }) {
   const [perms, setPerms] = useState(admin.permissions || ALL_PERMISSIONS)
   const [assignedProjects, setAssignedProjects] = useState(admin.assignedProjects || null)
   const [projects, setProjects] = useState([])
-  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     fetch('/api/projects').then(r => r.ok ? r.json() : []).then(data => setProjects(data || [])).catch(() => {})
@@ -233,23 +235,15 @@ function AdminPermissionEditor({ admin, onSaved }) {
     })
   }
 
-  async function handleSave() {
-    setSaving(true)
-    try {
-      const res = await apiFetchOrLogout(`/api/admin/users/${encodeURIComponent(admin.name)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ permissions: perms, assignedProjects }),
-      })
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}))
-        alert(d.error || 'Failed to save.')
-        return
-      }
-      await onSaved()
-    } finally {
-      setSaving(false)
-    }
+  function handleSave() {
+    enqueue({
+      url: `/api/admin/users/${encodeURIComponent(admin.name)}`,
+      method: 'PUT',
+      body: { permissions: perms, assignedProjects },
+      optimistic: { entity: 'admin', op: 'update', id: admin.name, patch: { permissions: perms, assignedProjects } },
+      label: `Save permissions for ${admin.name}`,
+    })
+    onSaved()
   }
 
   const GROUPS = [
@@ -336,9 +330,9 @@ function AdminPermissionEditor({ admin, onSaved }) {
       )}
 
       <div style={{ display: 'flex', gap: 8 }}>
-        <button className="btn-primary" style={{ fontSize: 12, padding: '4px 14px' }} onClick={handleSave} disabled={saving}>
-          {saving ? 'Saving…' : 'Save'}
-        </button>
+        <SubmitButton className="btn-primary" style={{ fontSize: 12, padding: '4px 14px' }} onClick={handleSave}>
+          Save
+        </SubmitButton>
         <button
           className="btn-ghost"
           style={{ fontSize: 12, padding: '4px 10px' }}
@@ -361,27 +355,19 @@ function AdminPermissionEditor({ admin, onSaved }) {
 function AdminPasswordEditor({ adminName, onSaved }) {
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
-  const [saving, setSaving] = useState(false)
 
-  async function handleSave() {
+  function handleSave() {
     if (!password) return
-    setSaving(true)
-    try {
-      const res = await apiFetchOrLogout(`/api/admin/users/${encodeURIComponent(adminName)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-      })
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}))
-        alert(d.error || 'Failed to save.')
-        return
-      }
-      setPassword('')
-      onSaved()
-    } finally {
-      setSaving(false)
-    }
+    // No optimistic descriptor: the password is never rendered in the admin list,
+    // so there is nothing to overlay — the write just needs to reach the server.
+    enqueue({
+      url: `/api/admin/users/${encodeURIComponent(adminName)}`,
+      method: 'PUT',
+      body: { password },
+      label: `Change password for ${adminName}`,
+    })
+    setPassword('')
+    onSaved()
   }
 
   return (
@@ -401,85 +387,105 @@ function AdminPasswordEditor({ adminName, onSaved }) {
           {showPw ? '🙈' : '👁'}
         </button>
       </div>
-      <button className="btn-primary" style={{ fontSize: 12, padding: '4px 14px' }} onClick={handleSave} disabled={saving || !password}>
-        {saving ? 'Saving…' : 'Save'}
-      </button>
+      <SubmitButton className="btn-primary" style={{ fontSize: 12, padding: '4px 14px' }} onClick={handleSave} disabled={!password}>
+        Save
+      </SubmitButton>
     </div>
   )
 }
 
 function AdminsTab() {
-  const [admins, setAdmins] = useState([])
+  const [rawAdmins, setRawAdmins] = useState([])
+  const admins = useOptimistic(rawAdmins, { entity: 'admin', key: 'name' })
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ name: '', username: '', password: '' })
   const [newPerms, setNewPerms] = useState(ALL_PERMISSIONS)
   const [showPw, setShowPw] = useState(false)
-  const [adding, setAdding] = useState(false)
   const [expanded, setExpanded] = useState(null)
   const [expandedPw, setExpandedPw] = useState(null)
-  const [applyingAll, setApplyingAll] = useState(false)
+  const [renaming, setRenaming] = useState(null)
+  const [renameVal, setRenameVal] = useState('')
 
   useEffect(() => { fetchAdmins() }, [])
+
+  // Pull the authoritative record once a queued admin write lands. Password saves
+  // carry no descriptor, so fall back to matching the URL.
+  useEffect(() => onSync(item => {
+    if (item.optimistic?.entity === 'admin' || (!item.optimistic && item.url.startsWith('/api/admin/users'))) fetchAdmins()
+  }), [])
 
   async function fetchAdmins() {
     setLoading(true)
     try {
       const res = await apiFetch('/api/admin/users')
-      if (res.ok) setAdmins(await res.json())
+      if (res.ok) setRawAdmins(await res.json())
     } finally {
       setLoading(false)
     }
   }
 
-  async function handleAdd(e) {
+  function handleAdd(e) {
     e.preventDefault()
-    if (!form.name.trim() || !form.username.trim() || !form.password) return
-    setAdding(true)
-    try {
-      const res = await apiFetch('/api/admin/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: form.name.trim(), username: form.username.trim(), password: form.password, permissions: newPerms }),
-      })
-      if (res.ok) {
-        setForm({ name: '', username: '', password: '' })
-        setNewPerms(ALL_PERMISSIONS)
-        fetchAdmins()
-      } else {
-        const d = await res.json()
-        alert(d.error || 'Failed to create admin')
-      }
-    } finally {
-      setAdding(false)
+    const name = form.name.trim()
+    const username = form.username.trim()
+    if (!name || !username || !form.password) return
+    enqueue({
+      url: '/api/admin/users',
+      method: 'POST',
+      body: { name, username, password: form.password, permissions: newPerms },
+      optimistic: { entity: 'admin', op: 'create', data: { name, username, permissions: newPerms, assignedProjects: null } },
+      label: `Add admin ${name}`,
+    })
+    setForm({ name: '', username: '', password: '' })
+    setNewPerms(ALL_PERMISSIONS)
+  }
+
+  // Not queued: the server returns 409 when the new name collides with an existing
+  // user — a uniqueness check the client cannot make.
+  async function handleRename(oldName) {
+    const trimmed = renameVal.trim()
+    if (!trimmed || trimmed === oldName) { setRenaming(null); return }
+    const res = await apiFetch(`/api/admin/users/${encodeURIComponent(oldName)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newName: trimmed }),
+    })
+    if (res.ok) {
+      setRenaming(null)
+      fetchAdmins()
+    } else {
+      const d = await res.json().catch(() => ({}))
+      alert(d.error || 'Rename failed.')
     }
   }
 
-  async function handleRemove(name) {
+  function handleRemove(name) {
     if (!confirm(`Remove admin "${name}"? They will lose admin access.`)) return
-    await apiFetch(`/api/admin/users/${encodeURIComponent(name)}`, { method: 'DELETE' })
-    setAdmins(prev => prev.filter(a => a.name !== name))
+    enqueue({
+      url: `/api/admin/users/${encodeURIComponent(name)}`,
+      method: 'DELETE',
+      optimistic: { entity: 'admin', op: 'delete', id: name },
+      label: `Remove admin ${name}`,
+    })
   }
 
+  // Not queued: reads d.updated off the response to report how many admins were
+  // changed — a count the client cannot know until the server answers.
   async function handleApplyAll() {
     if (!admins.length) return
     if (!confirm(`Grant the full permission list to all ${admins.length} admin(s)? This overwrites their current permissions.`)) return
-    setApplyingAll(true)
-    try {
-      const res = await apiFetch('/api/admin/users/bulk-permissions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ permissions: ALL_PERMISSIONS }),
-      })
-      if (res.ok) {
-        const d = await res.json()
-        await fetchAdmins()
-        alert(`Updated ${d.updated} admin(s) to the full permission list.`)
-      } else {
-        const d = await res.json().catch(() => ({}))
-        alert(d.error || 'Failed to update permissions')
-      }
-    } finally {
-      setApplyingAll(false)
+    const res = await apiFetch('/api/admin/users/bulk-permissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ permissions: ALL_PERMISSIONS }),
+    })
+    if (res.ok) {
+      const d = await res.json()
+      await fetchAdmins()
+      alert(`Updated ${d.updated} admin(s) to the full permission list.`)
+    } else {
+      const d = await res.json().catch(() => ({}))
+      alert(d.error || 'Failed to update permissions')
     }
   }
 
@@ -489,15 +495,15 @@ function AdminsTab() {
         <span>Admins</span>
         {!loading && <span className="badge">{admins.length}</span>}
         {!loading && admins.length > 0 && (
-          <button
+          <SubmitButton
             className="btn-ghost"
             style={{ marginLeft: 'auto', fontSize: 12, whiteSpace: 'nowrap' }}
             onClick={handleApplyAll}
-            disabled={applyingAll}
+            busyLabel="Applying…"
             title="Grant every permission to all secondary admins"
           >
-            {applyingAll ? 'Applying…' : 'Grant full permissions to all'}
-          </button>
+            Grant full permissions to all
+          </SubmitButton>
         )}
       </div>
 
@@ -522,9 +528,9 @@ function AdminsTab() {
               {showPw ? '🙈' : '👁'}
             </button>
           </div>
-          <button className="btn-primary" type="submit" disabled={adding || !form.name.trim() || !form.username.trim() || !form.password} style={{ whiteSpace: 'nowrap' }}>
-            {adding ? 'Adding…' : '+ Add Admin'}
-          </button>
+          <SubmitButton className="btn-primary" type="submit" onClick={handleAdd} disabled={!form.name.trim() || !form.username.trim() || !form.password} busyLabel="Adding…" style={{ whiteSpace: 'nowrap' }}>
+            + Add Admin
+          </SubmitButton>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
           {ALL_PERMISSIONS.map(perm => {
@@ -565,7 +571,27 @@ function AdminsTab() {
             <li key={admin.name} style={{ borderBottom: '1px solid var(--border)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontSize: 14, color: 'var(--fg)', fontWeight: 500 }}>🛡 {admin.name}</span>
+                  <span style={{ fontSize: 14, color: 'var(--fg)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    🛡
+                    {renaming === admin.name ? (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <input
+                          className="form-input"
+                          value={renameVal}
+                          onChange={e => setRenameVal(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') handleRename(admin.name); if (e.key === 'Escape') setRenaming(null) }}
+                          style={{ fontSize: 14, padding: '2px 8px', width: 180 }}
+                          autoFocus
+                        />
+                        <SubmitButton className="btn-primary" style={{ fontSize: 12, padding: '3px 10px' }} onClick={() => handleRename(admin.name)} disabled={!renameVal.trim()}>
+                          Save
+                        </SubmitButton>
+                        <button className="btn-ghost" style={{ fontSize: 12, padding: '3px 8px' }} onClick={() => setRenaming(null)}>
+                          Cancel
+                        </button>
+                      </span>
+                    ) : admin.name}
+                  </span>
                   <span style={{ fontSize: 12, color: 'var(--muted)' }}>
                     {admin.username ? `@${admin.username}` : <em>no username</em>}
                     {' · '}
@@ -575,6 +601,15 @@ function AdminsTab() {
                   </span>
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>
+                  {renaming !== admin.name && (
+                    <button
+                      className="btn-ghost"
+                      style={{ fontSize: 12, padding: '4px 10px' }}
+                      onClick={() => { setRenaming(admin.name); setRenameVal(admin.name); setExpanded(null); setExpandedPw(null) }}
+                    >
+                      Rename
+                    </button>
+                  )}
                   <button
                     className="btn-ghost"
                     style={{ fontSize: 12, padding: '4px 10px' }}
@@ -589,13 +624,13 @@ function AdminsTab() {
                   >
                     {expandedPw === admin.name ? 'Cancel' : 'Change Password'}
                   </button>
-                  <button className="btn-ghost" style={{ fontSize: 12, padding: '4px 10px', color: 'var(--danger, #e05)' }} onClick={() => handleRemove(admin.name)}>
+                  <SubmitButton className="btn-ghost" style={{ fontSize: 12, padding: '4px 10px', color: 'var(--danger, #e05)' }} onClick={() => handleRemove(admin.name)} busyLabel="Removing…">
                     Remove
-                  </button>
+                  </SubmitButton>
                 </div>
               </div>
               {expanded === admin.name && (
-                <AdminPermissionEditor admin={admin} onSaved={async () => { await fetchAdmins(); setExpanded(null) }} />
+                <AdminPermissionEditor admin={admin} onSaved={() => setExpanded(null)} />
               )}
               {expandedPw === admin.name && (
                 <AdminPasswordEditor adminName={admin.name} onSaved={() => setExpandedPw(null)} />
@@ -608,30 +643,61 @@ function AdminsTab() {
   )
 }
 
-function UserRow({ user, onRemove, onSaved }) {
+function RoleBadge({ role }) {
+  const r = role || 'user'
+  const label = r === 'superadmin' ? 'Super Admin' : r === 'admin' ? 'Admin' : 'User'
+  const isPriv = r === 'admin' || r === 'superadmin'
+  return (
+    <span style={{
+      fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.4,
+      color: isPriv ? 'var(--accent)' : 'var(--muted)',
+      border: `1px solid ${isPriv ? 'var(--accent)' : 'var(--border)'}`,
+      borderRadius: 4, padding: '1px 5px', whiteSpace: 'nowrap',
+    }}>{label}</span>
+  )
+}
+
+function UserRow({ user, onRemove, onSaved, isSuperAdmin }) {
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({ username: user.username || '', password: '' })
-  const [saving, setSaving] = useState(false)
   const [showPw, setShowPw] = useState(false)
+  const [renaming, setRenaming] = useState(false)
+  const [renameVal, setRenameVal] = useState(user.name)
 
-  async function handleSave() {
-    setSaving(true)
-    try {
-      const body = { username: form.username }
-      if (form.password) body.password = form.password
-      const res = await apiFetch(`/api/assignees/${encodeURIComponent(user.name)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      if (res.ok) {
-        setEditing(false)
-        setForm(f => ({ ...f, password: '' }))
-        onSaved()
-      }
-    } finally {
-      setSaving(false)
+  // Not queued: the server returns 409 when the new name collides with an existing
+  // user — a uniqueness check the client cannot make, so we await it and surface the
+  // error before closing the rename field.
+  async function handleRename() {
+    const trimmed = renameVal.trim()
+    if (!trimmed || trimmed === user.name) { setRenaming(false); return }
+    const res = await apiFetch(`/api/assignees/${encodeURIComponent(user.name)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newName: trimmed }),
+    })
+    if (res.ok) {
+      setRenaming(false)
+      onSaved()
+    } else {
+      const d = await res.json().catch(() => ({}))
+      alert(d.error || 'Rename failed.')
     }
+  }
+
+  function handleSave() {
+    const body = { username: form.username }
+    if (form.password) body.password = form.password
+    const patch = { username: form.username }
+    if (form.password) patch.hasPassword = true
+    enqueue({
+      url: `/api/assignees/${encodeURIComponent(user.name)}`,
+      method: 'PUT',
+      body,
+      optimistic: { entity: 'user', op: 'update', id: user.name, patch },
+      label: `Update ${user.name} credentials`,
+    })
+    setEditing(false)
+    setForm(f => ({ ...f, password: '' }))
   }
 
   return (
@@ -642,12 +708,27 @@ function UserRow({ user, onRemove, onSaved }) {
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <span style={{ fontSize: 14, color: 'var(--fg)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
-            &#128100; {user.name}
-            {(user.role === 'admin' || user.role === 'superadmin') && (
-              <span style={{
-                fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.4,
-                color: 'var(--accent)', border: '1px solid var(--accent)', borderRadius: 4, padding: '1px 5px',
-              }}>{user.role === 'superadmin' ? 'Super Admin' : 'Admin'}</span>
+            <RoleBadge role={user.role} />
+            &#128100;
+            {renaming ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  className="form-input"
+                  value={renameVal}
+                  onChange={e => setRenameVal(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') { setRenaming(false); setRenameVal(user.name) } }}
+                  style={{ fontSize: 14, padding: '2px 8px', width: 180 }}
+                  autoFocus
+                />
+                <SubmitButton className="btn-primary" style={{ fontSize: 12, padding: '3px 10px' }} onClick={handleRename} disabled={!renameVal.trim()}>
+                  Save
+                </SubmitButton>
+                <button className="btn-ghost" style={{ fontSize: 12, padding: '3px 8px' }} onClick={() => { setRenaming(false); setRenameVal(user.name) }}>
+                  Cancel
+                </button>
+              </span>
+            ) : (
+              user.name
             )}
           </span>
           <span style={{ fontSize: 12, color: 'var(--muted)' }}>
@@ -657,6 +738,15 @@ function UserRow({ user, onRemove, onSaved }) {
           </span>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
+          {isSuperAdmin && !renaming && (
+            <button
+              className="btn-ghost"
+              style={{ fontSize: 12, padding: '4px 10px' }}
+              onClick={() => { setRenaming(true); setRenameVal(user.name) }}
+            >
+              Rename
+            </button>
+          )}
           <button
             className="btn-ghost"
             style={{ fontSize: 12, padding: '4px 10px' }}
@@ -664,13 +754,14 @@ function UserRow({ user, onRemove, onSaved }) {
           >
             {editing ? 'Cancel' : 'Set credentials'}
           </button>
-          <button
+          <SubmitButton
             className="btn-ghost"
             style={{ fontSize: 12, padding: '4px 10px', color: 'var(--danger, #e05)' }}
             onClick={() => onRemove(user.name)}
+            busyLabel="Removing…"
           >
             Remove
-          </button>
+          </SubmitButton>
         </div>
       </div>
 
@@ -708,14 +799,14 @@ function UserRow({ user, onRemove, onSaved }) {
                 {showPw ? '🙈' : '👁'}
               </button>
             </div>
-            <button
+            <SubmitButton
               className="btn-primary"
               onClick={handleSave}
-              disabled={saving || !form.username.trim()}
+              disabled={!form.username.trim()}
               style={{ whiteSpace: 'nowrap', fontSize: 12 }}
             >
-              {saving ? 'Saving…' : 'Save'}
-            </button>
+              Save
+            </SubmitButton>
           </div>
           {!form.username.trim() && (
             <p style={{ margin: 0, fontSize: 12, color: '#f87171' }}>Username is required to save.</p>
@@ -727,47 +818,52 @@ function UserRow({ user, onRemove, onSaved }) {
 }
 
 function Snapshots() {
-  const [snapshots, setSnapshots] = useState([])
+  const [rawSnapshots, setRawSnapshots] = useState([])
+  const snapshots = useOptimistic(rawSnapshots, { entity: 'snapshot', key: 'id' })
   const [loading, setLoading] = useState(true)
   const [label, setLabel] = useState('')
-  const [creating, setCreating] = useState(false)
   const [expanded, setExpanded] = useState(null)
   const [detail, setDetail] = useState({})
 
   useEffect(() => { fetchSnapshots() }, [])
 
+  useEffect(() => onSync(item => {
+    if (item.optimistic?.entity === 'snapshot') fetchSnapshots()
+  }), [])
+
   async function fetchSnapshots() {
     setLoading(true)
     try {
       const res = await apiFetch('/api/admin/snapshots')
-      if (res.ok) setSnapshots(await res.json())
+      if (res.ok) setRawSnapshots(await res.json())
     } finally {
       setLoading(false)
     }
   }
 
+  // Not queued: the snapshot id is assigned by the server (snapshot-store.js ignores
+  // any client id), so there is no stable key to build an optimistic row from.
   async function handleCreate(e) {
     e.preventDefault()
-    setCreating(true)
-    try {
-      const res = await apiFetch('/api/admin/snapshots', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ label: label.trim() || undefined }),
-      })
-      if (res.ok) {
-        setLabel('')
-        fetchSnapshots()
-      }
-    } finally {
-      setCreating(false)
+    const res = await apiFetch('/api/admin/snapshots', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label: label.trim() || undefined }),
+    })
+    if (res.ok) {
+      setLabel('')
+      fetchSnapshots()
     }
   }
 
-  async function handleDelete(id, snapLabel) {
+  function handleDelete(id, snapLabel) {
     if (!confirm(`Delete snapshot "${snapLabel}"? This cannot be undone.`)) return
-    await apiFetch(`/api/admin/snapshots/${id}`, { method: 'DELETE' })
-    setSnapshots(prev => prev.filter(s => s.id !== id))
+    enqueue({
+      url: `/api/admin/snapshots/${id}`,
+      method: 'DELETE',
+      optimistic: { entity: 'snapshot', op: 'delete', id },
+      label: `Delete snapshot ${snapLabel}`,
+    })
     if (expanded === id) setExpanded(null)
   }
 
@@ -797,9 +893,9 @@ function Snapshots() {
           value={label}
           onChange={e => setLabel(e.target.value)}
         />
-        <button className="btn-primary" type="submit" disabled={creating} style={{ whiteSpace: 'nowrap' }}>
-          {creating ? 'Taking…' : 'Take Snapshot'}
-        </button>
+        <SubmitButton className="btn-primary" type="submit" onClick={handleCreate} busyLabel="Taking…" style={{ whiteSpace: 'nowrap' }}>
+          Take Snapshot
+        </SubmitButton>
       </form>
 
       {loading ? (
@@ -834,13 +930,14 @@ function Snapshots() {
                   >
                     {expanded === s.id ? 'Hide' : 'Details'}
                   </button>
-                  <button
+                  <SubmitButton
                     className="btn-ghost"
                     style={{ fontSize: 12, padding: '4px 10px', color: 'var(--danger, #e05)' }}
                     onClick={() => handleDelete(s.id, s.label)}
+                    busyLabel="Deleting…"
                   >
                     Delete
-                  </button>
+                  </SubmitButton>
                 </div>
               </div>
               {expanded === s.id && (
@@ -875,11 +972,11 @@ export default function AdminPage({ currentUser }) {
   const router = useRouter()
   const isSuperAdmin = currentUser?.role === 'superadmin' || (currentUser?.isAdmin && !currentUser?.role)
   const [tab, setTab] = useState('users')
-  const [users, setUsers] = useState([])
+  const [rawUsers, setRawUsers] = useState([])
+  const users = useOptimistic(rawUsers, { entity: 'user', key: 'name' })
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ name: '', username: '', password: '' })
   const [showPw, setShowPw] = useState(false)
-  const [adding, setAdding] = useState(false)
 
   useEffect(() => {
     if (currentUser && !currentUser.isAdmin) router.replace('/')
@@ -887,39 +984,43 @@ export default function AdminPage({ currentUser }) {
 
   useEffect(() => { fetchUsers() }, [])
 
+  useEffect(() => onSync(item => {
+    if (item.optimistic?.entity === 'user') fetchUsers()
+  }), [])
+
   async function fetchUsers() {
     setLoading(true)
     try {
       const res = await fetch('/api/assignees')
-      if (res.ok) setUsers(await res.json())
+      if (res.ok) setRawUsers(await res.json())
     } finally {
       setLoading(false)
     }
   }
 
-  async function handleAdd(e) {
+  function handleAdd(e) {
     e.preventDefault()
-    if (!form.name.trim()) return
-    setAdding(true)
-    try {
-      const res = await apiFetch('/api/assignees', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: form.name.trim(), username: form.username.trim(), password: form.password }),
-      })
-      if (res.ok) {
-        setForm({ name: '', username: '', password: '' })
-        fetchUsers()
-      }
-    } finally {
-      setAdding(false)
-    }
+    const name = form.name.trim()
+    if (!name) return
+    const username = form.username.trim()
+    enqueue({
+      url: '/api/assignees',
+      method: 'POST',
+      body: { name, username, password: form.password },
+      optimistic: { entity: 'user', op: 'create', data: { name, username, hasPassword: !!form.password } },
+      label: `Add user ${name}`,
+    })
+    setForm({ name: '', username: '', password: '' })
   }
 
-  async function handleRemove(name) {
+  function handleRemove(name) {
     if (!confirm(`Remove user "${name}"?`)) return
-    await apiFetch(`/api/assignees/${encodeURIComponent(name)}`, { method: 'DELETE' })
-    setUsers(prev => prev.filter(u => u.name !== name))
+    enqueue({
+      url: `/api/assignees/${encodeURIComponent(name)}`,
+      method: 'DELETE',
+      optimistic: { entity: 'user', op: 'delete', id: name },
+      label: `Remove user ${name}`,
+    })
   }
 
   return (
@@ -995,9 +1096,9 @@ export default function AdminPage({ currentUser }) {
                     {showPw ? '🙈' : '👁'}
                   </button>
                 </div>
-                <button className="btn-primary" type="submit" disabled={adding || !form.name.trim()} style={{ whiteSpace: 'nowrap' }}>
-                  {adding ? 'Adding…' : '+ Add User'}
-                </button>
+                <SubmitButton className="btn-primary" type="submit" onClick={handleAdd} disabled={!form.name.trim()} busyLabel="Adding…" style={{ whiteSpace: 'nowrap' }}>
+                  + Add User
+                </SubmitButton>
               </div>
             </form>
 
@@ -1018,7 +1119,7 @@ export default function AdminPage({ currentUser }) {
             ) : (
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {users.map(user => (
-                  <UserRow key={user.name} user={user} onRemove={handleRemove} onSaved={fetchUsers} />
+                  <UserRow key={user.name} user={user} onRemove={handleRemove} onSaved={fetchUsers} isSuperAdmin={isSuperAdmin} />
                 ))}
               </ul>
             )}

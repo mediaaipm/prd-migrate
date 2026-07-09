@@ -3,6 +3,8 @@ let _kv;
 function getKv() { if (!_kv) _kv = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN }); return _kv; }
 const { logAudit } = require('../../../lib/audit-log')
 const { requirePermission } = require('../../../lib/require-permission')
+const { requireSuperAdmin } = require('../../../lib/require-superadmin')
+const { renameUser, RenameError } = require('../../../lib/rename-user')
 
 const KEY = 'assignees'
 
@@ -18,7 +20,24 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PUT') {
-    const { username, password } = req.body || {}
+    const { username, password, newName } = req.body || {}
+
+    // Rename is superadmin-only, and works for any role (user, admin, superadmin).
+    // Existing project members and task assignments are cascaded to the new name.
+    if (newName !== undefined) {
+      if (!requireSuperAdmin(req, res)) return
+      try {
+        const result = await renameUser(name, newName, { username, password })
+        if (result.renamed) {
+          await logAudit(req, 'update_user_credentials', 'user', { name: result.name, renamedFrom: name })
+          return res.json({ ok: true, name: result.name })
+        }
+      } catch (err) {
+        if (err instanceof RenameError) return res.status(err.status).json({ error: err.message })
+        throw err
+      }
+    }
+
     const existing = await getKv().hgetall(`user:${name}`) || {}
     await getKv().hset(`user:${name}`, {
       username: username !== undefined ? username.trim() : (existing.username || ''),

@@ -2067,3 +2067,91 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   font-style: italic;
 }
 .thist-time { margin-top: 4px; font-size: 11px; color: var(--muted); }
+
+/* ─── Submit queue: spinner, sync banner, pending rows ────────────────────── */
+
+.btn-spinner {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin-right: 6px;
+  vertical-align: -1px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 0.6s linear infinite;
+  opacity: 0.85;
+}
+
+@keyframes btn-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-spinner { animation-duration: 2s; }
+}
+
+/* Fixed to the viewport so it stays visible while the user keeps working. */
+.sync-status {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  max-width: min(380px, calc(100vw - 36px));
+  pointer-events: none;
+}
+.sync-status > * { pointer-events: auto; }
+
+.sync-status-pill {
+  display: flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: var(--sidebar-bg, #1e293b);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .25);
+}
+
+.sync-status-error {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 13px;
+  border-radius: 9px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .18);
+}
+.sync-status-error-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.sync-status-error-body strong { font-size: 12.5px; color: #991b1b; }
+.sync-status-error-body span { font-size: 12px; color: #b91c1c; word-break: break-word; }
+.sync-status-error-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.sync-status-error-actions button { font-size: 12px; padding: 4px 12px; }
+
+/* A row whose write has not reached the database yet. */
+.pending-dot {
+  position: absolute;
+  top: 10px;
+  left: -4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, .18);
+  animation: pending-pulse 1.6s ease-in-out infinite;
+}
+.project-card.is-pending { opacity: 0.75; }
+
+@keyframes pending-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pending-dot { animation: none; }
+}

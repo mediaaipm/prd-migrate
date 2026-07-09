@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
-import { apiFetch } from '../lib/api-fetch'
+import { enqueue } from '../lib/submit-queue'
+import SubmitButton from './SubmitButton'
 
 function renderMarkdown(md) {
   return md
@@ -23,7 +24,6 @@ function renderMarkdown(md) {
 export default function Editor({ slug, version, proposalId }) {
   const [content, setContent] = useState('')
   const [status, setStatus] = useState('')
-  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     setContent('')
@@ -40,29 +40,20 @@ export default function Editor({ slug, version, proposalId }) {
       .catch(() => {})
   }, [slug, version, proposalId])
 
-  const save = useCallback(async () => {
-    setSaving(true)
-    setStatus('saving…')
-    try {
-      const url = proposalId
-        ? `/api/projects/${slug}/proposals/${proposalId}`
-        : `/api/projects/${slug}/versions/${version}`
-      const method = proposalId ? 'PUT' : 'PUT'
-      const body = proposalId ? { content } : { content }
+  const save = useCallback(() => {
+    const url = proposalId
+      ? `/api/projects/${slug}/proposals/${proposalId}`
+      : `/api/projects/${slug}/versions/${version}`
 
-      const res = await apiFetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      const j = await res.json()
-      if (!res.ok) throw new Error(j.error || JSON.stringify(j))
-      setStatus('saved')
-    } catch (err) {
-      setStatus('error: ' + err.message)
-    } finally {
-      setSaving(false)
-    }
+    // No optimistic descriptor: the editor already holds the content it just queued,
+    // and nothing else on this page reads it. Failures surface through SyncStatus.
+    enqueue({
+      url,
+      method: 'PUT',
+      body: { content },
+      label: proposalId ? 'Save proposal' : `Save PRD v${version}`,
+    })
+    setStatus('saved')
   }, [slug, version, proposalId, content])
 
   const statusClass = status.startsWith('error') ? 'error' : status === 'saved' ? 'success' : ''
@@ -71,9 +62,9 @@ export default function Editor({ slug, version, proposalId }) {
     <>
       <div className="editor-toolbar" style={{ borderTop: '1px solid var(--border)', borderBottom: 'none', paddingTop: 0, paddingBottom: 0, height: 40, flexShrink: 0 }}>
         <span className={`editor-status ${statusClass}`} style={{ flex: 1 }}>{status}</span>
-        <button className="btn-primary" onClick={save} disabled={saving || (!version && !proposalId)}>
-          {saving ? 'Saving…' : 'Save'}
-        </button>
+        <SubmitButton className="btn-primary" onClick={save} disabled={!version && !proposalId}>
+          Save
+        </SubmitButton>
       </div>
 
       <div className="editor-panels">

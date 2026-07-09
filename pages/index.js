@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Nav from '../components/Nav'
+import SubmitButton from '../components/SubmitButton'
 import { apiFetch } from '../lib/api-fetch'
+import { isSuperAdmin } from '../lib/client-permissions'
+import { useOptimistic } from '../lib/optimistic'
+import { enqueue, onSync } from '../lib/submit-queue'
+import { slugify } from '../lib/slugify'
 
 export default function Home({ currentUser }) {
-  const [projects, setProjects] = useState([])
+  const [serverProjects, setServerProjects] = useState([])
   const [loading, setLoading] = useState(true)
-  const [creating, setCreating] = useState(false)
   const [form, setForm] = useState({ name: '', description: '', taskPrefix: '', taskSeqStart: '' })
   const [showForm, setShowForm] = useState(false)
   const [search, setSearch] = useState('')
@@ -16,45 +20,74 @@ export default function Home({ currentUser }) {
   const [filterPerson, setFilterPerson] = useState('')
   const [allAssignees, setAllAssignees] = useState([])
 
+  // Pending creates/deletes are replayed over the server list, so a refetch that lands
+  // mid-sync can neither drop a new project nor resurrect a deleted one.
+  const projects = useOptimistic(serverProjects, { entity: 'project', key: 'slug' })
+
   useEffect(() => { fetchProjects() }, [])
   useEffect(() => {
     fetch('/api/assignees').then(r => r.ok ? r.json() : []).then(setAllAssignees).catch(() => {})
   }, [])
 
+  // Pull the authoritative record once the server has it (createdAt, latestVersion).
+  useEffect(() => onSync(item => {
+    if (item.optimistic?.entity === 'project') fetchProjects()
+  }), [])
+
   async function fetchProjects() {
     setLoading(true)
     try {
       const res = await apiFetch('/api/projects')
-      if (res.ok) setProjects(await res.json())
+      if (res.ok) setServerProjects(await res.json())
     } finally {
       setLoading(false)
     }
   }
 
-  async function handleDeleteProject(slug, name) {
+  function handleDeleteProject(slug, name) {
     if (!confirm(`Delete project "${name}" and all its data? This cannot be undone.`)) return
-    const res = await apiFetch(`/api/projects/${slug}`, { method: 'DELETE' })
-    if (res.ok) setProjects(prev => prev.filter(p => p.slug !== slug))
+    enqueue({
+      url: `/api/projects/${slug}`,
+      method: 'DELETE',
+      label: `Delete project “${name}”`,
+      optimistic: { entity: 'project', op: 'delete', id: slug },
+    })
   }
 
-  async function handleCreate(e) {
+  function handleCreate(e) {
     e.preventDefault()
-    if (!form.name.trim()) return
-    setCreating(true)
-    try {
-      const res = await apiFetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      })
-      if (res.ok) {
-        setShowForm(false)
-        setForm({ name: '', description: '', taskPrefix: '', taskSeqStart: '' })
-        fetchProjects()
-      }
-    } finally {
-      setCreating(false)
-    }
+    const name = form.name.trim()
+    if (!name) return
+
+    // The server derives the slug from the name the same way, so the optimistic card
+    // and the eventual server record agree on the primary key — and a replayed POST
+    // overwrites the same key rather than creating a second project.
+    const slug = slugify(name)
+
+    enqueue({
+      url: '/api/projects',
+      method: 'POST',
+      body: form,
+      label: `Create project “${name}”`,
+      optimistic: {
+        entity: 'project',
+        op: 'create',
+        data: {
+          slug,
+          name,
+          description: form.description || '',
+          status: 'active',
+          priority: 'medium',
+          members: [],
+          latestVersion: '1.0.0',
+          pendingProposals: 0,
+          createdAt: new Date().toISOString(),
+        },
+      },
+    })
+
+    setShowForm(false)
+    setForm({ name: '', description: '', taskPrefix: '', taskSeqStart: '' })
   }
 
   const q = search.toLowerCase()
@@ -104,9 +137,17 @@ export default function Home({ currentUser }) {
                 value={form.description}
                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               />
-              <button className="btn-primary" type="submit" disabled={creating || !form.name.trim()}>
-                {creating ? 'Creating…' : 'Create'}
-              </button>
+              {/* Enter-to-submit goes through the form's onSubmit; the click goes through
+                  onClick, which preventDefaults so only one of the two ever runs. */}
+              <SubmitButton
+                type="submit"
+                className="btn-primary"
+                busyLabel="Creating…"
+                onClick={handleCreate}
+                disabled={!form.name.trim()}
+              >
+                Create
+              </SubmitButton>
             </div>
             <div className="form-row">
               <input
@@ -217,15 +258,23 @@ export default function Home({ currentUser }) {
         ) : (
           <div className="project-grid">
             {filtered.map(p => (
-              <div key={p.slug} className="project-card" style={{ position: 'relative' }}>
-                {currentUser?.isAdmin && (
+              <div key={p.slug} className={`project-card${p._pending ? ' is-pending' : ''}`} style={{ position: 'relative' }}>
+                {p._pending && <span className="pending-dot" title="Saving…" />}
+                {isSuperAdmin(currentUser) && (
                   <button
                     onClick={e => { e.preventDefault(); handleDeleteProject(p.slug, p.name) }}
                     style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 14, lineHeight: 1, padding: '2px 6px' }}
                     title="Delete project"
                   >&#x2715;</button>
                 )}
-                <Link href={`/projects/${p.slug}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+                {/* Opening a project whose POST has not landed would 404 — the project
+                    page loads it by slug. Swallow the click until the create syncs. */}
+                <Link
+                  href={p._pending ? '#' : `/projects/${p.slug}`}
+                  onClick={e => { if (p._pending) e.preventDefault() }}
+                  aria-disabled={p._pending || undefined}
+                  style={{ textDecoration: 'none', color: 'inherit', display: 'block', cursor: p._pending ? 'progress' : undefined }}
+                >
                   <div className="project-card-header">
                     <span className="project-icon">&#9670;</span>
                     <span className="project-name">{p.name}</span>

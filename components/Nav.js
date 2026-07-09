@@ -3,12 +3,15 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import Image from 'next/image'
 import { apiFetch } from '../lib/api-fetch'
+import { enqueue } from '../lib/submit-queue'
+import { useQueueState, LEAVE_WARNING } from '../lib/use-submit-queue'
 
 const CHIME_URL = 'https://cdn.pixabay.com/download/audio/2025/05/06/audio_2fd68b9a9a.mp3?filename=alexis_gaming_cam-bell-notification-337658.mp3'
 
 export default function Nav() {
   const router = useRouter()
   const { pathname, query } = router
+  const { pending } = useQueueState()
   const projectSlug = query.slug || (pathname.match(/^\/projects\/([^/]+)/) || [])[1]
   const [currentUser, setCurrentUser] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -59,18 +62,18 @@ export default function Nav() {
 
   const unread = notifs.filter(n => !n.read).length
 
-  async function openNotif(n) {
+  function openNotif(n) {
     setShowNotifs(false)
     if (!n.read) {
       setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))
-      apiFetch(`/api/notifications/${n.id}`, { method: 'PATCH' }).catch(() => {})
+      enqueue({ url: `/api/notifications/${n.id}`, method: 'PATCH', label: 'Mark notification read', silent: true })
     }
     if (n.link) router.push(n.link)
   }
 
-  async function markAllRead() {
+  function markAllRead() {
     setNotifs(prev => prev.map(x => ({ ...x, read: true })))
-    apiFetch('/api/notifications', { method: 'POST' }).catch(() => {})
+    enqueue({ url: '/api/notifications', method: 'POST', label: 'Mark all notifications read', silent: true })
   }
 
   useEffect(() => {
@@ -78,7 +81,14 @@ export default function Nav() {
     setShowNotifs(false)
   }, [pathname])
 
+  // Not queued, and blocked while the queue is draining: signing out clears `ss_auth`,
+  // which is where apiFetch reads the X-User header from. Every queued write would then
+  // be sent unauthenticated, get a 403, and park.
   async function handleSignOut() {
+    if (pending > 0) {
+      alert(LEAVE_WARNING)
+      return
+    }
     try { await apiFetch('/api/auth/logout', { method: 'POST' }) } catch {}
     localStorage.removeItem('ss_auth')
     router.reload()

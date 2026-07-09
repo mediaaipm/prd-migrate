@@ -3,6 +3,8 @@ import { useRouter } from 'next/router'
 import Link from 'next/link'
 import Nav from '../../../components/Nav'
 import { apiFetch } from '../../../lib/api-fetch'
+import { enqueue } from '../../../lib/submit-queue'
+import { isSuperAdmin } from '../../../lib/client-permissions'
 
 export default function ProjectPage({ currentUser }) {
   const router = useRouter()
@@ -27,6 +29,8 @@ export default function ProjectPage({ currentUser }) {
       .catch(() => setLoading(false))
   }, [slug])
 
+  // Deliberately NOT queued: this navigates straight into the editor for the new
+  // proposal, which loads it by id from the server. The row has to exist first.
   async function handleNewProposal(e) {
     e.preventDefault()
     setSubmitting(true)
@@ -47,14 +51,27 @@ export default function ProjectPage({ currentUser }) {
     }
   }
 
-  async function handleDeleteProposal(proposalId, title) {
+  function handleDeleteProposal(proposalId, title) {
     if (!confirm(`Delete proposal "${title}"? This cannot be undone.`)) return
-    const res = await apiFetch(`/api/projects/${slug}/proposals/${proposalId}`, { method: 'DELETE' })
-    if (res.ok) {
-      setProject(prev => ({ ...prev, proposals: prev.proposals.filter(p => p.id !== proposalId) }))
-    }
+    setProject(prev => ({ ...prev, proposals: prev.proposals.filter(p => p.id !== proposalId) }))
+    enqueue({
+      url: `/api/projects/${slug}/proposals/${proposalId}`,
+      method: 'DELETE',
+      label: `Delete proposal “${title}”`,
+    })
   }
 
+  function handleDeleteVersion(v) {
+    if (!confirm(`Delete PRD v${v}? This removes its content and version-scoped tasks. This cannot be undone.`)) return
+    setProject(prev => ({ ...prev, versions: prev.versions.filter(x => x.version !== v) }))
+    enqueue({
+      url: `/api/projects/${slug}/versions/${v}`,
+      method: 'DELETE',
+      label: `Delete PRD v${v}`,
+    })
+  }
+
+  // Deliberately NOT queued: the caller renders the version number the server picks.
   async function handlePromote(proposalId) {
     const bumpType = prompt('Bump type: major / minor / patch', 'minor')
     if (!bumpType) return
@@ -228,6 +245,16 @@ export default function ProjectPage({ currentUser }) {
                         >
                           Compare
                         </Link>
+                      )}
+                      {isSuperAdmin(currentUser) && (
+                        <button
+                          className="btn-ghost"
+                          style={{ fontSize: 12, padding: '4px 10px', color: 'var(--danger, #e05)' }}
+                          onClick={() => handleDeleteVersion(v.version)}
+                          title="Delete this PRD version"
+                        >
+                          Delete
+                        </button>
                       )}
                     </div>
                   </div>

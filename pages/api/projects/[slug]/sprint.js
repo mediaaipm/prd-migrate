@@ -20,10 +20,12 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const { name, startDate, endDate, taskIds, status } = req.body || {}
+    const { id: clientId, name, startDate, endDate, taskIds, status } = req.body || {}
     if (!name) return res.status(400).json({ error: 'name is required' })
+    // saveSprint upserts on id, so honouring a client-supplied id makes a replayed
+    // POST overwrite the same sprint instead of creating a duplicate.
     const sprint = {
-      id: `sprint-${Date.now()}`,
+      id: (typeof clientId === 'string' && /^[A-Za-z0-9_-]{4,64}$/.test(clientId)) ? clientId : `sprint-${Date.now()}`,
       name,
       startDate: startDate || null,
       endDate: endDate || null,

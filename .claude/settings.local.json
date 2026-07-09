@@ -246,10 +246,27 @@
       "Read(//c/Users/hardik/AppData/Local/Temp/claude/c--PRD-Manager/16389d5a-9fb2-4555-9f0a-34261c5e4000/scratchpad/**)",
       "Bash(curl -s -o /dev/null -w \"tasks page: %{http_code}\\\\n\" \"http://localhost:3000/projects/sanatan-sansaar/tasks\")",
       "Bash(curl -s -w '\\\\nHTTP %{http_code}\\\\n' -X POST -H 'X-User: {\"name\":\"SomeUser\",\"username\":\"someuser\",\"isAdmin\":false,\"role\":\"\",\"permissions\":[\"task:create\"]}' -H 'Content-Type: application/json' -d '{\"title\":\"REG TEST\",\"priority\":\"medium\",\"status\":\"todo\",\"parentId\":\"g-1.0\"}' http://localhost:3000/api/projects/sanatan-sansaar/tasks)",
-      "Bash(curl -s -o /dev/null -w \"tasks page after edit: %{http_code}\\\\n\" \"http://localhost:3000/projects/sanatan-sansaar/tasks\")"
+      "Bash(curl -s -o /dev/null -w \"tasks page after edit: %{http_code}\\\\n\" \"http://localhost:3000/projects/sanatan-sansaar/tasks\")",
+      "PowerShell(npx next build 2>&1)",
+      "Bash(perl -0pi -e 's/ disabled=\\\\{acting === sprint\\\\.id\\\\}//g' \"pages/projects/[slug]/tasks.js\")",
+      "Bash(perl -0pi -e \"s/  const \\\\[saving, setSaving\\\\] = useState\\\\\\(false\\\\\\)\\\\n//; s/  const \\\\[savingAcl, setSavingAcl\\\\] = useState\\\\\\(false\\\\\\)\\\\n//; s/export default function KanbanBoard\\\\\\(\\\\{ tasks, apiBase, slug, onRefresh, currentUser,/export default function KanbanBoard\\({ tasks, apiBase, slug, currentUser,/\" components/KanbanBoard.js)",
+      "Bash(perl -0pi -e \"s/  const \\\\[savingUpdate, setSavingUpdate\\\\] = useState\\\\\\(false\\\\\\)\\\\n//\" components/TaskTree.js)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(perl -0pi -e \"s|import \\\\{ apiFetch \\\\} from '../lib/api-fetch'\\\\nimport \\\\{ hasPerm, isSuperAdmin \\\\} from '../lib/client-permissions'|import { enqueue } from '../lib/submit-queue'\\\\nimport { taskDraft, taskCreateBody } from '../lib/task-draft'\\\\nimport { hasPerm, isSuperAdmin } from '../lib/client-permissions'|; s|export default function CalendarView\\\\\\(\\\\{ tasks, apiBase, onRefresh, currentUser \\\\}\\\\\\)|export default function CalendarView\\({ tasks, apiBase, currentUser }\\)|\" components/CalendarView.js)",
+      "Bash(npx eslint *)",
+      "Bash(npx next dev -p 3111 > /c/Users/hardik/AppData/Local/Temp/claude/c--PRD-Manager/31db4573-545a-42ea-9919-90455745071e/scratchpad/dev.log 2>&1 & *)",
+      "Bash(node \"/c/Users/hardik/AppData/Local/Temp/claude/c--PRD-Manager/31db4573-545a-42ea-9919-90455745071e/scratchpad/test-store.js\")",
+      "Bash(node \"/c/Users/hardik/AppData/Local/Temp/claude/c--PRD-Manager/31db4573-545a-42ea-9919-90455745071e/scratchpad/test-queue.mjs\")",
+      "Bash(set -e)",
+      "Bash(sed \"s|from './api-fetch'|from '../lib/api-fetch.js'|\" lib/submit-queue.js)",
+      "Bash(sed \"s|from './submit-queue'|from './submit-queue.js'|\" lib/optimistic.js)",
+      "Bash(sed -e 's|file:///c:/PRD_Manager/lib/submit-queue.js|file:///c:/PRD_Manager/.qtest/submit-queue.js|' -e 's|file:///c:/PRD_Manager/lib/optimistic.js|file:///c:/PRD_Manager/.qtest/optimistic.js|' __TRACKED_VAR__/test-queue.mjs)",
+      "Bash(node .qtest/run.mjs)",
+      "Bash(python -c \"import json;print\\(json.load\\(open\\('package.json'\\)\\).get\\('scripts'\\)\\)\")"
     ],
     "additionalDirectories": [
-      "c:\\HVWork\\PRD_Manager\\pages\\projects"
+      "c:\\HVWork\\PRD_Manager\\pages\\projects",
+      "C:\\Users\\hardik\\AppData\\Local\\Temp\\claude\\c--PRD-Manager\\31db4573-545a-42ea-9919-90455745071e\\scratchpad"
     ]
   }
 }

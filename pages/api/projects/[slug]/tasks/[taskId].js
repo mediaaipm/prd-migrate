@@ -1,4 +1,4 @@
-const { getTask, updateTask, deleteTask, reorderTask, moveTask, reorderBoard } = require('../../../../../lib/task-store');
+const { getTask, updateTask, deleteTask, reorderTask, moveTask, restorePositions, reorderBoard } = require('../../../../../lib/task-store');
 const { logAudit, getAuditUser } = require('../../../../../lib/audit-log');
 const { recordTaskUpdate } = require('../../../../../lib/task-history-store');
 const { notifyTaskChange } = require('../../../../../lib/notification-store');
@@ -61,10 +61,15 @@ export default async function handler(req, res) {
   }
   if (req.method === 'PATCH') {
     if (!requirePermission('task:update')(req, res)) return;
-    const { direction, action, targetId, position, status, orderedIds } = req.body || {};
+    const { direction, action, targetId, position, status, orderedIds, positions } = req.body || {};
     if (action === 'boardReorder') {
       const tasks = await reorderBoard(slug, v, status, Array.isArray(orderedIds) ? orderedIds : []);
       await logAudit(req, 'board_reorder', 'task', { slug, version: v, status, count: (orderedIds || []).length });
+      return res.status(200).json(tasks);
+    }
+    if (action === 'restorePositions') {
+      const tasks = await restorePositions(slug, v, Array.isArray(positions) ? positions : []);
+      await logAudit(req, 'restore_positions', 'task', { slug, version: v, count: (positions || []).length });
       return res.status(200).json(tasks);
     }
     if (action === 'move') {
