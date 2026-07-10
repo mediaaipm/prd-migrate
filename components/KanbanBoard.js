@@ -840,15 +840,6 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     return boardTasks.filter(t => t.parentId === taskId).sort((a, b) => a.order - b.order)
   }
 
-  // Unchecking sends a task back to 'todo' when the board has that column,
-  // otherwise to the leftmost column, since columns are user-defined.
-  function toggleChildDone(child) {
-    if (!canChangeStatus(child)) return
-    const fallback = columns.find(c => c.status === 'todo')?.status || columns[0]?.status || 'todo'
-    const next = child.status === 'done' ? fallback : 'done'
-    enqueueUpdate(child.id, { status: next }, `${next === 'done' ? 'Complete' : 'Reopen'} “${child.title}”`)
-  }
-
   // All transitive descendants of a top-level card (not just direct children),
   // so deeply nested sub-tasks show up in the progress badge and on the board.
   function getChildrenOf(taskId) {
@@ -1690,7 +1681,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                 />
               </div>
 
-              {/* Sub-tasks: check off inline, or click through to edit one */}
+              {/* Sub-tasks: click through to edit one */}
               {(() => {
                 const kids = directChildren(editingTask.id)
                 if (!kids.length) return null
@@ -1703,16 +1694,8 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                     <div className="kanban-subtask-list">
                       {kids.map(child => {
                         const done = child.status === 'done'
-                        const allowed = canChangeStatus(child)
                         return (
                           <div key={child.id} className={`kanban-subtask-row${done ? ' kanban-subtask-row--done' : ''}`}>
-                            <input
-                              type="checkbox"
-                              checked={done}
-                              disabled={!allowed}
-                              title={allowed ? (done ? 'Mark not done' : 'Mark done') : 'No permission to change status'}
-                              onChange={() => toggleChildDone(child)}
-                            />
                             <button
                               type="button"
                               className="kanban-subtask-open"
