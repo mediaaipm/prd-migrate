@@ -7,6 +7,7 @@ import AssigneeInput from './AssigneeInput'
 import SubmitButton from './SubmitButton'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
+import { useColumns, columnsWithTaskStatuses, labelForStatus } from '../lib/kanban-columns'
 
 const MAX_ATTACH_BYTES = 1024 * 1024 // 1MB cap per image (stored inline as data URL in Redis)
 
@@ -83,11 +84,20 @@ function FilterMultiSelect({ label, options, selected, onToggle, onClear }) {
   )
 }
 
-const STATUS_LABEL = { 'backlog': 'Backlog', 'todo': 'To Do', 'in-progress': 'In Progress', 'in-review': 'In Review', 'blocked': 'Blocked', 'done': 'Done' }
-const STATUS_ORDER = ['backlog', 'todo', 'in-progress', 'in-review', 'blocked', 'done']
-const STATUS_COLOR = { 'backlog': '#64748b', 'todo': '#2563eb', 'in-progress': '#f59e0b', 'in-review': '#9333ea', 'blocked': '#dc2626', 'done': '#16a34a' }
-// Statuses shown in the color legend (collapsed review variants).
-const STATUS_LEGEND = ['backlog', 'todo', 'in-progress', 'in-review', 'blocked', 'done']
+// Statuses come from the kanban columns, so a column added on the board shows up here
+// too. Built-in ones keep their globals.css pill class; custom ones are coloured inline.
+const STATUS_CLASS = {
+  'backlog': 'backlog', 'todo': 'todo', 'in-progress': 'in-progress',
+  'in-review': 'review', 'review': 'review', 'blocked': 'blocked', 'done': 'done',
+}
+
+function statusPillProps(status, color) {
+  const cls = STATUS_CLASS[status]
+  if (cls) return { className: `task-status ${cls}` }
+  const c = color || '#64748b'
+  return { className: 'task-status', style: { background: c, borderColor: c } }
+}
+
 const PRIORITY_ORDER = ['critical', 'high', 'medium', 'low']
 const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
 const PRIORITY_LABEL = { low: 'Low', medium: 'Med', high: 'High', critical: 'Crit' }
@@ -205,7 +215,7 @@ function blankForm() {
 // `quickAdd` collapses everything but the title behind a "More options" toggle — the
 // common case is a title and Enter. `allowAddAnother` keeps the form open and cleared
 // after a save so several sub-tasks can be typed in a row.
-function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreator = false, currentUser = null, quickAdd = false, allowAddAnother = false }) {
+function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreator = false, currentUser = null, quickAdd = false, allowAddAnother = false, columns = [] }) {
   function makeInitial() {
     const base = initial || blankForm()
     // Auto-attribute the creator from the logged-in user; no manual entry.
@@ -279,11 +289,7 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreato
       <textarea className="form-input task-desc-input" placeholder="Description (optional)" value={form.description} onChange={f('description')} rows={2} />
       <div className="task-form-row">
         <select className="form-input" value={form.status} onChange={f('status')}>
-          <option value="todo">To Do</option>
-          <option value="in-progress">In Progress</option>
-          <option value="in-review">In Review</option>
-          <option value="blocked">Blocked</option>
-          <option value="done">Done</option>
+          {columns.map(c => <option key={c.status} value={c.status}>{c.label}</option>)}
         </select>
         <select className="form-input" value={form.priority} onChange={f('priority')}>
           <option value="low">Low priority</option>
@@ -394,7 +400,7 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreato
   )
 }
 
-function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], currentUser, dnd, taskAcl, taskPrefix, onContextMenu }) {
+function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], currentUser, dnd, taskAcl, taskPrefix, onContextMenu, columns = [] }) {
   const [expanded, setExpanded] = useState(true)
   const [editing, setEditing] = useState(false)
   const [addingChild, setAddingChild] = useState(false)
@@ -557,7 +563,9 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
     })
   }
 
-  const statusClass = localStatus === 'done' ? 'task-status done' : localStatus === 'in-progress' ? 'task-status in-progress' : localStatus === 'blocked' ? 'task-status blocked' : (localStatus === 'review' || localStatus === 'in-review') ? 'task-status review' : localStatus === 'backlog' ? 'task-status backlog' : 'task-status todo'
+  const column = columns.find(c => c.status === localStatus)
+  const statusLabel = column?.label || labelForStatus(localStatus) || 'To Do'
+  const statusPill = statusPillProps(localStatus, column?.color)
 
   const { total: descTotal, done: descDone } = hasChildren ? getDescendantStats(node) : { total: 0, done: 0 }
 
@@ -676,6 +684,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
             onCancel={() => setEditing(false)}
             label="Update"
             assignees={assignees}
+            columns={columns}
           />
         </div>
       )}
@@ -738,6 +747,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
             currentUser={currentUser}
             quickAdd
             allowAddAnother
+            columns={columns}
           />
         </div>
       )}
@@ -767,6 +777,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
                 onCancel={() => setDetailEditing(false)}
                 label="Update"
                 assignees={assignees}
+                columns={columns}
               />
             ) : (
               <div className="task-detail">
@@ -776,10 +787,10 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
                     <span className="task-detail-label">Status</span>
                     {canChangeStatus ? (
                       <select className="form-input" value={localStatus} onChange={e => setStatus(e.target.value)} style={{ maxWidth: 180, fontSize: 12 }}>
-                        {STATUS_ORDER.map(s => <option key={s} value={s} disabled={!statusAllowed(s)}>{STATUS_LABEL[s] || s}</option>)}
+                        {columns.map(c => <option key={c.status} value={c.status} disabled={!statusAllowed(c.status)}>{c.label}</option>)}
                       </select>
                     ) : (
-                      <span className={statusClass + ' task-detail-static'}>{STATUS_LABEL[localStatus] || localStatus}</span>
+                      <span {...statusPill} className={`${statusPill.className} task-detail-static`}>{statusLabel}</span>
                     )}
                   </div>
                   <div className="task-detail-field"><span className="task-detail-label">Priority</span><span>{PRIORITY_LABEL[node.priority] || node.priority || '—'}</span></div>
@@ -824,7 +835,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
       {expanded && hasChildren && (
         <div className="task-children">
           {node.children.map(child => (
-            <TaskNode key={child.id} node={child} apiBase={apiBase} onRefresh={onRefresh} depth={depth + 1} assignees={assignees} currentUser={currentUser} dnd={dnd} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={onContextMenu} />
+            <TaskNode key={child.id} node={child} apiBase={apiBase} onRefresh={onRefresh} depth={depth + 1} assignees={assignees} currentUser={currentUser} dnd={dnd} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={onContextMenu} columns={columns} />
           ))}
         </div>
       )}
@@ -851,6 +862,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
   function taskLabel(t) {
     return taskPrefix && t.seq != null ? `${taskPrefix}-${t.seq}` : (t.number ? `#${t.number}` : '')
   }
+  const savedColumns = useColumns(apiBase)
   const [assignees, setAssignees] = useState([])
   const [sortBy, setSortBy] = useState('newest')
   const [search, setSearch] = useState('')
@@ -977,10 +989,9 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
   // Matched tasks plus their ancestors, nested so parents give context to matched children.
   const filteredTree = filtered ? buildFilteredTree(liveTasks, filtered, sortBy) : null
 
-  const statusOptions = (() => {
-    const present = new Set(liveTasks.map(t => t.status || 'todo'))
-    return [...STATUS_ORDER.filter(s => present.has(s)), ...[...present].filter(s => !STATUS_ORDER.includes(s))]
-  })()
+  // Board columns first (including empty ones the user just added), then any status
+  // a task carries that no column covers.
+  const columns = columnsWithTaskStatuses(savedColumns, liveTasks)
 
   function clearFilters() {
     setSearch(''); setFilterPerson(''); setFilterStatuses([]); setFilterPriorities([])
@@ -1099,7 +1110,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
         {liveTasks.length > 0 && (
           <FilterMultiSelect
             label="Status"
-            options={statusOptions.map(s => ({ value: s, label: STATUS_LABEL[s] || s }))}
+            options={columns.map(c => ({ value: c.status, label: c.label }))}
             selected={filterStatuses}
             onToggle={toggleStatus}
             onClear={() => setFilterStatuses([])}
@@ -1169,10 +1180,10 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
           </span>
         )}
         <div className="status-legend" title="Status color key">
-          {STATUS_LEGEND.map(s => (
-            <span key={s} className="status-legend-item">
-              <span className="status-legend-dot" style={{ background: STATUS_COLOR[s] }} />
-              {STATUS_LABEL[s]}
+          {columns.map(c => (
+            <span key={c.status} className="status-legend-item">
+              <span className="status-legend-dot" style={{ background: c.color }} />
+              {c.label}
             </span>
           ))}
         </div>
@@ -1180,7 +1191,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
 
       {addingRoot && (
         <div className="task-inline-form" style={{ marginTop: 8 }}>
-          <TaskForm onSave={handleAddRoot} onCancel={() => setAddingRoot(false)} label="Add Task" assignees={assignees} showCreator currentUser={currentUser} />
+          <TaskForm onSave={handleAddRoot} onCancel={() => setAddingRoot(false)} label="Add Task" assignees={assignees} showCreator currentUser={currentUser} columns={columns} />
         </div>
       )}
 
@@ -1190,7 +1201,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
         ) : (
           <div className="task-list">
             {filteredTree.map(node => (
-              <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} />
+              <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} columns={columns} />
             ))}
           </div>
         )
@@ -1199,7 +1210,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
       ) : (
         <div className="task-list">
           {tree.map(node => (
-            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={canReorder ? dnd : null} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} />
+            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={canReorder ? dnd : null} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} columns={columns} />
           ))}
         </div>
       )}

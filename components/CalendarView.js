@@ -6,11 +6,11 @@ import AssigneeInput from './AssigneeInput'
 import SubmitButton from './SubmitButton'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
+import { useColumns, columnsWithTaskStatuses } from '../lib/kanban-columns'
 
 const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-const STATUSES = ['backlog', 'todo', 'in-progress', 'in-review', 'blocked', 'done']
 const MAX_ATTACH_BYTES = 1024 * 1024 // 1MB cap per image (stored inline as data URL in Redis)
 
 function readFileAsDataUrl(file) {
@@ -26,7 +26,7 @@ function blankForm(dueDate) {
   return { title: '', description: '', status: 'todo', priority: 'medium', assignees: [], startDate: '', dueDate: dueDate || '', attachments: [], cover: null }
 }
 
-function DayTaskForm({ initial, onSave, onCancel, label, assignees }) {
+function DayTaskForm({ initial, onSave, onCancel, label, assignees, columns = [] }) {
   const [form, setForm] = useState(initial)
   const f = (k) => e => setForm(p => ({ ...p, [k]: e.target.value }))
 
@@ -62,7 +62,7 @@ function DayTaskForm({ initial, onSave, onCancel, label, assignees }) {
       <textarea className="form-input task-desc-input" placeholder="Description (optional)" value={form.description} onChange={f('description')} rows={2} />
       <div className="task-form-row">
         <select className="form-input" value={form.status} onChange={f('status')}>
-          {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+          {columns.map(c => <option key={c.status} value={c.status}>{c.label}</option>)}
         </select>
         <select className="form-input" value={form.priority} onChange={f('priority')}>
           <option value="low">Low priority</option>
@@ -122,6 +122,8 @@ function dueKey(task) {
 
 export default function CalendarView({ tasks, apiBase, currentUser }) {
   const today = new Date()
+  const savedColumns = useColumns(apiBase)
+  const columns = columnsWithTaskStatuses(savedColumns, tasks)
   const [ctxMenu, setCtxMenu] = useState(null)   // { x, y, task }
   const [historyTask, setHistoryTask] = useState(null)
   const canCreate = hasPerm(currentUser, 'task:create')
@@ -314,6 +316,7 @@ export default function CalendarView({ tasks, apiBase, currentUser }) {
                       onCancel={closeForm}
                       label="Update"
                       assignees={assignees}
+                      columns={columns}
                     />
                   )
                 })()
@@ -330,6 +333,7 @@ export default function CalendarView({ tasks, apiBase, currentUser }) {
                     onCancel={closeForm}
                     label={subParent ? 'Add Sub-task' : 'Add Task'}
                     assignees={assignees}
+                    columns={columns}
                   />
                 </>
               ) : (

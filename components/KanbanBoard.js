@@ -5,20 +5,7 @@ import AssigneeInput from './AssigneeInput'
 import SubmitButton from './SubmitButton'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
-
-const DEFAULT_COLUMNS = [
-  { status: 'backlog',     label: 'Backlog',      color: '#94a3b8' },
-  { status: 'todo',        label: 'To Do',        color: '#3b82f6' },
-  { status: 'in-progress', label: 'In Progress',  color: '#f59e0b' },
-  { status: 'in-review',   label: 'In Review',    color: '#8b5cf6' },
-  { status: 'blocked',     label: 'Blocked',      color: '#dc2626' },
-  { status: 'done',        label: 'Done',         color: '#16a34a' },
-]
-
-const COL_COLORS = [
-  '#94a3b8','#3b82f6','#f59e0b','#8b5cf6','#16a34a',
-  '#ef4444','#ec4899','#06b6d4','#f97316','#84cc16',
-]
+import { DEFAULT_COLUMNS, COL_COLORS, readColumns, writeColumns, labelForStatus } from '../lib/kanban-columns'
 
 const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
 const PRIORITY_LABEL = { low: 'Low', medium: 'Med', high: 'High', critical: 'Crit' }
@@ -98,8 +85,6 @@ function slugify(label, existingStatuses) {
 }
 
 export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl, onAclChange, taskPrefix, onPrefixChange, taskSeqStart, onSeqStartChange }) {
-  const storageKey = `kanban-cols:${apiBase}`
-
   // Full edit for admins; assignees may only change status of their own tasks.
   const canEditAll = !!currentUser?.isAdmin
   const isMine = task => !!currentUser?.name && (Array.isArray(task?.assignees) ? task.assignees : (task?.assignee ? [task.assignee] : []))
@@ -114,18 +99,12 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     return list.includes(status)
   }
 
-  const [columns, setColumns] = useState(() => {
-    if (typeof window === 'undefined') return DEFAULT_COLUMNS
-    try {
-      const saved = localStorage.getItem(`kanban-cols:${apiBase}`)
-      if (saved) return JSON.parse(saved)
-    } catch {}
-    return DEFAULT_COLUMNS
-  })
+  const [columns, setColumns] = useState(() => readColumns(apiBase))
 
+  // Persisting broadcasts, so the task list and calendar pick the change up live.
   useEffect(() => {
-    try { localStorage.setItem(storageKey, JSON.stringify(columns)) } catch {}
-  }, [columns, storageKey])
+    writeColumns(apiBase, columns)
+  }, [columns, apiBase])
 
   // Reconcile columns with statuses present in tasks. A task set (e.g. from the
   // calendar) to a status with no column would otherwise vanish from the board.
@@ -138,7 +117,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
       known.add(t.status)
       missing.push(fallback[t.status] || {
         status: t.status,
-        label: t.status.replace(/(^|-)([a-z])/g, (_, s, c) => (s ? ' ' : '') + c.toUpperCase()),
+        label: labelForStatus(t.status),
         color: COL_COLORS[(columns.length + missing.length) % COL_COLORS.length],
       })
     }
