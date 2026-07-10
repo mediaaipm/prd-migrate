@@ -556,7 +556,7 @@ function TaskSkeleton() {
 
 export default function TasksPage({ currentUser }) {
   const router = useRouter()
-  const { slug, version } = router.query
+  const { slug, version, task: focusTaskId } = router.query
 
   const [projectName, setProjectName] = useState('')
   const [taskAcl, setTaskAcl] = useState(null)
@@ -605,8 +605,15 @@ export default function TasksPage({ currentUser }) {
   const refreshTasks = useCallback(() => loadTasks({ background: true }), [loadTasks])
 
   // Fold in server-assigned fields (seq, number, order) once a queued write lands.
+  // Moves (drag, ↑/↓) carry no optimistic descriptor — the server reindexes siblings and
+  // renumbers, which is not replayable client-side — so match on the url too, otherwise a
+  // move would only appear after a reload.
   useEffect(() => onSync(item => {
-    if (item.optimistic?.entity === 'task' && item.optimistic.scope === apiBase) refreshTasks()
+    if (!apiBase) return
+    const scoped = item.optimistic
+      ? item.optimistic.entity === 'task' && item.optimistic.scope === apiBase
+      : typeof item.url === 'string' && item.url.startsWith(apiBase)
+    if (scoped) refreshTasks()
   }), [apiBase, refreshTasks])
 
   function openIdSettings() {
@@ -647,6 +654,9 @@ export default function TasksPage({ currentUser }) {
     if (!router.isReady) return
     loadTasks()
   }, [router.isReady, loadTasks])
+
+  // A shared ?task= link points at a row in the tree, which only the list view renders.
+  useEffect(() => { if (focusTaskId) setViewMode('list') }, [focusTaskId])
 
   async function handleExport(format) {
     setShowExportMenu(false)
@@ -862,11 +872,11 @@ export default function TasksPage({ currentUser }) {
             </div>
           </div>
           {loading ? <TaskSkeleton /> : viewMode === 'kanban' ? (
-            <KanbanBoard key={apiBase} tasks={tasks} apiBase={apiBase} slug={slug} currentUser={currentUser} taskAcl={taskAcl} onAclChange={setTaskAcl} taskPrefix={taskPrefix} onPrefixChange={setTaskPrefix} taskSeqStart={taskSeqStart} onSeqStartChange={setTaskSeqStart} />
+            <KanbanBoard key={apiBase} tasks={tasks} apiBase={apiBase} slug={slug} currentUser={currentUser} taskAcl={taskAcl} onAclChange={setTaskAcl} taskPrefix={taskPrefix} onPrefixChange={setTaskPrefix} taskSeqStart={taskSeqStart} onSeqStartChange={setTaskSeqStart} focusTaskId={focusTaskId} />
           ) : viewMode === 'calendar' ? (
             <CalendarView tasks={tasks} apiBase={apiBase} currentUser={currentUser} />
           ) : (
-            <TaskTree tasks={tasks} apiBase={apiBase} onRefresh={refreshTasks} currentUser={currentUser} taskAcl={taskAcl} taskPrefix={taskPrefix} />
+            <TaskTree tasks={tasks} apiBase={apiBase} onRefresh={refreshTasks} currentUser={currentUser} taskAcl={taskAcl} taskPrefix={taskPrefix} focusTaskId={focusTaskId} />
           )}
         </div>
 

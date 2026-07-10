@@ -268,7 +268,9 @@
       "Bash(ls -la \"/c/Users/hardik/.local/bin/\" 2>/dev/null | grep -i graphify; echo \"--- out:\"; ls -la /c/PRD_Manager/graphify-out/ 2>/dev/null || echo \"no graphify-out\")",
       "Read(//c/Users/hardik/.local/bin//**)",
       "Bash(\"/c/Users/hardik/.local/bin/graphify.exe\" --help)",
-      "Bash(\"/c/Users/hardik/.local/bin/graphify.exe\" update *)"
+      "Bash(\"/c/Users/hardik/.local/bin/graphify.exe\" update *)",
+      "Bash(node \"C:/Users/hardik/AppData/Local/Temp/claude/c--PRD-Manager/74d8d872-f24e-4081-9225-7ee4a074da20/scratchpad/task-links.js\")",
+      "Bash(ls .vercel)"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects",

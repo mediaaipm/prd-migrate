@@ -8,6 +8,7 @@ import SubmitButton from './SubmitButton'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
 import { useColumns, columnsWithTaskStatuses, labelForStatus } from '../lib/kanban-columns'
+import { taskShareLink, copyText } from '../lib/task-link'
 
 const MAX_ATTACH_BYTES = 1024 * 1024 // 1MB cap per image (stored inline as data URL in Redis)
 
@@ -157,7 +158,7 @@ const TASK_COMPARATORS = {
   oldest: (a, b) => taskTimestamp(a) - taskTimestamp(b),
 }
 
-function buildTree(tasks, sortBy = 'newest') {
+function buildTree(tasks, sortBy = 'order') {
   const byId = {}
   const roots = []
   tasks.forEach(t => { byId[t.id] = { ...t, children: [] } })
@@ -165,7 +166,7 @@ function buildTree(tasks, sortBy = 'newest') {
     if (t.parentId && byId[t.parentId]) byId[t.parentId].children.push(byId[t.id])
     else roots.push(byId[t.id])
   })
-  const cmp = TASK_COMPARATORS[sortBy] || TASK_COMPARATORS.newest
+  const cmp = TASK_COMPARATORS[sortBy] || TASK_COMPARATORS.order
   function sort(nodes) {
     nodes.sort(cmp)
     nodes.forEach(n => sort(n.children))
@@ -178,7 +179,7 @@ function buildTree(tasks, sortBy = 'newest') {
 // them, so a matched child is always shown under its parent, plus every
 // descendant of a matched task so a matched parent shows its whole subtree.
 // Tasks that did not themselves match are flagged `__context` for dimmed display.
-function buildFilteredTree(allTasks, matched, sortBy = 'newest') {
+function buildFilteredTree(allTasks, matched, sortBy = 'order') {
   const byId = {}
   const childrenOf = {}
   allTasks.forEach(t => {
@@ -400,8 +401,11 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreato
   )
 }
 
-function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], currentUser, dnd, taskAcl, taskPrefix, onContextMenu, columns = [] }) {
+function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], currentUser, dnd, taskAcl, taskPrefix, onContextMenu, columns = [], focusId, expandSignal }) {
   const [expanded, setExpanded] = useState(true)
+  const [copied, setCopied] = useState(false)
+  const rowRef = useRef(null)
+  const isFocused = focusId === node.id
   const [editing, setEditing] = useState(false)
   const [addingChild, setAddingChild] = useState(false)
   const [showUpdates, setShowUpdates] = useState(false)
@@ -412,6 +416,26 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
   const [detailEditing, setDetailEditing] = useState(false)
 
   useEffect(() => { setLocalStatus(node.status) }, [node.status])
+
+  // Collapse/expand all broadcasts a bumped counter; `n` (not `value`) is the dep so
+  // hitting the same button twice still re-applies to rows toggled since.
+  useEffect(() => {
+    if (!expandSignal) return
+    setExpanded(expandSignal.value)
+  }, [expandSignal?.n])
+
+  // Ancestors render expanded by default, so by the time the target row mounts it is
+  // already on screen and can be scrolled to.
+  useEffect(() => {
+    if (!isFocused || !rowRef.current) return
+    rowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [isFocused])
+
+  async function copyLink() {
+    if (!(await copyText(taskShareLink(node.id)))) return
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
 
   const nodeAssignees = Array.isArray(node.assignees) ? node.assignees : (node.assignee ? [node.assignee] : [])
 
@@ -574,10 +598,11 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
   return (
     <div className={`task-node${node.__context ? ' task-node--context' : ''}`} style={{ '--depth': depth }} data-depth={depth} data-group={hasChildren ? 'true' : undefined}>
       <div
-        className={`task-row task-row--${localStatus}${localStatus === 'done' ? ' task-row-done' : ''}${dropZone ? ` task-row--drop-${dropZone}` : ''}`}
+        ref={rowRef}
+        className={`task-row task-row--${localStatus}${localStatus === 'done' ? ' task-row-done' : ''}${dropZone ? ` task-row--drop-${dropZone}` : ''}${isFocused ? ' task-row--focused' : ''}`}
         onContextMenu={onContextMenu ? e => onContextMenu(e, node) : undefined}
         draggable={!!dnd}
-        onDragStart={dnd ? e => { e.dataTransfer.effectAllowed = 'move'; dnd.onDragStart(node.id) } : undefined}
+        onDragStart={dnd ? e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', node.id); dnd.onDragStart(node.id) } : undefined}
         onDragOver={dnd ? e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; const r = e.currentTarget.getBoundingClientRect(); const rel = (e.clientY - r.top) / r.height; dnd.onDragOver(node.id, rel < 0.28 ? 'before' : rel > 0.72 ? 'after' : 'child') } : undefined}
         onDrop={dnd ? e => { e.preventDefault(); dnd.onDrop(node.id) } : undefined}
         onDragEnd={dnd ? dnd.onDragEnd : undefined}
@@ -645,7 +670,10 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
           >{taskPrefix ? `${taskPrefix}-${node.seq}` : `#${node.seq}`}</span>
         )}
         <div className="task-row-actions">
-          {canEdit && <>
+          <button className="task-action-btn" onClick={copyLink} title="Copy link to this task">
+            {copied ? '✓' : '🔗'}
+          </button>
+          {canEdit && dnd && <>
             <button className="task-action-btn task-action-btn--move" onClick={() => handleMove('up')} title="Move up">↑</button>
             <button className="task-action-btn task-action-btn--move" onClick={() => handleMove('down')} title="Move down">↓</button>
           </>}
@@ -835,7 +863,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
       {expanded && hasChildren && (
         <div className="task-children">
           {node.children.map(child => (
-            <TaskNode key={child.id} node={child} apiBase={apiBase} onRefresh={onRefresh} depth={depth + 1} assignees={assignees} currentUser={currentUser} dnd={dnd} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={onContextMenu} columns={columns} />
+            <TaskNode key={child.id} node={child} apiBase={apiBase} onRefresh={onRefresh} depth={depth + 1} assignees={assignees} currentUser={currentUser} dnd={dnd} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={onContextMenu} columns={columns} focusId={focusId} expandSignal={expandSignal} />
           ))}
         </div>
       )}
@@ -850,8 +878,10 @@ function countDescendants(node) {
   return count
 }
 
-export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskAcl, taskPrefix }) {
+export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskAcl, taskPrefix, focusTaskId }) {
   const [addingRoot, setAddingRoot] = useState(false)
+  const [expandSignal, setExpandSignal] = useState(null)  // { n, value } broadcast to every TaskNode
+  const [copiedAll, setCopiedAll] = useState(0)  // count of links in the last copy, 0 = idle
   const [ctxMenu, setCtxMenu] = useState(null)   // { x, y, task }
   const [historyTask, setHistoryTask] = useState(null)
   function handleContextMenu(e, task) {
@@ -864,7 +894,10 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
   }
   const savedColumns = useColumns(apiBase)
   const [assignees, setAssignees] = useState([])
-  const [sortBy, setSortBy] = useState('newest')
+  // Manual order is the default: it is the only sort where the rendered position matches
+  // the `order` field that numbers (1.2.3, 1.2.4 …) are derived from, so a drag both
+  // moves the row and renumbers it. Under newest/oldest the numbers look shuffled.
+  const [sortBy, setSortBy] = useState('order')
   const [search, setSearch] = useState('')
   const [filterPerson, setFilterPerson] = useState('')
   const [filterStatuses, setFilterStatuses] = useState([])
@@ -882,6 +915,9 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
   const [dropTarget, setDropTarget] = useState(null)
   const [undoStack, setUndoStack] = useState([])   // snapshots of task positions, newest last
   const canReorder = hasPerm(currentUser, 'task:update')
+  // Dragging writes `order`, which newest/oldest ignore — so drag is live in manual order
+  // only, otherwise a drop would silently change nothing on screen.
+  const canDrag = canReorder && sortBy === 'order'
 
   // Snapshot every task's parentId/order so a move can be reverted exactly.
   function snapshotPositions() {
@@ -984,7 +1020,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
         const matchesDue = (!dueFrom || (dd && dd >= dueFrom)) && (!dueTo || (dd && dd <= dueTo))
         const matchesDueSet = dueDates.length === 0 || dueDates.includes(dd.slice(0, 10))
         return matchesSearch && matchesPerson && matchesStatus && matchesPriority && matchesStart && matchesDue && matchesDueSet
-      }).sort(TASK_COMPARATORS[sortBy] || TASK_COMPARATORS.newest)
+      }).sort(TASK_COMPARATORS[sortBy] || TASK_COMPARATORS.order)
     : null
   // Matched tasks plus their ancestors, nested so parents give context to matched children.
   const filteredTree = filtered ? buildFilteredTree(liveTasks, filtered, sortBy) : null
@@ -1037,6 +1073,32 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
     }
   }, [showDuePicker])
 
+  // Copies one indented markdown link per task, in the order the tree renders them —
+  // so a filtered/searched view exports exactly what is on screen.
+  async function copyAllLinks() {
+    const lines = []
+    function walk(nodes, depth) {
+      for (const n of nodes) {
+        const id = taskLabel(n) || `#${n.number}`
+        lines.push(`${'  '.repeat(depth)}- [${id} · ${n.title}](${taskShareLink(n.id)})`)
+        walk(n.children || [], depth + 1)
+      }
+    }
+    walk(filteredTree || tree, 0)
+    if (!lines.length) return
+    if (!(await copyText(lines.join('\n')))) return
+    setCopiedAll(lines.length)
+    setTimeout(() => setCopiedAll(0), 2000)
+  }
+
+  function broadcastExpand(value) {
+    setExpandSignal(prev => ({ n: (prev?.n || 0) + 1, value }))
+  }
+
+  // Only tasks whose parent is still live actually nest — buildTree() re-roots the rest.
+  const liveIds = new Set(liveTasks.map(t => t.id))
+  const hasSubTasks = liveTasks.some(t => t.parentId && liveIds.has(t.parentId))
+
   function handleAddRoot(form) {
     const draft = taskDraft({ ...form, parentId: null, numberOverride: form.numberOverride || null })
     enqueue({
@@ -1066,6 +1128,36 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
             title="Undo last drag move (Ctrl+Z)"
           >
             ↶ Undo{undoStack.length ? ` (${undoStack.length})` : ''}
+          </button>
+        )}
+        {hasSubTasks && (
+          <div className="tt-expand-group">
+            <button
+              className="btn-ghost"
+              onClick={() => broadcastExpand(true)}
+              style={{ fontSize: 12, padding: '5px 10px', whiteSpace: 'nowrap' }}
+              title="Expand all sub-tasks"
+            >
+              ⊞ Expand all
+            </button>
+            <button
+              className="btn-ghost"
+              onClick={() => broadcastExpand(false)}
+              style={{ fontSize: 12, padding: '5px 10px', whiteSpace: 'nowrap' }}
+              title="Collapse all sub-tasks"
+            >
+              ⊟ Collapse all
+            </button>
+          </div>
+        )}
+        {liveTasks.length > 0 && (
+          <button
+            className="btn-ghost"
+            onClick={copyAllLinks}
+            style={{ fontSize: 12, padding: '5px 10px', whiteSpace: 'nowrap' }}
+            title="Copy a shareable link for every task shown"
+          >
+            {copiedAll ? `✓ Copied ${copiedAll}` : '🔗 Copy links'}
           </button>
         )}
         {liveTasks.length > 0 && (
@@ -1101,10 +1193,16 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
           </div>
         )}
         {liveTasks.length > 0 && (
-          <select className="form-input filter-select" value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }} title="Sort tasks">
+          <select
+            className="form-input filter-select"
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value)}
+            style={{ fontSize: 12, padding: '5px 8px' }}
+            title={canReorder && sortBy !== 'order' ? 'Switch to Manual order to drag tasks' : 'Sort tasks'}
+          >
+            <option value="order">Manual order</option>
             <option value="newest">Latest first</option>
             <option value="oldest">Oldest first</option>
-            <option value="order">Manual order</option>
           </select>
         )}
         {liveTasks.length > 0 && (
@@ -1201,7 +1299,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
         ) : (
           <div className="task-list">
             {filteredTree.map(node => (
-              <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} columns={columns} />
+              <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} columns={columns} focusId={focusTaskId} expandSignal={expandSignal} />
             ))}
           </div>
         )
@@ -1210,7 +1308,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
       ) : (
         <div className="task-list">
           {tree.map(node => (
-            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={canReorder ? dnd : null} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} columns={columns} />
+            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={canDrag ? dnd : null} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} columns={columns} focusId={focusTaskId} expandSignal={expandSignal} />
           ))}
         </div>
       )}

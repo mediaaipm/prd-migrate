@@ -623,6 +623,18 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 
 .task-count-label { font-size: 12px; color: var(--muted); }
 
+/* Expand all / Collapse all — segmented so the pair reads as one control. */
+.tt-expand-group {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--card, #fff);
+}
+.tt-expand-group .btn-ghost { border: 0; border-radius: 0; }
+.tt-expand-group .btn-ghost + .btn-ghost { border-left: 1px solid var(--border); }
+
 .tt-date-filter {
   display: flex;
   align-items: center;
@@ -696,6 +708,17 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .task-row:hover { background: var(--bg); }
 .task-row:hover .task-row-actions { opacity: 1; }
 .task-row-done { opacity: .7; }
+
+/* Target of a shared ?task=<id> link. */
+.task-row--focused {
+  background: #fffbeb;
+  box-shadow: 0 0 0 2px #f59e0b;
+  animation: task-row-focus-pulse 1.2s ease-out 2;
+}
+@keyframes task-row-focus-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px #f59e0b; }
+  50%      { box-shadow: 0 0 0 5px rgba(245, 158, 11, .35); }
+}
 
 .task-row-left {
   display: flex;
@@ -1476,6 +1499,16 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   box-shadow: none;
   border-style: dashed;
   border-color: var(--accent);
+}
+
+/* Target of a shared ?task=<id> link. */
+.kanban-card--focused {
+  border-color: #f59e0b;
+  animation: kanban-card-focus-pulse 1.2s ease-out 2;
+}
+@keyframes kanban-card-focus-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px #f59e0b; }
+  50%      { box-shadow: 0 0 0 6px rgba(245, 158, 11, .3); }
 }
 
 .kanban-card-header {

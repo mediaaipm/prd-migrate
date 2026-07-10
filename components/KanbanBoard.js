@@ -6,6 +6,7 @@ import SubmitButton from './SubmitButton'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
 import { DEFAULT_COLUMNS, COL_COLORS, readColumns, writeColumns, labelForStatus } from '../lib/kanban-columns'
+import { taskShareLink, copyText } from '../lib/task-link'
 
 const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
 const PRIORITY_LABEL = { low: 'Low', medium: 'Med', high: 'High', critical: 'Crit' }
@@ -84,7 +85,7 @@ function slugify(label, existingStatuses) {
   return `${base}-${i}`
 }
 
-export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl, onAclChange, taskPrefix, onPrefixChange, taskSeqStart, onSeqStartChange }) {
+export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl, onAclChange, taskPrefix, onPrefixChange, taskSeqStart, onSeqStartChange, focusTaskId }) {
   // Full edit for admins; assignees may only change status of their own tasks.
   const canEditAll = !!currentUser?.isAdmin
   const isMine = task => !!currentUser?.name && (Array.isArray(task?.assignees) ? task.assignees : (task?.assignee ? [task.assignee] : []))
@@ -161,6 +162,44 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   }
   function taskLabel(t) {
     return taskPrefix && t.seq != null ? `${taskPrefix}-${t.seq}` : (t.number ? `#${t.number}` : '')
+  }
+
+  // Share links
+  const [copiedId, setCopiedId] = useState(null)  // card whose link was just copied
+  const [copiedAll, setCopiedAll] = useState(0)   // links in the last bulk copy, 0 = idle
+  const focusCardRef = useRef(null)
+
+  useEffect(() => {
+    if (!focusTaskId || !focusCardRef.current) return
+    focusCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' })
+  }, [focusTaskId, tasks.length])
+
+  async function copyCardLink(e, task) {
+    e.stopPropagation()
+    if (!(await copyText(taskShareLink(task.id)))) return
+    setCopiedId(task.id)
+    setTimeout(() => setCopiedId(null), 1500)
+  }
+
+  // One indented markdown link per visible card, walking each column top-down so the
+  // export mirrors the board — and so an active filter exports only what is on screen.
+  async function copyAllLinks() {
+    const lines = []
+    function walk(task, col, depth) {
+      const id = taskLabel(task) || `#${task.number}`
+      lines.push(`${'  '.repeat(depth)}- [${id} · ${task.title}](${taskShareLink(task.id)})`)
+      for (const kid of getChildrenInCol(task.id, col.status)) walk(kid, col, depth + 1)
+    }
+    for (const col of columns) {
+      const cards = [...getColTasks(col.status), ...getOrphanSubsInCol(col.status)]
+      if (!cards.length) continue
+      lines.push(`\n### ${col.label}`)
+      for (const card of cards) walk(card, col, 0)
+    }
+    if (!lines.length) return
+    if (!(await copyText(lines.join('\n').trim()))) return
+    setCopiedAll(lines.filter(l => l.trimStart().startsWith('- ')).length)
+    setTimeout(() => setCopiedAll(0), 2000)
   }
 
   // Label manager
@@ -901,7 +940,8 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     return (
       <div key={task.id} className={groupClass}>
         <div
-          className={`kanban-card${isChild ? ' kanban-card--child' : ''}${draggingId === task.id ? ' kanban-card--dragging' : ''}${dropClass}`}
+          ref={task.id === focusTaskId ? focusCardRef : undefined}
+          className={`kanban-card${isChild ? ' kanban-card--child' : ''}${draggingId === task.id ? ' kanban-card--dragging' : ''}${dropClass}${task.id === focusTaskId ? ' kanban-card--focused' : ''}`}
           draggable
           role="button"
           tabIndex={0}
@@ -935,6 +975,11 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
             {isChild && <span className="kanban-sub-badge" title="Sub-task">↳ sub</span>}
             {(task.seq != null || task.number) && <span className="task-id-badge" style={{ fontSize: 10 }}>{task.seq != null ? (taskPrefix ? `${taskPrefix}-${task.seq}` : `#${task.seq}`) : `#${task.number}`}</span>}
             {task.number && <span className="task-number" style={{ fontSize: 10 }}>{task.number}</span>}
+            <button
+              className="kanban-card-edit-btn"
+              onClick={e => copyCardLink(e, task)}
+              title="Copy link to this task"
+            >{copiedId === task.id ? '✓' : '🔗'}</button>
             {canEditAll && (
               <button
                 className="kanban-card-edit-btn"
@@ -1053,6 +1098,14 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
             </datalist>
           </div>
         )}
+        <button
+          className="btn-ghost"
+          style={{ whiteSpace: 'nowrap', fontSize: 12 }}
+          onClick={copyAllLinks}
+          title="Copy a shareable link for every card shown"
+        >
+          {copiedAll ? `✓ Copied ${copiedAll}` : '🔗 Copy links'}
+        </button>
         {labelsApi && (
           <button className="btn-ghost" style={{ whiteSpace: 'nowrap', fontSize: 12 }} onClick={() => setShowLabelMgr(true)}>
             🏷 Labels

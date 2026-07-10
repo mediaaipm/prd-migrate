@@ -1,0 +1,626 @@
+# Task share links
+
+## Sanatan Sansaar — Project Tasks
+
+- [ENG-2 · BACKEND](/projects/sanatan-sansaar/tasks?task=g-1) — `todo`
+  - [ENG-4 · Foundation](/projects/sanatan-sansaar/tasks?task=g-1.0) — `in-review`
+    - [ENG-6 · Add ASTROLOGER role](/projects/sanatan-sansaar/tasks?task=t-1.0.1) — `todo`
+    - [ENG-8 · Create all enums](/projects/sanatan-sansaar/tasks?task=t-1.0.2) — `in-progress`
+    - [ENG-10 · Create all 23 entities + repos](/projects/sanatan-sansaar/tasks?task=t-1.0.3) — `todo`
+    - [ENG-12 · Liquibase migration](/projects/sanatan-sansaar/tasks?task=t-1.0.4) — `todo`
+    - [ENG-14 · Provider interfaces](/projects/sanatan-sansaar/tasks?task=t-1.0.5) — `done`
+    - [ENG-16 · Config classes](/projects/sanatan-sansaar/tasks?task=t-1.0.6) — `in-progress`
+    - [ENG-18 · State machine](/projects/sanatan-sansaar/tasks?task=t-1.0.7) — `done`
+    - [ENG-20 · Billing calculator](/projects/sanatan-sansaar/tasks?task=t-1.0.8) — `in-progress`
+  - [ENG-22 · Astrologer Management](/projects/sanatan-sansaar/tasks?task=g-1.1) — `done`
+    - [ENG-24 · Astrologer registration](/projects/sanatan-sansaar/tasks?task=t-1.1.1) — `todo`
+    - [ENG-26 · Profile CRUD](/projects/sanatan-sansaar/tasks?task=t-1.1.2) — `todo`
+    - [ENG-28 · Gallery management](/projects/sanatan-sansaar/tasks?task=t-1.1.3) — `todo`
+    - [ENG-30 · Rate management](/projects/sanatan-sansaar/tasks?task=t-1.1.4) — `todo`
+    - [ENG-32 · Banking details](/projects/sanatan-sansaar/tasks?task=t-1.1.5) — `todo`
+    - [ENG-34 · Availability toggle](/projects/sanatan-sansaar/tasks?task=t-1.1.6) — `todo`
+    - [ENG-36 · Weekly schedule](/projects/sanatan-sansaar/tasks?task=t-1.1.7) — `todo`
+    - [ENG-38 · Dashboard & earnings](/projects/sanatan-sansaar/tasks?task=t-1.1.8) — `todo`
+    - [ENG-40 · Assistant management](/projects/sanatan-sansaar/tasks?task=t-1.1.9) — `todo`
+  - [ENG-42 · User MoneyWallet](/projects/sanatan-sansaar/tasks?task=g-1.2) — `backlog`
+    - [ENG-44 · Wallet balance & history](/projects/sanatan-sansaar/tasks?task=t-1.2.1) — `todo`
+    - [ENG-46 · Recharge via Razorpay](/projects/sanatan-sansaar/tasks?task=t-1.2.2) — `todo`
+    - [ENG-48 · Recharge slabs](/projects/sanatan-sansaar/tasks?task=t-1.2.3) — `done`
+    - [ENG-50 · Wallet deduction service](/projects/sanatan-sansaar/tasks?task=t-1.2.4) — `todo`
+    - [ENG-52 · Pre-consultation balance check](/projects/sanatan-sansaar/tasks?task=t-1.2.5) — `todo`
+  - [ENG-54 · Consultation Core](/projects/sanatan-sansaar/tasks?task=g-1.3) — `in-progress`
+    - [ENG-56 · Create chat request](/projects/sanatan-sansaar/tasks?task=t-1.3.1) — `todo`
+    - [ENG-58 · Create call request (audio/video)](/projects/sanatan-sansaar/tasks?task=t-1.3.2) — `todo`
+    - [ENG-60 · Accept request](/projects/sanatan-sansaar/tasks?task=t-1.3.3) — `todo`
+    - [ENG-62 · Reject request](/projects/sanatan-sansaar/tasks?task=t-1.3.4) — `todo`
+    - [ENG-64 · User joins session](/projects/sanatan-sansaar/tasks?task=t-1.3.5) — `todo`
+    - [ENG-65 · Astrologer joins session](/projects/sanatan-sansaar/tasks?task=t-1.3.6) — `todo`
+    - [ENG-66 · End session](/projects/sanatan-sansaar/tasks?task=t-1.3.7) — `todo`
+    - [ENG-67 · Cancel request](/projects/sanatan-sansaar/tasks?task=t-1.3.8) — `todo`
+    - [ENG-68 · Poll request status](/projects/sanatan-sansaar/tasks?task=t-1.3.9) — `todo`
+    - [ENG-69 · Consultation history](/projects/sanatan-sansaar/tasks?task=t-1.3.10) — `todo`
+    - [ENG-70 · Intake form](/projects/sanatan-sansaar/tasks?task=t-1.3.11) — `done`
+  - [ENG-71 · Agora Integration](/projects/sanatan-sansaar/tasks?task=g-1.4) — `done`
+    - [ENG-72 · Agora token generation](/projects/sanatan-sansaar/tasks?task=t-1.4.1) — `todo`
+    - [ENG-73 · AgoraCallProvider impl](/projects/sanatan-sansaar/tasks?task=t-1.4.2) — `todo`
+    - [ENG-74 · Agora webhook handler](/projects/sanatan-sansaar/tasks?task=t-1.4.3) — `todo`
+  - [ENG-75 · CometChat Integration](/projects/sanatan-sansaar/tasks?task=g-1.5) — `done`
+    - [ENG-76 · CometChatProvider impl](/projects/sanatan-sansaar/tasks?task=t-1.5.1) — `todo`
+    - [ENG-77 · CometChat auth token](/projects/sanatan-sansaar/tasks?task=t-1.5.2) — `todo`
+    - [ENG-78 · Chat keyword filtering](/projects/sanatan-sansaar/tasks?task=t-1.5.3) — `todo`
+    - [ENG-79 · Chat media upload](/projects/sanatan-sansaar/tasks?task=t-1.5.4) — `todo`
+    - [ENG-80 · Catalog suggestion](/projects/sanatan-sansaar/tasks?task=t-1.5.5) — `todo`
+  - [ENG-81 · Astrologer Wallet & Commission](/projects/sanatan-sansaar/tasks?task=g-1.6) — `done`
+    - [ENG-82 · Astrologer wallet service](/projects/sanatan-sansaar/tasks?task=t-1.6.1) — `todo`
+    - [ENG-83 · Withdrawal request](/projects/sanatan-sansaar/tasks?task=t-1.6.2) — `todo`
+    - [ENG-84 · Commission cascade](/projects/sanatan-sansaar/tasks?task=t-1.6.3) — `todo`
+    - [ENG-85 · Admin commission CRUD](/projects/sanatan-sansaar/tasks?task=t-1.6.4) — `todo`
+    - [ENG-86 · Admin withdrawal processing](/projects/sanatan-sansaar/tasks?task=t-1.6.5) — `todo`
+  - [ENG-87 · Social Features](/projects/sanatan-sansaar/tasks?task=g-1.7) — `todo`
+    - [ENG-88 · Follow/unfollow](/projects/sanatan-sansaar/tasks?task=t-1.7.1) — `todo`
+    - [ENG-89 · Block/unblock](/projects/sanatan-sansaar/tasks?task=t-1.7.2) — `todo`
+    - [ENG-90 · Reviews & ratings](/projects/sanatan-sansaar/tasks?task=t-1.7.3) — `in-progress`
+    - [ENG-91 · Virtual gifts](/projects/sanatan-sansaar/tasks?task=t-1.7.4) — `done`
+    - [ENG-92 · Waitlist](/projects/sanatan-sansaar/tasks?task=t-1.7.5) — `backlog`
+    - [ENG-93 · Similar astrologers](/projects/sanatan-sansaar/tasks?task=t-1.7.6) — `done`
+    - [ENG-94 · Astrologer listing & search](/projects/sanatan-sansaar/tasks?task=t-1.7.7) — `todo`
+  - [ENG-95 · Push Notifications & Jobs](/projects/sanatan-sansaar/tasks?task=g-1.8) — `backlog`
+    - [ENG-96 · Firebase push service](/projects/sanatan-sansaar/tasks?task=t-1.8.1) — `todo`
+    - [ENG-97 · VoIP push (iOS)](/projects/sanatan-sansaar/tasks?task=t-1.8.2) — `todo`
+    - [ENG-98 · Timeout job](/projects/sanatan-sansaar/tasks?task=t-1.8.3) — `todo`
+    - [ENG-99 · No-show job](/projects/sanatan-sansaar/tasks?task=t-1.8.4) — `todo`
+    - [ENG-100 · Free session watchdog](/projects/sanatan-sansaar/tasks?task=t-1.8.5) — `todo`
+    - [ENG-101 · Waitlist notification job](/projects/sanatan-sansaar/tasks?task=t-1.8.6) — `todo`
+  - [ENG-102 · Admin Module](/projects/sanatan-sansaar/tasks?task=g-1.9) — `todo`
+    - [ENG-103 · Astrologer verification](/projects/sanatan-sansaar/tasks?task=t-1.9.1) — `todo`
+    - [ENG-104 · Astrologer admin management](/projects/sanatan-sansaar/tasks?task=t-1.9.2) — `todo`
+    - [ENG-105 · Consultation dashboard](/projects/sanatan-sansaar/tasks?task=t-1.9.3) — `todo`
+    - [ENG-106 · Consultation list & detail](/projects/sanatan-sansaar/tasks?task=t-1.9.4) — `todo`
+    - [ENG-107 · Force terminate](/projects/sanatan-sansaar/tasks?task=t-1.9.5) — `todo`
+    - [ENG-108 · Chat monitoring](/projects/sanatan-sansaar/tasks?task=t-1.9.6) — `todo`
+    - [ENG-109 · Revenue report](/projects/sanatan-sansaar/tasks?task=t-1.9.7) — `todo`
+    - [ENG-110 · Transaction report](/projects/sanatan-sansaar/tasks?task=t-1.9.8) — `todo`
+    - [ENG-111 · Top astrologers report](/projects/sanatan-sansaar/tasks?task=t-1.9.9) — `todo`
+    - [ENG-112 · Gift CRUD](/projects/sanatan-sansaar/tasks?task=t-1.9.10) — `todo`
+    - [ENG-113 · Recharge slab CRUD](/projects/sanatan-sansaar/tasks?task=t-1.9.11) — `todo`
+    - [ENG-114 · Chat keyword CRUD](/projects/sanatan-sansaar/tasks?task=t-1.9.12) — `todo`
+    - [ENG-115 · Review moderation](/projects/sanatan-sansaar/tasks?task=t-1.9.13) — `todo`
+    - [ENG-116 · System config](/projects/sanatan-sansaar/tasks?task=t-1.9.14) — `todo`
+- [ENG-117 · MOBILE — USER APP](/projects/sanatan-sansaar/tasks?task=g-2) — `todo`
+  - [ENG-118 · Wallet](/projects/sanatan-sansaar/tasks?task=g-2.0) — `todo`
+    - [ENG-119 · Wallet screen](/projects/sanatan-sansaar/tasks?task=t-2.0.1) — `todo`
+    - [ENG-120 · Recharge flow](/projects/sanatan-sansaar/tasks?task=t-2.0.2) — `todo`
+    - [ENG-121 · Low balance prompt](/projects/sanatan-sansaar/tasks?task=t-2.0.3) — `done`
+  - [ENG-122 · Astrologer Discovery](/projects/sanatan-sansaar/tasks?task=g-2.1) — `in-progress`
+    - [ENG-123 · Astrologer listing](/projects/sanatan-sansaar/tasks?task=t-2.1.1) — `todo`
+    - [ENG-124 · Astrologer profile](/projects/sanatan-sansaar/tasks?task=t-2.1.2) — `todo`
+    - [ENG-125 · Similar astrologers](/projects/sanatan-sansaar/tasks?task=t-2.1.3) — `todo`
+    - [ENG-126 · Search](/projects/sanatan-sansaar/tasks?task=t-2.1.4) — `todo`
+  - [ENG-127 · Consultation Flow](/projects/sanatan-sansaar/tasks?task=g-2.2) — `todo`
+    - [ENG-128 · Intake form](/projects/sanatan-sansaar/tasks?task=t-2.2.1) — `todo`
+    - [ENG-129 · Request chat](/projects/sanatan-sansaar/tasks?task=t-2.2.2) — `todo`
+    - [ENG-130 · Request call (audio/video)](/projects/sanatan-sansaar/tasks?task=t-2.2.3) — `todo`
+    - [ENG-131 · Waiting screen](/projects/sanatan-sansaar/tasks?task=t-2.2.4) — `todo`
+    - [ENG-132 · Chat screen](/projects/sanatan-sansaar/tasks?task=t-2.2.5) — `todo`
+    - [ENG-133 · Call screen (audio)](/projects/sanatan-sansaar/tasks?task=t-2.2.6) — `todo`
+    - [ENG-134 · Call screen (video)](/projects/sanatan-sansaar/tasks?task=t-2.2.7) — `todo`
+    - [ENG-135 · End session](/projects/sanatan-sansaar/tasks?task=t-2.2.8) — `todo`
+    - [ENG-136 · Consultation history](/projects/sanatan-sansaar/tasks?task=t-2.2.9) — `todo`
+- [ENG-137 · MOBILE — ASTROLOGER APP](/projects/sanatan-sansaar/tasks?task=g-3) — `todo`
+  - [ENG-138 · Onboarding](/projects/sanatan-sansaar/tasks?task=g-3.0) — `todo`
+    - [ENG-139 · Registration flow](/projects/sanatan-sansaar/tasks?task=t-3.0.1) — `todo`
+    - [ENG-140 · Pending verification screen](/projects/sanatan-sansaar/tasks?task=t-3.0.2) — `todo`
+    - [ENG-141 · Banking details](/projects/sanatan-sansaar/tasks?task=t-3.0.3) — `todo`
+  - [ENG-142 · Profile & Settings](/projects/sanatan-sansaar/tasks?task=g-3.1) — `todo`
+    - [ENG-143 · Profile management](/projects/sanatan-sansaar/tasks?task=t-3.1.1) — `todo`
+    - [ENG-144 · Rate management](/projects/sanatan-sansaar/tasks?task=t-3.1.2) — `todo`
+    - [ENG-145 · Availability toggle](/projects/sanatan-sansaar/tasks?task=t-3.1.3) — `todo`
+    - [ENG-146 · Weekly schedule](/projects/sanatan-sansaar/tasks?task=t-3.1.4) — `todo`
+    - [ENG-147 · Assistant management](/projects/sanatan-sansaar/tasks?task=t-3.1.5) — `todo`
+- [ENG-148 · ADMIN WEB](/projects/sanatan-sansaar/tasks?task=g-4) — `todo`
+  - [ENG-149 · Astrologer Management](/projects/sanatan-sansaar/tasks?task=g-4.0) — `todo`
+    - [ENG-150 · Astrologer list](/projects/sanatan-sansaar/tasks?task=t-4.0.1) — `done`
+    - [ENG-151 · Astrologer detail](/projects/sanatan-sansaar/tasks?task=t-4.0.2) — `todo`
+    - [ENG-152 · Verify/reject](/projects/sanatan-sansaar/tasks?task=t-4.0.3) — `todo`
+    - [ENG-153 · Activate/deactivate](/projects/sanatan-sansaar/tasks?task=t-4.0.4) — `todo`
+    - [ENG-154 · Edit astrologer](/projects/sanatan-sansaar/tasks?task=t-4.0.5) — `todo`
+- [ENG-155 · Astro Profile](/projects/sanatan-sansaar/tasks?task=task-1781097330091) — `backlog`
+- [ENG-156 · master task](/projects/sanatan-sansaar/tasks?task=task-1781104268244) — `master`
+- [ENG-157 · ok](/projects/sanatan-sansaar/tasks?task=task-1781105262274) — `master`
+
+## Sanatan Sansaar — v1.0.0
+
+- [ENG-162 · Unable to book seva packages.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782299821723) — `done`
+- [ENG-163 · Remove the "Ritual video will..." text from the Sampoorna Aaradhana Bundle. This text should only be displayed for Puja packages.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782391797261) — `done`
+- [ENG-161 · Should not receive karma points for package instantly. ](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782299660941) — `done`
+- [ENG-164 · Users receive order request received notifications on the SDK page even when payment has not been completed.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782391885776) — `done`
+- [ENG-160 · Astrologer can also see their reviews on astro app ](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782285053376) — `done`
+- [ENG-159 · Astrologers should be able to edit their profile even when their account is deactivated.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782282232968) — `done`
+- [ENG-165 · Remove the "Payment Success" status from the Order Details page for COD orders in the app only.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782391909829) — `done`
+- [ENG-166 · If a user selects a Puja package for three people, they should not be able to add a fourth person using the Add New Member option.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782391945680) — `done`
+- [ENG-167 · A Data Integrity Violation error occurs for some products, such as Bhimseni Camphor and Navgrah Sambrani Cups.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782391980079) — `done`
+- [ENG-168 · Thumbnail images of the products in the cart get shuffled after refreshing the page. Need to change display order](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782392038195) — `done`
+- [ENG-169 · Clicked on notification for shani dev and stuck on this loader.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782709098689) — `done`
+- [ENG-379 · ENG-379	GST related discussion](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782709422604) — `done`
+- [ENG-380 · ENG-380	Correct Pooja Spelling in system to Puja](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782709436386) — `backlog`
+  - [ENG-1163 · Web FE](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783061168924) — `up-next`
+  - [ENG-1164 · Web BE](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783061194106) — `up-next`
+  - [ENG-1247 · BE](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783404530687) — `up-next`
+  - [ENG-1248 · BE](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783404531898) — `in-progress`
+- [ENG-575 · ENG-575	Proper use Crashlytics for user app](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782711232588) — `in-review`
+- [ENG-592 · ENG-592	There should be 2 recommended puja in remedies section (App)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782711239578) — `todo`
+- [ENG-600 · ENG-600	Events & Temples cards on home screen need redesign](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782711246241) — `todo`
+- [ENG-683 · ENG-683	A calendar should be visible in the Panchang section.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782711278503) — `done`
+- [ENG-744 · ENG-744	At minimum, subscription-related data should be synchronized with Production.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782711293993) — `todo`
+- [ENG-836 · ENG-836	While Signup or Editing - In years of experience field, Month field also needed](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782711300826) — `done`
+- [ENG-878 · ENG-878	Daily Energy & Prabhav Experience Enhancements : add this task into the task sheet](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782711318927) — `todo`
+- [ENG-891 · ENG-891	Event tracking on Consultation flow both Flutter and Web.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782711324635) — `in-progress`
+- [ENG-892 · ENG-892	Event tracking on Astrologer App and Web App.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782711330909) — `in-progress`
+- [ENG-930 · ENG-930	On iOS, remove notification badge counts from the app icon (both Astro and User apps).](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782711338695) — `in-review`
+- [ENG-937 · ENG-937	Native payment options on web and  mobile app](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782711344247) — `in-progress`
+- [ENG-946 · ENG-946	Decide and implement holistic event tracking on website and mobile app](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782711353315) — `done`
+- [ENG-1084 · ENG-1084	Revamp temple details page ~ Aarti](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782711375024) — `done`
+- [ENG-198 · Astro test profiles should be in last in the list](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782712143603) — `done`
+- [ENG-199 · ENG-1085 On details pages, image is not being displayed properly in the frame.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782718098058) — `in-review`
+- [ENG-1086 · ENG-1086 Double notification issue at Astro end](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782718119007) — `done`
+  - [ENG-1168 · BE Update](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783314359656) — `done`
+- [ENG-201 · Users are unable to delete their accounts.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782738479688) — `done`
+- [ENG-202 · Search is not working in the "Returns" section of the Admin panel.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782738527562) — `done`
+- [ENG-203 · Add an "Audit Log" for astrologers.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782738646542) — `done`
+- [ENG-204 · Add search functionality by "Display Name" in the Astrologers section of the Admin panel.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782738764447) — `done`
+- [ENG-205 · The "Customer" section is blank in the "Returns" module.(admin)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782738841851) — `done`
+- [ENG-206 · Implement Clarity on the website, prioritise the website first.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782795629803) — `done`
+- [ENG-207 · Website UI rewamp, should be more appealing, Japam reference was shared over the call. ](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782795705405) — `done`
+- [ENG-208 · That notification in "General" will be "Sanskaar" and "Pooja" will be "Puja"](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782796059978) — `done`
+- [ENG-209 · Notification listing screen should remain in stack to land back on in on press back](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782796177274) — `done`
+- [ENG-1091 · Images sent are not being shown](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782796212150) — `done`
+- [ENG-211 · Discount Flows (In order of their priority)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782796264327) — `done`
+- [ENG-212 · Buy a god idol -> First order free on subscription](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782796299437) — `in-progress`
+- [ENG-213 · Prompt user to add more items worth X amount to unlock a promo code ](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782796324798) — `in-progress`
+  - [ENG-1169 · Mobile Integration](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783314813379) — `in-review`
+  - [ENG-1185 · Web FE](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783320000775) — `in-review`
+  - [ENG-1186 · BE](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783320028983) — `in-review`
+- [ENG-1088 · Add items to cart worth X amount to unlock a % discount](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782796429592) — `done`
+  - [ENG-1132 · Integration on Cart](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782891452219) — `done`
+- [ENG-215 · Show proper COD NA reason to user, as received from BE](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782796491400) — `done`
+- [ENG-216 · Media gallery to be designed and developed for everything on FE +@Komal](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782796507016) — `up-next`
+- [ENG-217 · Catalogue details pages to be redesigned and developed + @Komal ](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782796522386) — `done`
+  - [ENG-220 · Design](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782798468895) — `todo`
+  - [ENG-219 · Development](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782798393503) — `in-review`
+- [ENG-218 · Prompt users for App review on play store and app store.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782796541779) — `in-review`
+- [ENG-221 · Distinguish old vs new astrologers in pending requests list](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782799595339) — `done`
+- [ENG-222 · Keep One Name,Sanskaar on Mobile, Articles and Blogs on Website](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782814994407) — `done`
+- [ENG-1122 · Seva orders to use sevaOccasionName instead of sevaOccasion so the occasion displays correctly.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782820438947) — `in-review`
+- [ENG-1123 · AIPM Seo points fixes](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782820684238) — `done`
+- [ENG-1124 · Sanatan sansaar seo points](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782820785290) — `done`
+- [ENG-1126 · Unable to create account on dev only. ](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782825207183) — `done`
+- [ENG-1127 · Creating ratings review page](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782828945978) — `done`
+- [ENG-1129 · Product Detail Page Revamp](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782887488608) — `done`
+- [ENG-1131 · Content section in admin ](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782887543056) — `up-next`
+- [ENG-1133 · Free First Chat/Call](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782891551037) — `done`
+  - [ENG-1134 · Integration Web FE](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782891964429) — `done`
+  - [ENG-1135 · Implementation on BE](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782891999537) — `done`
+- [ENG-1136 · ACL + Audit Logs for entire astro module.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782892121723) — `in-review`
+  - [ENG-1137 · Integration FE](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782892327444) — `todo`
+  - [ENG-1138 · Implementation BE](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782892446147) — `in-review`
+- [ENG-1139 · Add Increment (+) and Decrement (-) buttons on the Add to Cart button on web ](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782895808644) — `done`
+- [ENG-1140 · Samriddhi Bundle: Replace the "Book Now" button with "Buy Now" on web also ](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782895901328) — `done`
+- [ENG-1141 · Remove the "View Cart" banner from the top after adding items in cart on web](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782895965857) — `done`
+- [ENG-1142 · Replace the "View Details" button with "Buy Now" after adding item in cart on web](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782896046704) — `done`
+- [ENG-1143 · Fix the UI flickering issue when changing the product quantity on web](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782896087029) — `done`
+- [ENG-1144 · Astro View Modal update to display System Information in Web Admin.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782900887646) — `in-review`
+- [ENG-1145 · Added parentVariantId in cart and catalogvariant.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782900990138) — `in-review`
+  - [ENG-1146 · Add Key from BE](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782901027317) — `in-review`
+  - [ENG-1147 · Add Key from Mobile FE](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782901064719) — `in-review`
+- [ENG-1148 · Fix needed in user stats data for admin dashboard.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782901136528) — `done`
+  - [ENG-1149 · Fixed SQL query for different status](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782901168851) — `in-review`
+  - [ENG-1162 · FE Web](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783059651170) — `in-review`
+- [ENG-1150 · Auto trigger top-up modal when chat/call is about to expire](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782904659022) — `done`
+- [ENG-1151 · Capture leads from abandoned carts](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782905386882) — `in-progress`
+  - [ENG-1152 · BE implementation with DB Queries and API Endpoints](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782905538654) — `done`
+  - [ENG-1153 · FE implementation modal and hooks](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782905622021) — `in-progress`
+- [ENG-1154 · Coupon for specific items hotfix -id changed from item id to variant id ](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1782908874941) — `in-review`
+- [ENG-1165 · Add user response inside the order return and add catalogitem response inside coupon.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783061511940) — `in-review`
+- [ENG-1166 · Child-Variant Subscription Discount](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783061607993) — `in-progress`
+  - [ENG-1538 · Data entry dependency](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-mrek9sp1-9d4c9eaf80174df0) — `in-progress`
+- [ENG-1167 ·  Preferred Language in User Registration](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783068158675) — `done`
+- [ENG-1170 · support searching in order return flow](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783315664085) — `done`
+  - [ENG-1172 · Web FE](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783315763119) — `done`
+  - [ENG-1173 · BE](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783315783336) — `done`
+- [ENG-1174 · Exposing endpoint for free session for showing on the ui](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783316191178) — `done`
+- [ENG-1175 · Fixing duplicate push notification in the chat](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783316294705) — `done`
+- [ENG-1176 · Fixing issue seva occurance date is not created](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783316310396) — `in-review`
+- [ENG-1177 · Update all forms to have phone number validation with country code autocomplete correction](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783316546253) — `done`
+- [ENG-1178 · Fix Buy Now modals to have COD unlocked at all times for applicable items](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783316586984) — `done`
+- [ENG-1179 · Address form simplification with city and state syncing from unicommerce](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783316612281) — `done`
+- [ENG-1180 · 5% off on all prepaid orders (Products) in order summary calculation](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783316712290) — `in-progress`
+  - [ENG-1181 · BE](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783316740538) — `in-progress`
+  - [ENG-1182 · Web FE](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783316768497) — `in-progress`
+- [ENG-1184 · fixed duplicate response of master entries in astrologers response](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783319391391) — `in-progress`
+- [ENG-1187 · This text is not for puja and seva.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783321235426) — `done`
+- [ENG-1188 · change response of coupon from catalog variant to  catalog item](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783321654376) — `in-review`
+- [ENG-1189 · Add Meta Content Area in Packages](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783322775796) — `in-progress`
+  - [ENG-1258 · Add the keys from backend for contentSection and metadata in packages](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783410848624) — `done`
+- [ENG-1190 · Catalog items stock should not be bydefault 0](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783322856105) — `done`
+- [ENG-1194 · Meta Pixel Event Capture from BE API](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783326101234) — `in-progress`
+- [ENG-1197 · Run security checks on each repos using Claude Fable 5 (available only till July 8th 2026)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783333676543) — `in-review`
+- [ENG-1203 · Unable to connect jaap with God Deity](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783334771972) — `in-progress`
+- [ENG-1204 · Filter issues in orders listing](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783335618460) — `done`
+- [ENG-1205 · The Estimated Delivery Date UI is not responsive and is getting cut off in the mobile web view.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783337332791) — `done`
+- [ENG-1206 · There is duplicate text of "Payment method" (Web)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783338693082) — `done`
+- [ENG-1207 · Need proper message when coupon is invalid.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783339387788) — `done`
+- [ENG-1208 · Product details image and gallery view](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783339722871) — `done`
+- [ENG-1209 · The product rating displayed on the product listing page is different from the rating shown on the individual product details page.(Web)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783340782061) — `done`
+- [ENG-1210 · Add applied coupon details in the order listing and details in admin list](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783340930048) — `done`
+- [ENG-1211 · AIPM Admin – Queries: Attachment file download is not working on the Form Details page.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783341803940) — `done`
+  - [ENG-1251 · Prod ENV](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783405628674) — `done`
+- [ENG-1212 · Meta data font issues of products like "DhanYog Panchatattva Bracelet" (Web)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783341981979) — `done`
+- [ENG-1213 · Apply coupon button issue (Ref to video) (Web)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783342306629) — `done`
+- [ENG-1214 · Unable to open panchang (App)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783342553007) — `done`
+- [ENG-1215 · Text "easy cancellation" is getting cut (App)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783342637042) — `done`
+- [ENG-1216 · Blur image of "samporna aradhana package" ](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783342704596) — `in-progress`
+- [ENG-1217 · The number of people who will receive the benefits of the Seva is not mentioned.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783342805296) — `up-next`
+- [ENG-1218 · Meta data ui issue - "Guggul Loban Dhoop stick" ](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783342881778) — `todo`
+- [ENG-1219 · There is no date mentioned for kaal sharp puja](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783342934556) — `in-review`
+- [ENG-1220 · For Shorts accessed from Spotlight:](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783343145383) — `done`
+  - [ENG-1408 · Mobile Implementation](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783577296818) — `in-progress`
+- [ENG-1221 · UI issues in samporna aradhana package like spacing and need to remove charcoal free like text from puja package](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783343259489) — `in-review`
+- [ENG-1222 · All videos should not be same for all seva ](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783343406977) — `up-next`
+- [ENG-1223 · On the web, new users who have not saved an address are prompted to enter their address twice.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783343480401) — `done`
+- [ENG-1224 · Back button need to remove from user registration page](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783343555059) — `in-review`
+- [ENG-1225 · There is no Cancel option for package "Samporna Aradhana package" (App)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783343620835) — `done`
+- [ENG-1226 · Filter is not working in Notification(App)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783343669461) — `done`
+- [ENG-1227 · There is a thumbnail issue in Shorts. One of the Shorts is missing its thumbnail.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783343932214) — `todo`
+- [ENG-1228 · There should be an option for order more than one "Sampoorna Aradhana package" (Need to discuss)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783344020338) — `todo`
+- [ENG-1229 · Update Coupon Catalog Item names as per the latest API response.(Admin)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783345024884) — `in-review`
+- [ENG-1233 · In web admin cancel orders pass order uuid in payload based on the OrderID for correct cancellation flow](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783401377436) — `done`
+- [ENG-1234 · Fix magnifying glass effect in details pages (in web screen size view) taking reference from amazon.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783401461484) — `done`
+- [ENG-1236 · Fix this dashboard UI in divya-jyotish page, buttons are clickabel but not of any use.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783401721466) — `done`
+- [ENG-1237 · Update Checkout Summary to Show Prepaid Amount and User Message](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783402176160) — `in-review`
+  - [ENG-1328 · Display Prepaid amount on mobile](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783493402353) — `in-progress`
+- [ENG-1239 · Remove this right section in the image and use the correct pujas card component in this section without changing the days listing above](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783402539828) — `done`
+- [ENG-1240 · After a product is delivered the user should be prompted to rate & review the product](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783402864656) — `todo`
+- [ENG-1241 · Resolve Incorrect COD Amount in Order Confirmation Template](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783403018283) — `done`
+- [ENG-1242 · Product gallery section in category and event pages](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783403954076) — `todo`
+- [ENG-1243 · Categorisation of WA templates to send for PUJA and SEVA based on preferred language on ORDER CONFIRMATION](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783403962137) — `in-review`
+- [ENG-1246 · Testing of Product sub-variant and addon subscription flow](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783404377248) — `in-progress`
+- [ENG-1249 · Change package section to follow the design of badged products sections above with the package card showing on left and details on right (if there is only one package)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783405085265) — `done`
+- [ENG-1250 · Order summary response restructuring.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783405453831) — `up-next`
+- [ENG-1252 · in sanatan-sansaar footer remove this om icon and show sanatan-sansaar logo in same line with bigger font size (use line1.png in dist folder)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783406644299) — `done`
+- [ENG-1253 · Let user see/zoom images of any product on mobile app](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783407480547) — `done`
+- [ENG-1254 · Add Unboxing videos of god idols](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783407808864) — `done`
+- [ENG-1255 · Add New Package Policy ](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783407938088) — `done`
+- [ENG-1256 · Subscription Catalog Policy to all Catalog Items Specifically](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783408146230) — `in-progress`
+- [ENG-1257 · Add aarti and jaap and sync lyrics](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783410107152) — `in-progress`
+- [ENG-1260 · Add isVisible true/false key in coupons listing so as to hide the coupons from UI while the CODE is active for users](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783417387491) — `done`
+- [ENG-1261 · Need to validate whatsapp field also.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783418622776) — `in-review`
+- [ENG-1262 · Text is getting cut (Ref to img) (on mobile web view)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783418996409) — `done`
+- [ENG-1263 · Need not to show Apply button when there is no coupons available](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783419298563) — `done`
+- [ENG-1264 · Hotfix for Product Gallery](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783420560616) — `done`
+- [ENG-1266 · Send Cart abandonment messages on Cart level too and update Message template for Abandonment messages](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783421049006) — `up-next`
+- [ENG-1267 · Send ratings and review message template per order basis after order completion](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783421174838) — `in-progress`
+- [ENG-1269 · Fix admin dashboard revenue calculation to exclude COD undelivered, returned, and refunded orders please this task](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783428201236) — `in-review`
+- [ENG-1270 · Send ratings and review message template per order basis after order completion](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783428619078) — `todo`
+- [ENG-1271 · Send Cart abandonment messages on Cart level too and update Message template for Abandonment messages](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783428639840) — `in-review`
+- [ENG-1272 · Topup in consulatation for user app](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783428677940) — `done`
+- [ENG-1273 · Work on Coupons](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783432961385) — `todo`
+- [ENG-1274 · Unable to see videos of god idol unboxing on SS website](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783434333248) — `done`
+- [ENG-1275 · admin-astrologer performance page enhancements for finance and review](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783486447906) — `in-progress`
+- [ENG-1276 · admin-astrologer performance page enhancements for finance and review](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783486453174) — `todo`
+- [ENG-1279 · admin-wallet enhancements for finance](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783486593305) — `todo`
+- [ENG-1282 · Catalog reccomendation module for astro to recommend items to user](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783486698628) — `todo`
+- [ENG-1286 · Largest Content full Paint optimization for sanatan-sansaar to reduce page load times and HTML size](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783487244750) — `in-progress`
+- [ENG-1288 · Full page image/Video viewer in detail pages on web and mobile view](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783488433601) — `done`
+- [ENG-1289 · Apply welcome coupon as soon as user logs in/registers for first time, applicable for other discounts as well](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783488510137) — `todo`
+- [ENG-1290 · Astrologer search skill search is not working and pull to refresh and getting duplicate data from backend](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783488732331) — `in-review`
+  - [ENG-1292 · Mobile Changes](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783488809728) — `in-progress`
+  - [ENG-1293 · BE Implementations](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783488895900) — `up-next`
+- [ENG-1294 · Notification icon should be show after login only in user app](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783489293890) — `in-review`
+- [ENG-1295 · Prompt for reviews & ratings once the order is delivered the user should get the detail of recently delivered order to rate in a modal ](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783489581560) — `todo`
+- [ENG-1296 · Razorpay Magic Checkout & Razorpay X](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783489945909) — `todo`
+- [ENG-1297 · AppTrove or alternative deep linking solution](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783489958936) — `todo`
+- [ENG-1298 · Event tracking & analytics solution (Clarity, etc)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783489972644) — `in-review`
+- [ENG-1299 · Covertway integration (Harshil) with IVR](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783489990196) — `todo`
+- [ENG-1300 · CometChat & alternatives](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490006261) — `in-progress`
+- [ENG-1301 · App](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490064947) — `todo`
+  - [ENG-1302 · Aaj ka darshan - tap on image to play jaap, audio player view changes](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490081802) — `todo`
+  - [ENG-1303 · Video/shorts player view - pause/play option, show caption](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490094637) — `todo`
+  - [ENG-1304 · Prompt login & subscription in infinite scroll views](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490109003) — `todo`
+  - [ENG-1305 · Bring out media section to front, better than Quick Access](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490120390) — `todo`
+- [ENG-1306 · Astro - Catalog recommendation flow](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490234051) — `up-next`
+- [ENG-1307 · Admin](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490247019) — `todo`
+  - [ENG-1308 · Left navigation menu restructuring](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490264052) — `todo`
+  - [ENG-1310 · Roles & users - admin, astro, dev, qa, media, etc](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490285107) — `todo`
+- [ENG-1311 · Backend](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490308197) — `todo`
+  - [ENG-1312 · Admin](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490313942) — `todo`
+    - [ENG-1313 · Dashboard data fixes](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490328726) — `todo`
+    - [ENG-1314 · Product getting out of stock randomly and intermittently](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490345724) — `todo`
+- [ENG-1315 · Content & Data](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490393707) — `todo`
+  - [ENG-1316 · Catalogs - image, videos, policies, subscription enablement, reviews with images & videos](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490402931) — `todo`
+  - [ENG-1317 · Daily engagement - jaap & aarti](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490413440) — `todo`
+  - [ENG-1318 · Events - more entries and media](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490424195) — `todo`
+- [ENG-1319 · Design](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490436937) — `todo`
+  - [ENG-1320 · Banner images - everywhere](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490447044) — `todo`
+    - [ENG-1333 · God Idol website image](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783498281865) — `in-progress`
+  - [ENG-1321 · Category landing pages](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490460426) — `todo`
+- [ENG-1322 · Unicommerce invoice fix (coupon discount missing)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783490944866) — `done`
+- [ENG-1324 · Sanatan sansaar SEO tasks 133 - 138](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783491144340) — `in-review`
+- [ENG-1325 · AIPM SEO task 38 - 44](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783491475686) — `in-review`
+- [ENG-1329 · Catalougue landing pages](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783495463909) — `up-next`
+- [ENG-1330 · add lyrics in jaap](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783496448062) — `in-review`
+- [ENG-1331 · metadata in catalog package](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783496480823) — `in-progress`
+- [ENG-1332 · failed creating review for cod orders ](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783496564717) — `done`
+- [ENG-1337 · aipm s3 upload issue](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783500064796) — `done`
+- [ENG-1338 · Native payment flow](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783509696546) — `in-progress`
+  - [ENG-1507 · Native Payment Flow UI Design](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-mrehp7w6-d24bf960b5384c26) — `in-progress`
+  - [ENG-1509 · Native Payment Flow - Mobile Integration](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-mrehroji-309af6a791bd401d) — `todo`
+- [ENG-1386 · Astrologer unable to upload their profile picture ](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783573926181) — `done`
+- [ENG-1387 · "Make a difference today" section on homepage is rendering twice, remove the bottom one](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783574039324) — `done`
+- [ENG-1388 · On sanatan Bazaar page the fallback banner text is different from the main text, align these properly](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783574298082) — `in-review`
+- [ENG-1389 · Guest puja/seva orders details sync for BUY NOW process to capture list of participants in family members](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783574508881) — `in-review`
+- [ENG-1390 · Need to apply conditional rendering on delete buttons with correct ACL permissions for components in ADMIN](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783574647362) — `up-next`
+- [ENG-1392 · Firebase Chat implementation with Cometchat fallback on ASTRO and SS WEB](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783574916847) — `todo`
+- [ENG-1394 · Few profiles in astro app are not editing and giving malformed request.](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783575132228) — `in-review`
+- [ENG-1395 · In seva landing page on SS fix the recommended seva section to follow the correct component "BadgedProductsCarousel.tsx"](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783575823660) — `in-review`
+- [ENG-1397 · Kundli (User's end)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783576263292) — `todo`
+  - [ENG-1398 · Add Transit chart in Charts section in Kundli](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783576279580) — `todo`
+  - [ENG-1399 · Add ask a question in the last of Kundli and redirect the user to astro section in the App](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783576290706) — `todo`
+  - [ENG-1400 · Add sub sub lord against planets in KP Table](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783576298786) — `todo`
+  - [ENG-1401 · Add Nakshatra and pada of nakshatra in planet table and add Shadbala sections](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783576316218) — `todo`
+  - [ENG-1402 · Show degrees and conditions of planet](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783576322521) — `todo`
+- [ENG-1403 · Fix ENG-HI translation on all pages, there is refetching issue on multiple pages and critical hotfix on EVENTS page](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783576385338) — `in-progress`
+- [ENG-1404 · On Audios page ID is showing instead of the name of aarti/bhajan](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783576509130) — `done`
+- [ENG-1405 · Need to change the position of "Add minutes" icon during call (App)](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783576675379) — `done`
+- [ENG-1407 · Add root level segregation based on User's preferred language to send WA Messages with respect to selected language](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783576954808) — `todo`
+- [ENG-1419 · Fix top priority crashalytics issues](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783580123868) — `in-review`
+- [ENG-1420 · Fix the notification routing issue for Sanskaars](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783580189787) — `in-review`
+- [ENG-1533 · Add sub-title/lable in sub-varinat for ui display](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783664080322-opqsj5) — `in-progress`
+- [ENG-1534 · Add Rating & review data from BE](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783665117600-j9u8gq) — `in-progress`
+- [ENG-1537 · Add Rating & review data from BE](/projects/sanatan-sansaar/tasks?version=1.0.0&task=task-1783665122482-9lkz2t) — `in-progress`
+
+## Sanatan Sansaar — v1.0.1
+
+- [ENG-1 · Phase 4 — Product Checkout Flow](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532512676) — `backlog`
+- [ENG-5 · Phase 5 — Payment UI](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532512781) — `in-progress`
+  - [ENG-3 · Product Checkout Flow](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532512729) — `todo`
+    - [ENG-11 · Package Booking UI](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532512935) — `in-progress`
+      - [ENG-17 · Phase 8 — Seva Booking Screens](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532513087) — `in-review`
+- [ENG-13 · Phase 7 — Puja Booking Screens](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532512985) — `done`
+- [ENG-7 · Payment UI](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532512831) — `done`
+  - [ENG-9 · Phase 6 — Package Booking UI](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532512883) — `todo`
+  - [ENG-15 · Puja Booking Screens](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532513037) — `todo`
+    - [ENG-19 · Seva Booking Screens](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532513139) — `todo`
+    - [ENG-27 · Phase 1 — Authentication Screens](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532513348) — `todo`
+      - [ENG-33 · Common Checkout Components](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532513504) — `todo`
+      - [ENG-35 · Phase 3 — Coupon UI](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532513554) — `todo`
+  - [ENG-23 · Order Pages](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532513244) — `todo`
+    - [ENG-21 · Phase 9 — Order Pages](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532513191) — `todo`
+- [ENG-25 · WEB FRONTEND](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532513296) — `todo`
+- [ENG-29 · Authentication Screens](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532513401) — `in-review`
+- [ENG-31 · Phase 2 — Common Checkout Components](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532513453) — `done`
+- [ENG-37 · Coupon UI](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532513605) — `todo`
+- [ENG-39 · Phase 4 — Product Checkout Flow](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532513657) — `todo`
+- [ENG-41 · Product Checkout Flow](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532513712) — `todo`
+- [ENG-43 · Phase 5 — Payment UI](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532513763) — `todo`
+- [ENG-45 · Payment UI](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532513813) — `todo`
+- [ENG-47 · Phase 6 — Package Booking UI](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532513864) — `todo`
+- [ENG-49 · Package Booking UI](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532513918) — `todo`
+- [ENG-51 · Phase 7 — Puja Booking Screens](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532513971) — `todo`
+- [ENG-53 · Puja Booking Screens](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532514024) — `todo`
+- [ENG-55 · Phase 8 — Seva Booking Screens](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532514076) — `todo`
+- [ENG-57 · Seva Booking Screens](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532514129) — `todo`
+- [ENG-59 · Phase 9 — Order Pages](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532514181) — `todo`
+- [ENG-61 · Order Pages](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1781532514233) — `todo`
+- [ENG-63 · NEw Task](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1782309744898) — `todo`
+- [ENG-1155 · Admin-panel  Approval flow restructure](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1782909635085) — `todo`
+- [ENG-1156 · Hot-fix-add auto focus in the new payment flow](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1782909703076) — `todo`
+- [ENG-1157 · create user end api for get all coupons](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1782916781116) — `todo`
+  - [ENG-1198 · Show degrees and conditions of planet](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1783333861145) — `todo`
+  - [ENG-1159 · Created Endpoint Public API](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1782916825023) — `in-progress`
+    - [ENG-1200 · Add sub sub lord against planets in KP Table](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1783334179278) — `todo`
+  - [ENG-1160 · Public coupon listing on details page](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1782916914728) — `in-progress`
+    - [ENG-1201 · Add ask a question in the last of Kundli and redirect the user to astro section in the App](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1783334236456) — `todo`
+  - [ENG-1326 · add lyrics in jaap response](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1783491547675) — `todo`
+- [ENG-1161 · Promotional URL for Catalog Items](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1782916947617) — `done`
+- [ENG-1195 · Kundli (User's end)](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1783333571935) — `todo`
+  - [ENG-1199 · Add Nakshatra and pada of nakshatra in planet table and add Shadbala sections](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1783334016685) — `todo`
+- [ENG-1202 · Add Transit chart in Charts section in Kundli](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1783334358500) — `todo`
+- [ENG-1327 · metadata in catalog package](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-1783491589285) — `todo`
+- [ENG-1539 · Main task 1](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-mrel1kli-fb1ca973110b4da6) — `review`
+  - [ENG-1540 · main task sub1](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-mrel1tmn-b63cf8e40a794609) — `review`
+  - [ENG-1541 · main task sub 2.](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-mrel28c6-31e0b47113d54d82) — `review`
+    - [ENG-1542 · main task sub 2.1](/projects/sanatan-sansaar/tasks?version=1.0.1&task=task-mrel634v-04b79ed622ab4913) — `review`
+
+## Sanatan Sansaar — v1.0.2
+
+- [ENG-1339 · Optimise Admin Dashboard](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783513178398) — `in-progress`
+  - [ENG-1340 · Show users' stats](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783513296927) — `todo`
+    - [ENG-1341 · Show user breakup by statuses - guest, registered, new, etc](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783513321934) — `todo`
+    - [ENG-1424 · Show user breakup over time](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrd8y38o-b56b0186b88d42d3) — `todo`
+  - [ENG-1342 · Show orders' stats](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783513369131) — `todo`
+    - [ENG-1343 · Show order amount/revenue breakup by time interval - total, average order value, etc](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783513479498) — `todo`
+    - [ENG-1344 · Show order breakup by statuses - pending, processing, completed, etc](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783513561653) — `todo`
+    - [ENG-1422 · Show orders breakup by catalog types](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrd8abtc-5488c77d86a84bad) — `todo`
+    - [ENG-1423 · Show top 5 ordered catalogs with their total number of orders](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrd8hxx1-204528952e444703) — `todo`
+    - [ENG-1425 · Show order breakup over time](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrd8yhx9-7c69d38d6d244748) — `todo`
+    - [ENG-1428 · Show order breakup by payment method - prepaid, COD, etc](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrd92p43-7f29a571a6974997) — `todo`
+  - [ENG-1421 · Show catalog stats](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrd7ibdj-446b516752eb4834) — `todo`
+    - [ENG-1426 · Show catalog breakup by type](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrd8zgvh-40f095a25a60464e) — `todo`
+    - [ENG-1427 · Show catalog breakup by statuses - draft, active, inactive, etc](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrd90blo-a7b1d265be524f57) — `todo`
+  - [ENG-1429 · Show subscription stats](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrd93vk0-72ff8d2d1165407c) — `todo`
+    - [ENG-1431 · Show subscriptions breakup - total, active, cancelled, etc](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrd9cvu0-43119cc1df864403) — `todo`
+    - [ENG-1432 · Show subscription orders breakup over time](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrd9ekjw-362fbe27cf764b4c) — `todo`
+  - [ENG-1430 · Show app install stats](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrd94bkk-cc3467f99d624de5) — `todo`
+- [ENG-1345 · Redesign all the landing & details pages ](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783514072367) — `todo`
+  - [ENG-1359 · Design the landing pages](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783516343594) — `todo`
+    - [ENG-1360 · Stage I - Home, Bazaar, Puja & Seva](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783516389446) — `todo`
+  - [ENG-1361 · Design the category details pages](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783516420446) — `todo`
+  - [ENG-1362 · Design the catalog listing pages](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783516557878) — `todo`
+  - [ENG-1448 · Design the catalog details pages](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdc4m9s-63c8332fcfac4632) — `todo`
+- [ENG-1346 · Redesign the banners across the whole app](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783514321672) — `todo`
+  - [ENG-1358 · Design the banners](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783516147959) — `todo`
+- [ENG-1347 · Optimise inventory syncing with Unicommerce](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783514462424) — `todo`
+  - [ENG-1348 · Products getting out of stock randomly and intermittently](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783514659876) — `in-progress`
+  - [ENG-1496 · Shift Unicommerce syncing to webhook](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdgg4zy-6495766082904063) — `todo`
+- [ENG-1349 · Optimise e-commerce payment journey](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783514878127) — `todo`
+  - [ENG-1350 · Razorpay optimisations](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783514900379) — `todo`
+    - [ENG-1351 · Research & follow up on Magic Checkout](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783514949017) — `up-next`
+    - [ENG-1352 · Research and plan about dynamically generated payment links/QR codes](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783515024136) — `todo`
+    - [ENG-1353 · Enhance SDK/payment page branding & design](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783515165954) — `up-next`
+    - [ENG-1555 · Pre-fill email/phone number to skip the step to enter it manually when SDK opens](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mreppbmq-948479b5def74466) — `up-next`
+  - [ENG-1354 · Add EMI option for payment](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783515236574) — `todo`
+  - [ENG-1355 · Add native methods for payment (UPI, Cards, NetBanking, COD, Wallet, Etc)](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783515460927) — `up-next`
+    - [ENG-1357 · Design the UI](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783515948733) — `todo`
+  - [ENG-1447 · Follow back the user for abandoned purchases](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdc2cje-68ec841b414b4136) — `up-next`
+  - [ENG-1497 · Option to convert COD options into prepaid before their delivery](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdggtcl-5fde4aeb18ef47fc) — `todo`
+  - [ENG-1516 · Add support for Wallet Recharge with UPI from backend astro service.](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrei70dc-d5a50adf695740b9) — `up-next`
+  - [ENG-1544 · UPI native flow UI redesign on both Catalouge payments and Wallet recharge payments.](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mreme5ej-34293ad8bc234a17) — `up-next`
+  - [ENG-1556 · Partial pre-payment for COD orders](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mreptbrs-37eff0a81a8d4b55) — `todo`
+    - [ENG-1557 · Evaluate & plan the implementation](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mreptp1w-81fee91cd4c14066) — `up-next`
+  - [ENG-1558 · Admin should control the payment options available to user](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrerbh27-3f3da216021c44ae) — `todo`
+    - [ENG-1559 · Payment options with applicable charges/discounts should show irrespective of delivery address on checkout pages](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrerr20f-753bcd0adc2e40f0) — `up-next`
+- [ENG-1356 · Update catalogs' details throughout the app](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783515699168) — `todo`
+  - [ENG-1374 · Update products' details](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783517618912) — `todo`
+  - [ENG-1375 · Update pujas' details](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783517642649) — `todo`
+  - [ENG-1376 · Update sevas' details](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783517657066) — `todo`
+- [ENG-1363 · Add support (+AI) bots to web & mobile apps](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783517028666) — `todo`
+  - [ENG-1364 · Implement AI Support Bot](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783517071169) — `todo`
+    - [ENG-1365 · Create the bot as a separate service](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783517112025) — `in-progress`
+    - [ENG-1366 · Integrate the bot on web apps](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783517140823) — `up-next`
+    - [ENG-1367 · Integrate the bot in mobile apps](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783517169655) — `todo`
+  - [ENG-1417 · Implement personality based AI bot](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783578941991) — `todo`
+  - [ENG-1549 · Add form based global support bot](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mreof6as-b29f25c223b5467e) — `todo`
+    - [ENG-1550 · Add a bubble head on website for user queries](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mreogcsz-b2f165adab094bc9) — `up-next`
+  - [ENG-1560 · Add recommender/calculator/similar feature for user to get help about their purchase](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mres3435-abeb0c715aa64654) — `todo`
+    - [ENG-1561 · Add flow to recommend correct bracelet for my Rashi](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mres3pm2-e3b8f7f25855437d) — `todo`
+- [ENG-1368 · Add IVR system for incoming & outgoing calls](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783517247283) — `todo`
+  - [ENG-1369 · Get the Exotel/alternative telephony service account created](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783517317712) — `up-next`
+  - [ENG-1370 · Get the IVR system setup for incoming and outgoing calls](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783517362961) — `up-next`
+  - [ENG-1371 · Get the AI bot added to the IVR system](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783517397795) — `todo`
+    - [ENG-1372 · Revert Harshil on API payload thread ](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783517473653) — `up-next`
+    - [ENG-1373 · Follow up with ConvertWay (Harshil) on next steps for integratioon](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783517553137) — `up-next`
+- [ENG-1377 · Track events and user journey](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783517830048) — `todo`
+  - [ENG-1378 · Add to astro apps](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783517856466) — `todo`
+    - [ENG-1379 · Add to web apps](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783517888809) — `todo`
+    - [ENG-1380 · Add to mobile apps](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783517906308) — `in-review`
+  - [ENG-1466 · Finalise on AppTrove or an alternative for deep linking](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdet3g4-373fc936907d41cc) — `todo`
+  - [ENG-1543 · Events has to be reviewd by Dhruv. (Awaiting response))](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrembw9a-2fc6cf262516467c) — `todo`
+- [ENG-1381 · Add recommendation/remedy flow to astro modules](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783518110282) — `todo`
+  - [ENG-1382 · Add feature to astro app](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783518148553) — `todo`
+    - [ENG-1384 · Design the UI](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783518190426) — `todo`
+  - [ENG-1383 · Add feature to user app](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783518161057) — `todo`
+    - [ENG-1385 · Design the UI](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783518206830) — `todo`
+- [ENG-1409 · Enhance Astro Admin Views](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783578456321) — `in-progress`
+  - [ENG-1410 · Show segregated wallet details on Admin panel](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783578552995) — `in-progress`
+    - [ENG-1411 · Enable the required keys from BE](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783578570209) — `in-review`
+    - [ENG-1413 · Map the keys on FE Admin](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783578622739) — `in-review`
+  - [ENG-1414 · Show payment breakdown of astro on Admin panel](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783578778911) — `in-review`
+    - [ENG-1415 · Enable the required keys from BE](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783578802472) — `in-review`
+    - [ENG-1416 · Map the keys on FE Admin](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783578841205) — `in-review`
+- [ENG-1433 · Enhance mobile app designs](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdanze1-f167bc9a037f4d28) — `todo`
+  - [ENG-1434 · Redesign the home page components - events, temples, festivals, etc](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdapxl5-fe355d6ea4d143fe) — `todo`
+  - [ENG-1435 · Complete the design and implementation of Daily Energy and Prabhav section](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdaslm2-c98e1a6e9f14488a) — `todo`
+  - [ENG-1454 · Complete the Aaj Ka Darshan design and implementation](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrde6hzw-b2c94ca165ac4504) — `in-progress`
+  - [ENG-1455 · Enhance shorts/video player view](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdebex3-f5f1402f24074a3d) — `todo`
+  - [ENG-1456 · Highlight media section/options more on front](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdeft11-8ae98bb64fef4467) — `todo`
+  - [ENG-1468 · Prompt login & subscription in infinite scroll views](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdeyirw-5e2ad7472f284672) — `in-progress`
+  - [ENG-1469 · Prompt login in Daily Energy and Prabhav section](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdezf0r-788a2800ab4c4912) — `todo`
+- [ENG-1436 · Sync data with Google & Facebook](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdbhxca-405a8ccb89ad46df) — `todo`
+  - [ENG-1437 · Upload catalogs/products to Google Merchant Centre](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdbjd19-707568659fbc49fb) — `in-progress`
+  - [ENG-1438 · Push purchase events to Meta Pixel from BE](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdbl8li-8568862491cc4ff1) — `in-progress`
+- [ENG-1439 · Enhance Astro Consultation Flows](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdboi1r-fd586ec5d2d94ce9) — `todo`
+  - [ENG-1440 · Add an alternative to CometChat](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdbp20o-339cba443ded429f) — `todo`
+    - [ENG-1441 · Evaluate and plan Firebase as chat alternative](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdbq5us-e5a3f0acf0414c21) — `in-progress`
+- [ENG-1442 · Enhance the Rating & Review flow](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdbvz1n-67bcb6a7e2564f15) — `todo`
+  - [ENG-1443 · Prompt user for orders' rating & review](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdbwnf5-79ebf67ea96f451b) — `todo`
+    - [ENG-1445 · Prompt on respective order details page](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdc02kp-ce662c6c085045e7) — `todo`
+    - [ENG-1446 · Prompt via notifications - push, whatsApp, SMS, etc](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdc0pzv-980ce941cdca404c) — `todo`
+  - [ENG-1444 · Prompt user for mobile app rating & review](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdbxcbq-2faeebf97abf4952) — `todo`
+- [ENG-1449 · Implement Discount & Coupon Flows](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdc5xbw-fa6404bf934e4306) — `todo`
+  - [ENG-1450 · Auto apply coupon, as applicable, as soon as user logs in during checkout flow](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdcj026-0ad9261f01e84b33) — `todo`
+  - [ENG-1467 · Enable use of different type of coupons](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdeuzoi-041cc307b2594de5) — `todo`
+- [ENG-1451 · Fix Puja Booking Flow Issues](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrddsyc7-a3a906bc955c4c62) — `up-next`
+  - [ENG-1452 · Puja Date Should not be visible on the same day - BE](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrddu3mv-ba745e377d0f4df3) — `todo`
+  - [ENG-1453 · Puja Date Should not be visible on the same day - need to change the custom FE logic](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrddw7hr-0d862b91459f4389) — `up-next`
+- [ENG-1457 · Optimise notification flows](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdeix7w-06b0722b2e6f44ce) — `todo`
+  - [ENG-1458 · Add root level segregation based on user's preferred language to send notifications](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdejyc1-11da837f32b0411e) — `todo`
+  - [ENG-1495 · Subscription emailer template design](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdgf3ra-a32bf24b96a4486f) — `todo`
+- [ENG-1459 · Data entry and updates](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdelsnr-56820f6d06c94f40) — `todo`
+  - [ENG-1460 · Events - more entries and media](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdem842-3eb037a588994edd) — `todo`
+  - [ENG-1461 · Daily engagement - jaap & aarti](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdemjmb-d3cc3c4ed0454115) — `todo`
+  - [ENG-1462 · Catalogs - image, videos, policies, subscription enablement, reviews with images & videos](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrden4fz-3e9319f82b714501) — `todo`
+  - [ENG-1463 · Mahayagya category & product images](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdenr99-a0ebf237634240ca) — `todo`
+  - [ENG-1464 · Rudrakash product images](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdeo7qe-294e4526b44044f8) — `todo`
+  - [ENG-1465 · Bracelet images](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdeoioh-4e87b47b54514fe2) — `todo`
+- [ENG-1470 · Optimise admin's left navigation menu](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdf38xb-ee4692d8d7364649) — `todo`
+  - [ENG-1471 · Re-organise the menu options](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdf439e-e285202f39784433) — `todo`
+- [ENG-1472 · Enhance ACL & Roles flow](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdf4h8w-b4d142e25f7f4e92) — `todo`
+  - [ENG-1473 · Few features are enabled by default for any new role being created](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdfcool-2d9ec311f9a442e4) — `todo`
+  - [ENG-1474 · Create & assign team specific roles, as per their need](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdfdbza-ab702ece21b847c3) — `todo`
+  - [ENG-1500 · Create a separate draft copy for any admin entry to be updated, so that live version remains as it is until next version push](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdhl3fq-7a07f628d37a40a5) — `todo`
+- [ENG-1475 · Optimise Kundali & Horoscope](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdfg5ke-a4706896d5d6477c) — `todo`
+  - [ENG-1476 · Add Transit chart in Charts section in Kundli](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdfgk3h-426e48f653dd4422) — `todo`
+  - [ENG-1477 · Add `Ask a question` CTA at the end of Kundali and redirect the user to astro section](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdfhvcq-55fc976938a54acc) — `todo`
+    - [ENG-1505 · Design UI](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrehhdmd-32ebd140dee44d0e) — `todo`
+    - [ENG-1506 · Implementation of "Ask a question" Kundli Section](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrehivdp-330a7646f2d7497e) — `todo`
+  - [ENG-1478 · Add sub lord against planets in KP Table](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdfibsm-1f569b1dbcb94e86) — `todo`
+  - [ENG-1479 · Add Nakshatra and Pada of Nakshatra in planet table and add Shadbala sections](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdfivz2-89de379c5ea94c36) — `todo`
+  - [ENG-1480 · Show degrees and conditions of planet](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdfj6o6-7dd61615cdee406e) — `todo`
+  - [ENG-1494 · Fix horoscope translation issue](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdgdksc-c9625805736e45ca) — `todo`
+- [ENG-1481 · Need endpoints to show limited data for sanatan world pages (wallpapers, audios) etc for prompting user to download APP after certain items](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783597002268-6xb3fw) — `up-next`
+  - [ENG-1482 · BE](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783597024900-f01km8) — `todo`
+  - [ENG-1483 · FE Sanatan Sansaar](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-1783597046509-ouk4lg) — `todo`
+- [ENG-1484 · Enhance user onboarding journey](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdfwy4o-65b81f9d6c084493) — `todo`
+  - [ENG-1485 · Integrate Truecaller](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdfxoyg-22f514ecd4174233) — `todo`
+  - [ENG-1486 · Allow single device (one web & one mobile) login for astro](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdfys4a-953ae2e1102646a1) — `todo`
+  - [ENG-1487 · App install data is not showing correct on Admin dashboard](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdfztd8-5354bbcf2d524ddd) — `todo`
+  - [ENG-1493 · Astro - PAN card and Aadhar Card Validation, Ask for cancelled cheque](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdga687-abd2c3fd28e9489a) — `todo`
+  - [ENG-1551 · Optimise address CRUD flow](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mreoj9uc-3e09fc14a3a94b8a) — `todo`
+    - [ENG-1552 · Fetch user's current location while adding/updating the address](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mreojy8t-74a696e39c71416c) — `up-next`
+      - [ENG-1553 · Enable in web app](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mreomgqi-dee0347c6eb647b5) — `up-next`
+      - [ENG-1554 · Enable in mobile app](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mreomwyr-839212baa1384b00) — `up-next`
+- [ENG-1488 · Infra & Security](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdg0itd-030e59f25c3f4f4c) — `todo`
+  - [ENG-1489 · Logs & matrices](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdg1ivt-8bf6948e413d4d16) — `todo`
+  - [ENG-1490 · Separate out Firebase projects based on env and platform](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdg2dq5-9ce0b900ed4a4d4b) — `todo`
+  - [ENG-1498 · Rename Java packages across backend, astro and gateway BE services](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdgizd9-f85213c3a8c54243) — `todo`
+  - [ENG-1499 · Standardise Internal Shared Secret Environment Variable Across Services](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdgjgqd-fd27c792958e4ce3) — `todo`
+  - [ENG-1501 · Implement SQS/SNS for different BE flows](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdhtuno-9b37a8c44e81420d) — `todo`
+    - [ENG-1502 · Send notifications - push, SMS, whatsApp, email](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdhuv1p-08c1df9ef141457d) — `in-progress`
+    - [ENG-1503 · Push purchase event to meta pixel](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdhvdhh-032215eafa184b56) — `in-progress`
+- [ENG-1491 · Shipment & Logistic](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdg4my1-a5a446a08ed04893) — `todo`
+  - [ENG-1492 · Pincode EDD Implementation for Shipway, Jiffy & others](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrdg6e2a-930fd0fefa5c4d7b) — `todo`
+- [ENG-1504 · UI enhancements in sanatan sansaar](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrehey81-7c1bb7cc7a524ca3) — `todo`
+  - [ENG-1519 · Remove explore more button from articles Listing page on sanatan-sansaar with pagination added on the page](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mreim51u-62b3c5f1624a4f81) — `in-progress`
+  - [ENG-1520 · Testimonials section data alignment on bazaar landing page to have min fixed height](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mreio0ma-8a9d983e91ba4d5c) — `in-review`
+  - [ENG-1521 · Temples page cards button alignment to be sticky at bottom for cards with less content](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mreip7sp-26310b7865e644db) — `in-review`
+  - [ENG-1522 · Subscriptions cards are not center aligned in home page (visible when logged out)](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mreir0nt-f373c92b695c42bc) — `in-review`
+  - [ENG-1523 · In sanatan puja 'how it works' section -> remove arrows between the steps](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mreisaey-c669a24027494e14) — `in-review`
+  - [ENG-1548 · Fix ENG-HI translation on all pages, there is refetching issue, fix the RTK query caching while language toggle to show correct language without page reload](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrenx3kp-3058473a36564d32) — `todo`
+- [ENG-1508 · InStock & Product schema correction in sanatan sansaar](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrehpleg-0aead69bba3144f3) — `todo`
+- [ENG-1512 · Connection error in mobile app (Apply retry mechanism for now))](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrei0akm-99380452e5cd4a9b) — `in-review`
+- [ENG-1513 · Implement Invoice Series and HSN/SAC number in Catalouge Items other than pooja type.](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrei4ohi-5b5ef00b72bb439c) — `todo`
+- [ENG-1514 · Admin Astrologer Wallet](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrei5bcn-5989935318aa4bb8) — `todo`
+  - [ENG-1515 · Endpoint Creation - BE](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrei6b1r-a8edc1ecbcc8474c) — `in-review`
+  - [ENG-1517 · Web Admin FE Integration](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrei7au7-f5cafc824d4a4537) — `in-progress`
+- [ENG-1518 · Maintain user data state in guest flow login](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mreih4nr-5ad0ddbc59434f27) — `up-next`
+- [ENG-1524 · Add Multi filters option from backend and FE in orders lisitng in admin.](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mreiy2xu-f377f52f87304f01) — `in-progress`
+  - [ENG-1525 · Add muti-select feature in EFFECTIVE STATUS filter in orders listing](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mreiztey-cb06d886a4da46e3) — `todo`
+  - [ENG-1528 · Add muti-select feature in PAYMENT STATUS filter in orders listing](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrej0xnt-5c3c2c58050a4336) — `todo`
+  - [ENG-1530 · Add muti-select feature in FULLFILMENT STATUS filter in orders listing](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrej1ghm-25ad818dc7c64a35) — `todo`
+- [ENG-1527 · Youtube Video for Playstore and also need cover image for play store](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrej0pir-60f4d5236da44ae8) — `up-next`
+- [ENG-1545 · EVENTS page content section EN-HI](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrentrzg-86840340371e4836) — `in-progress`
+  - [ENG-1546 · Add correct content in english and hindi using content section in mahayagya event along with CTAs in current content](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrenuqru-396ea6d542ad4ebf) — `todo`
+  - [ENG-1547 · Fix ENG-HI translation critical hotfix on EVENTS page, render data from content section instead of hardcoded fallback](/projects/sanatan-sansaar/tasks?version=1.0.2&task=task-mrenvsa1-86840515f6fd4ada) — `todo`
+
+## SS Media — v1.0.0
+
+- [#1 · MAHAYAGYA ](/projects/ss-media/tasks?version=1.0.0&task=task-1781953587231) — `todo`
+  - [#1.1 · MAHAYAGYA CATALOG VIDEO](/projects/ss-media/tasks?version=1.0.0&task=task-1781954726340) — `todo`
+  - [#1.2 · MAHAYAGYA CATALOG IMAGES](/projects/ss-media/tasks?version=1.0.0&task=task-1781954397791) — `todo`
+  - [#1.3 · MAHAYAGYA - EVENT ](/projects/ss-media/tasks?version=1.0.0&task=task-1781954991554) — `todo`
+  - [#1.4 · MAHAYAGYA - ARTICLES](/projects/ss-media/tasks?version=1.0.0&task=task-1781955254770) — `todo`
+- [#2 · SANATAN SEVA](/projects/ss-media/tasks?version=1.0.0&task=task-1782103826430) — `todo`
+- [#3 · SANATAN - PUJA ](/projects/ss-media/tasks?version=1.0.0&task=task-1781955113953) — `todo`
+  - [#3.1 · CATALOG - IMAGE UPDATE](/projects/ss-media/tasks?version=1.0.0&task=task-1781957082953) — `todo`
+  - [#3.2 · Catalog - Video ](/projects/ss-media/tasks?version=1.0.0&task=task-1781957289491) — `todo`
+  - [#3.3 · PUJA ARTICLES ](/projects/ss-media/tasks?version=1.0.0&task=task-1781957371118) — `todo`
