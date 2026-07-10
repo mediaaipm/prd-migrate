@@ -39,7 +39,8 @@ export default function AssigneeInput({ value = [], options = [], onChange, onQu
       else if (query.trim()) add(query.trim())
     }
     else if (e.key === 'Backspace' && !query && value.length) remove(value[value.length - 1])
-    else if (e.key === 'Escape') setOpen(false)
+    // Swallowed so an enclosing quick-add form doesn't also close on the same Esc.
+    else if (e.key === 'Escape' && open) { e.stopPropagation(); setOpen(false) }
   }
 
   return (

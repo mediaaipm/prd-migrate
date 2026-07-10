@@ -862,7 +862,60 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   border-radius: 8px;
 }
 
+/* Sub-task composer: indented under its parent row and tied to it by an accent rail. */
+.task-inline-form--sub {
+  margin-left: calc(var(--depth, 0) * 20px + 26px);
+  padding: 8px 10px;
+  border-left: 2px solid var(--accent, #7c3aed);
+  border-radius: 0 8px 8px 0;
+}
+
 .task-form { display: flex; flex-direction: column; gap: 7px; }
+
+/* ── Quick-add mode (title + Enter, everything else behind a disclosure) ── */
+.task-form--quick { gap: 6px; }
+
+.task-quick-row { display: flex; align-items: center; gap: 6px; }
+.task-quick-arrow { font-size: 12px; color: var(--muted); flex-shrink: 0; }
+.task-quick-input { flex: 1; min-width: 0; font-size: 13px !important; }
+.task-quick-submit { font-size: 12px; padding: 6px 14px; white-space: nowrap; flex-shrink: 0; }
+.task-quick-close {
+  font-size: 12px; padding: 4px 7px; line-height: 1; flex-shrink: 0; color: var(--muted);
+}
+.task-quick-close:hover { color: var(--danger, #dc2626); }
+
+.task-quick-advanced {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-top: 8px;
+  margin-top: 2px;
+  border-top: 1px dashed var(--border);
+  animation: task-quick-reveal .12s ease-out;
+}
+@keyframes task-quick-reveal {
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.task-quick-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--muted);
+}
+.task-quick-toggle {
+  background: none; border: none; cursor: pointer; padding: 2px 4px; border-radius: 4px;
+  font-size: 11px; font-weight: 600; color: var(--accent, #7c3aed);
+}
+.task-quick-toggle:hover { background: rgba(124,58,237,.08); }
+.task-quick-another {
+  display: inline-flex; align-items: center; gap: 5px; cursor: pointer; user-select: none;
+}
+.task-quick-another input { cursor: pointer; margin: 0; }
+.task-quick-hint { margin-left: auto; opacity: .7; white-space: nowrap; }
 
 .task-form-row {
   display: flex;
@@ -1353,6 +1406,43 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   line-height: 1;
 }
 
+/* ── Kanban "Add Sub-task" modal ── */
+.kanban-sub-parent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 6px 8px;
+  background: var(--bg);
+  border-left: 2px solid var(--accent, #7c3aed);
+  border-radius: 0 6px 6px 0;
+}
+.kanban-sub-parent strong { color: var(--text); font-weight: 600; }
+.kanban-sub-parent-id {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.kanban-sub-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.kanban-sub-another {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;
+  font-size: 12px; color: var(--muted);
+}
+.kanban-sub-another input { cursor: pointer; margin: 0; }
+
 .kanban-cards {
   display: flex;
   flex-direction: column;
@@ -1391,9 +1481,10 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .kanban-card-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 4px;
   margin-bottom: 4px;
 }
+.kanban-card-header .kanban-card-edit-btn { margin-left: auto; }
 
 .kanban-card-edit-btn {
   background: none;
@@ -1468,6 +1559,65 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .kanban-card-group--leaving {
   animation: kanbanFadeOut .18s ease forwards;
   pointer-events: none;
+}
+
+/* Child cards: same card UI as parents, marked as sub-tasks. */
+.kanban-child-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 6px 0 0 12px;
+  padding-left: 10px;
+  border-left: 2px solid rgba(124,58,237,.35);
+}
+
+.kanban-card-group--child { animation: none; }
+
+.kanban-card--child {
+  padding: 8px 10px;
+  border-left: 3px solid var(--accent);
+  background: color-mix(in srgb, var(--surface) 92%, var(--accent));
+  opacity: .92;
+}
+.kanban-card--child:hover { opacity: 1; }
+.kanban-card--child .kanban-card-title { font-size: 12px; margin-bottom: 6px; }
+.kanban-card--child .kanban-card-meta { gap: 3px; }
+.kanban-card--child .task-meta-chip { font-size: 10px; padding: 1px 5px; }
+.kanban-card--child .kanban-assignee-avatar { width: 18px; height: 18px; font-size: 9px; }
+.kanban-card--child .kanban-card-cover { height: 60px; }
+
+.kanban-sub-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(124,58,237,.12);
+  border: 1px solid rgba(124,58,237,.28);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.kanban-card-parent-crumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 5px;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 1px 2px;
+  transition: color .12s;
+}
+.kanban-card-parent-crumb:hover { color: var(--accent); }
+.kanban-card-parent-crumb-arrow { flex-shrink: 0; }
+.kanban-card-parent-crumb-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Subtask rows nested under parent */
@@ -1613,6 +1763,197 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   border-bottom: 1px solid var(--border);
   font-weight: 600;
   font-size: 14px;
+}
+
+.kanban-subtask-section {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.kanban-subtask-count {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.kanban-subtask-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kanban-subtask-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 6px;
+  padding: 3px 4px;
+}
+
+.kanban-subtask-row:hover {
+  background: var(--bg);
+}
+
+.kanban-subtask-row input[type='checkbox'] {
+  cursor: pointer;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.kanban-subtask-row input[type='checkbox']:disabled {
+  cursor: not-allowed;
+}
+
+.kanban-subtask-row--done .kanban-subtask-title {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.kanban-subtask-open {
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  font: inherit;
+  font-size: 12px;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.kanban-subtask-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kanban-subtask-chevron {
+  color: var(--muted);
+  margin-left: auto;
+  opacity: 0;
+}
+
+.kanban-subtask-open:hover .kanban-subtask-chevron {
+  opacity: 1;
+}
+
+.kanban-modal-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.kanban-modal-back {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 13px;
+  line-height: 1;
+  padding: 4px 8px;
+}
+
+.kanban-modal-back:hover {
+  background: var(--bg);
+}
+
+.kanban-modal-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+/* Ancestor trail: one line, never wraps, oldest crumbs squeeze first. */
+.kanban-modal-crumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 3px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.kanban-modal-crumb {
+  background: none;
+  border: none;
+  border-radius: 5px;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  min-width: 0;
+  padding: 1px 4px;
+}
+
+.kanban-modal-crumb:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.kanban-modal-crumb-id {
+  color: var(--muted);
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.75;
+}
+
+.kanban-modal-crumb-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kanban-modal-crumb-sep {
+  color: var(--muted);
+  flex-shrink: 0;
+  font-size: 11px;
+  opacity: 0.5;
+}
+
+.kanban-modal-crumb-ellipsis {
+  color: var(--muted);
+  cursor: help;
+  flex-shrink: 0;
+  font-size: 11px;
+  padding: 0 2px;
+}
+
+/* Current task: the actual heading. */
+.kanban-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.kanban-modal-title-arrow {
+  color: var(--muted);
+  flex-shrink: 0;
+  font-weight: 400;
+  opacity: 0.6;
+}
+
+.kanban-modal-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .kanban-modal-close {
@@ -1818,7 +2159,14 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   /* Less indentation per depth level (20 → 12px) */
   .task-row { padding: 8px 4px 8px calc(var(--depth, 0) * 12px + 6px); }
   .task-inline-form { margin-left: 8px; }
+  .task-inline-form--sub { margin-left: calc(var(--depth, 0) * 12px + 16px); }
   .task-updates-panel { margin: 0 4px 6px calc(var(--depth, 0) * 12px + 28px); }
+  /* Add button drops under the title so it never squeezes the input on a phone. */
+  .task-quick-row { flex-wrap: wrap; }
+  .task-quick-arrow { display: none; }
+  .task-quick-input { flex: 1 1 100%; }
+  .task-quick-submit { flex: 1; }
+  .task-quick-hint { display: none; }
 
   /* Actions always visible (hover doesn't work on touch) */
   .task-row-actions { opacity: 1; flex-wrap: wrap; gap: 2px; }

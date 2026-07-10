@@ -83,7 +83,6 @@ function FilterMultiSelect({ label, options, selected, onToggle, onClear }) {
   )
 }
 
-const STATUS_CYCLE = ['todo', 'in-progress', 'done']
 const STATUS_LABEL = { 'backlog': 'Backlog', 'todo': 'To Do', 'in-progress': 'In Progress', 'in-review': 'In Review', 'blocked': 'Blocked', 'done': 'Done' }
 const STATUS_ORDER = ['backlog', 'todo', 'in-progress', 'in-review', 'blocked', 'done']
 const STATUS_COLOR = { 'backlog': '#64748b', 'todo': '#2563eb', 'in-progress': '#f59e0b', 'in-review': '#9333ea', 'blocked': '#dc2626', 'done': '#16a34a' }
@@ -203,13 +202,20 @@ function blankForm() {
   return { title: '', description: '', status: 'todo', priority: 'medium', assignees: [], assignedBy: '', startDate: '', dueDate: '', numberOverride: '', attachments: [], cover: null }
 }
 
-function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreator = false, currentUser = null }) {
-  const [form, setForm] = useState(() => {
+// `quickAdd` collapses everything but the title behind a "More options" toggle — the
+// common case is a title and Enter. `allowAddAnother` keeps the form open and cleared
+// after a save so several sub-tasks can be typed in a row.
+function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreator = false, currentUser = null, quickAdd = false, allowAddAnother = false }) {
+  function makeInitial() {
     const base = initial || blankForm()
     // Auto-attribute the creator from the logged-in user; no manual entry.
     if (showCreator && !base.assignedBy && currentUser?.name) return { ...base, assignedBy: currentUser.name }
     return base
-  })
+  }
+  const [form, setForm] = useState(makeInitial)
+  const [expanded, setExpanded] = useState(!quickAdd)
+  const [addAnother, setAddAnother] = useState(false)
+  const titleRef = useRef(null)
   const f = (k) => e => setForm(p => ({ ...p, [k]: e.target.value }))
   // Text typed in the assignee box but not yet turned into a token. Held in a ref
   // (not state) so it's always current at save time without a blur→re-render race.
@@ -222,7 +228,21 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreato
     const pending = pendingAssignee.current.trim()
     const cur = Array.isArray(form.assignees) ? form.assignees : []
     const assigneesFinal = pending && !cur.includes(pending) ? [...cur, pending] : cur
-    onSave({ ...form, assignees: assigneesFinal })
+    const keepOpen = allowAddAnother && addAnother
+    onSave({ ...form, assignees: assigneesFinal }, { keepOpen })
+    if (!keepOpen) return
+    // Keep the inherited defaults (status, priority, assignees, dates); clear what is
+    // unique to the task just added.
+    setForm(p => ({ ...p, title: '', description: '', numberOverride: '', attachments: [], cover: null }))
+    pendingAssignee.current = ''
+    requestAnimationFrame(() => titleRef.current?.focus())
+  }
+
+  function onFormKeyDown(e) {
+    if (e.key === 'Escape') { e.stopPropagation(); onCancel?.() }
+  }
+  function onTitleKeyDown(e) {
+    if (e.key === 'Enter' && !e.nativeEvent?.isComposing) { e.preventDefault(); submit() }
   }
 
   async function addImages(fileList) {
@@ -251,12 +271,11 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreato
     setForm(p => ({ ...p, cover: p.cover?.attId === att.id ? null : { dataUrl: att.dataUrl, attId: att.id } }))
   }
 
-  return (
-    <div className="task-form">
-      <div className="task-form-row">
-        <input className="form-input" placeholder="Task title *" value={form.title} onChange={f('title')} autoFocus required />
+  const advanced = (
+    <>
+      {quickAdd && (
         <input className="form-input task-num-input" placeholder="# override (e.g. 1.2.3)" value={form.numberOverride} onChange={f('numberOverride')} title="Custom number (leave blank for auto)" />
-      </div>
+      )}
       <textarea className="form-input task-desc-input" placeholder="Description (optional)" value={form.description} onChange={f('description')} rows={2} />
       <div className="task-form-row">
         <select className="form-input" value={form.status} onChange={f('status')}>
@@ -315,12 +334,61 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreato
           <span className="task-form-date-label">End</span>
           <input className="form-input" type="date" title="End date" value={form.dueDate} onChange={f('dueDate')} />
         </label>
-        <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
-          <button className="btn-ghost" type="button" onClick={onCancel} style={{ fontSize: 12 }}>Cancel</button>
-          <SubmitButton className="btn-primary" onClick={submit} style={{ fontSize: 12 }} disabled={!form.title.trim()}>
-            {label || 'Save'}
-          </SubmitButton>
+        {!quickAdd && (
+          <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
+            <button className="btn-ghost" type="button" onClick={onCancel} style={{ fontSize: 12 }}>Cancel</button>
+            <SubmitButton className="btn-primary" onClick={submit} style={{ fontSize: 12 }} disabled={!form.title.trim()}>
+              {label || 'Save'}
+            </SubmitButton>
+          </div>
+        )}
+      </div>
+    </>
+  )
+
+  if (!quickAdd) {
+    return (
+      <div className="task-form" onKeyDown={onFormKeyDown}>
+        <div className="task-form-row">
+          <input ref={titleRef} className="form-input" placeholder="Task title *" value={form.title} onChange={f('title')} onKeyDown={onTitleKeyDown} autoFocus required />
+          <input className="form-input task-num-input" placeholder="# override (e.g. 1.2.3)" value={form.numberOverride} onChange={f('numberOverride')} title="Custom number (leave blank for auto)" />
         </div>
+        {advanced}
+      </div>
+    )
+  }
+
+  return (
+    <div className="task-form task-form--quick" onKeyDown={onFormKeyDown}>
+      <div className="task-quick-row">
+        <span className="task-quick-arrow" aria-hidden="true">↳</span>
+        <input
+          ref={titleRef}
+          className="form-input task-quick-input"
+          placeholder="Sub-task title…"
+          value={form.title}
+          onChange={f('title')}
+          onKeyDown={onTitleKeyDown}
+          autoFocus
+          required
+        />
+        <SubmitButton className="btn-primary task-quick-submit" onClick={submit} disabled={!form.title.trim()}>
+          {label || 'Add'}
+        </SubmitButton>
+        <button className="btn-ghost task-quick-close" type="button" onClick={onCancel} title="Cancel (Esc)">✕</button>
+      </div>
+      {expanded && <div className="task-quick-advanced">{advanced}</div>}
+      <div className="task-quick-footer">
+        <button className="task-quick-toggle" type="button" onClick={() => setExpanded(v => !v)} aria-expanded={expanded}>
+          {expanded ? '⌃ Fewer options' : '⌄ More options'}
+        </button>
+        {allowAddAnother && (
+          <label className="task-quick-another" title="Keep this form open after adding">
+            <input type="checkbox" checked={addAnother} onChange={e => setAddAnother(e.target.checked)} />
+            Add another
+          </label>
+        )}
+        <span className="task-quick-hint">Enter to add · Esc to close</span>
       </div>
     </div>
   )
@@ -374,17 +442,6 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
     if (!statusAllowed(next)) { alert('You are not allowed to set this status.'); return }
     setLocalStatus(next)
     enqueueUpdate({ status: next }, `Set “${node.title}” to ${next}`)
-  }
-
-  function cycleStatus() {
-    if (!canChangeStatus) return
-    // Advance to the next status in the cycle the user is actually allowed to set.
-    const start = STATUS_CYCLE.indexOf(localStatus)
-    for (let i = 1; i <= STATUS_CYCLE.length; i++) {
-      const cand = STATUS_CYCLE[(start + i) % STATUS_CYCLE.length]
-      if (cand === localStatus) break
-      if (statusAllowed(cand)) { setStatus(cand); return }
-    }
   }
 
   function handleSaveEdit(form) {
@@ -463,7 +520,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
     enqueueUpdate({ archived: true, archivedAt: new Date().toISOString() }, `Archive “${node.title}”`)
   }
 
-  function handleAddChild(form) {
+  function handleAddChild(form, { keepOpen } = {}) {
     const draft = taskDraft({ ...form, parentId: node.id, numberOverride: form.numberOverride || null })
     enqueue({
       url: apiBase,
@@ -472,8 +529,20 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
       label: `Add sub-task “${draft.title}”`,
       optimistic: { entity: 'task', op: 'create', scope: apiBase, data: draft },
     })
-    setAddingChild(false)
+    if (!keepOpen) setAddingChild(false)
     setExpanded(true)
+  }
+
+  // A sub-task starts life looking like its parent — same column, priority, owners and
+  // deadline — so the common case is title-then-Enter.
+  function childDefaults() {
+    return {
+      ...blankForm(),
+      status: localStatus,
+      priority: node.priority || 'medium',
+      assignees: nodeAssignees.map(a => (typeof a === 'object' ? a.name : a)),
+      dueDate: node.dueDate || '',
+    }
   }
 
   // Reorder swaps `order` with a sibling the client does not hold a reference to, so
@@ -518,9 +587,6 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
           <span className="task-number" title={node.autoNumber !== node.number ? `Auto: ${node.autoNumber}` : 'Auto-numbered'}>
             {node.number}
           </span>
-          <button className={statusClass} onClick={cycleStatus} disabled={!canChangeStatus} title={canChangeStatus ? `Status: ${STATUS_LABEL[localStatus]} — click to cycle` : `Status: ${STATUS_LABEL[localStatus]}`}>
-            {localStatus === 'done' ? '✓' : localStatus === 'in-progress' ? '◑' : localStatus === 'blocked' ? '⊘' : (localStatus === 'review' || localStatus === 'in-review') ? '◎' : '○'}
-          </button>
           <span
             className="task-title task-title--clickable"
             onClick={() => { setShowDetail(true); setDetailEditing(false) }}
@@ -661,8 +727,18 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
       )}
 
       {addingChild && (
-        <div className="task-inline-form">
-          <TaskForm onSave={handleAddChild} onCancel={() => setAddingChild(false)} label="Add Sub-task" assignees={assignees} showCreator currentUser={currentUser} />
+        <div className="task-inline-form task-inline-form--sub">
+          <TaskForm
+            initial={childDefaults()}
+            onSave={handleAddChild}
+            onCancel={() => setAddingChild(false)}
+            label="Add"
+            assignees={assignees}
+            showCreator
+            currentUser={currentUser}
+            quickAdd
+            allowAddAnother
+          />
         </div>
       )}
 

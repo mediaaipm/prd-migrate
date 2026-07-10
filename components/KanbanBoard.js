@@ -25,6 +25,10 @@ const PRIORITY_LABEL = { low: 'Low', medium: 'Med', high: 'High', critical: 'Cri
 
 const MAX_ATTACH_BYTES = 1024 * 1024 // 1MB cap per file (stored inline as data URL in Redis)
 
+function blankSubForm() {
+  return { title: '', description: '', priority: 'medium', status: 'todo', assignees: [], startDate: '', dueDate: '', labelIds: [] }
+}
+
 function isOverdue(dueDate) {
   if (!dueDate) return false
   return new Date(dueDate) < new Date()
@@ -149,8 +153,11 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   const [quickAddFor, setQuickAddFor] = useState(null)
   const [quickAddTitle, setQuickAddTitle] = useState('')
   const [subAddFor, setSubAddFor] = useState(null) // parent task id for inline sub-task add
-  const [subAddForm, setSubAddForm] = useState({ title: '', priority: 'medium' })
+  const [subAddForm, setSubAddForm] = useState(blankSubForm())
+  const [subAddAnother, setSubAddAnother] = useState(false)    // keep the modal open after Add
+  const subTitleRef = useRef(null)
   const [editingTask, setEditingTask] = useState(null)
+  const [editStack, setEditStack] = useState([])   // task ids visited before the current one
   const [editForm, setEditForm] = useState(null)
   const [assignees, setAssignees] = useState([])
   const [labels, setLabels] = useState([])
@@ -250,6 +257,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     return matchIds.has(topAncestorId(t.id))        // child: show if its top card matched
   }
   const visibleTasks = boardTasks.filter(isVisible)
+  const visibleIds = new Set(visibleTasks.map(t => t.id))
 
   function onBoardMouseDown(e) {
     if (e.target.closest('.kanban-card') || e.target.closest('.kanban-subtask-row') ||
@@ -418,18 +426,44 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     setQuickAddTitle('')
   }
 
-  // Add a sub-task to an existing card on the board. Inherits the parent's status
-  // so it renders nested under the parent.
-  function addSubtask(parent) {
-    if (!subAddForm.title.trim()) return
-    enqueueCreate({
-      title: subAddForm.title,
-      priority: subAddForm.priority || 'medium',
+  // A sub-task starts life looking like its parent — same column, priority, owners and
+  // deadline — so the common case is title-then-Enter.
+  function openSubAdd(parent) {
+    setSubAddFor(parent.id)
+    setSubAddForm({
+      ...blankSubForm(),
       status: parent.status,
+      priority: parent.priority || 'medium',
+      assignees: Array.isArray(parent.assignees) ? [...parent.assignees] : [],
+      dueDate: parent.dueDate || '',
+    })
+  }
+
+  function closeSubAdd() {
+    setSubAddFor(null)
+    setSubAddForm(blankSubForm())
+  }
+
+  function toggleSubLabel(id) {
+    setSubAddForm(p => {
+      const ids = Array.isArray(p.labelIds) ? p.labelIds : []
+      return { ...p, labelIds: ids.includes(id) ? ids.filter(l => l !== id) : [...ids, id] }
+    })
+  }
+
+  // Add a sub-task to an existing card on the board.
+  function addSubtask(parent) {
+    if (!parent || !subAddForm.title.trim()) return
+    enqueueCreate({
+      ...subAddForm,
+      startDate: subAddForm.startDate || null,
+      dueDate: subAddForm.dueDate || null,
       parentId: parent.id,
     }, `Add sub-task “${subAddForm.title.trim()}”`)
-    setSubAddFor(null)
-    setSubAddForm({ title: '', priority: 'medium' })
+    if (!subAddAnother) { closeSubAdd(); return }
+    // Keep the inherited defaults; clear what was unique to the task just added.
+    setSubAddForm(p => ({ ...p, title: '', description: '' }))
+    requestAnimationFrame(() => subTitleRef.current?.focus())
   }
 
   function renderSubFormChildren(children, path) {
@@ -471,12 +505,41 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   }
 
   function openEdit(task) {
+    setEditStack([])
     setEditingTask(task)
     setEditForm(toEditForm(task))
     setCommentText('')
   }
 
+  function isEditDirty() {
+    if (!editingTask || !editForm) return false
+    return JSON.stringify(editForm) !== JSON.stringify(toEditForm(editingTask))
+  }
+
+  // Jump to another task from inside the modal (breadcrumb click), remembering
+  // where we came from so the back arrow can return.
+  function navEdit(task) {
+    if (!task || task.id === editingTask?.id) return
+    if (isEditDirty() && !confirm('Discard unsaved changes to this task?')) return
+    if (editingTask) setEditStack(s => [...s, editingTask.id])
+    setEditingTask(task)
+    setEditForm(toEditForm(task))
+    setCommentText('')
+  }
+
+  function backEdit() {
+    const prevId = editStack[editStack.length - 1]
+    const prev = prevId && taskById[prevId]
+    if (!prev) return
+    if (isEditDirty() && !confirm('Discard unsaved changes to this task?')) return
+    setEditStack(s => s.slice(0, -1))
+    setEditingTask(prev)
+    setEditForm(toEditForm(prev))
+    setCommentText('')
+  }
+
   function closeEdit() {
+    setEditStack([])
     setEditingTask(null)
     setEditForm(null)
     setCommentText('')
@@ -759,6 +822,33 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     return cur ? cur.id : taskId
   }
 
+  // Ancestors of a task, root-first (excludes the task itself). Cycle-guarded
+  // the same way topAncestorId is, since parentId comes from the store.
+  function ancestorChain(task) {
+    const out = []
+    const seen = new Set([task.id])
+    let cur = task.parentId ? taskById[task.parentId] : null
+    while (cur && !seen.has(cur.id)) {
+      seen.add(cur.id)
+      out.unshift(cur)
+      cur = cur.parentId ? taskById[cur.parentId] : null
+    }
+    return out
+  }
+
+  function directChildren(taskId) {
+    return boardTasks.filter(t => t.parentId === taskId).sort((a, b) => a.order - b.order)
+  }
+
+  // Unchecking sends a task back to 'todo' when the board has that column,
+  // otherwise to the leftmost column, since columns are user-defined.
+  function toggleChildDone(child) {
+    if (!canChangeStatus(child)) return
+    const fallback = columns.find(c => c.status === 'todo')?.status || columns[0]?.status || 'todo'
+    const next = child.status === 'done' ? fallback : 'done'
+    enqueueUpdate(child.id, { status: next }, `${next === 'done' ? 'Complete' : 'Reopen'} “${child.title}”`)
+  }
+
   // All transitive descendants of a top-level card (not just direct children),
   // so deeply nested sub-tasks show up in the progress badge and on the board.
   function getChildrenOf(taskId) {
@@ -767,15 +857,30 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
       .sort((a, b) => a.order - b.order)
   }
 
+  // Nearest ancestor that is itself drawn in this column. A grandchild nests
+  // under its parent when the parent shares the column, otherwise it climbs to
+  // whichever ancestor does. Null => nothing above it is here, so it renders
+  // top-level with a parent breadcrumb.
+  function nearestAncestorInCol(task, colStatus) {
+    const seen = new Set([task.id])
+    let cur = task.parentId ? taskById[task.parentId] : null
+    while (cur && !seen.has(cur.id)) {
+      seen.add(cur.id)
+      if (cur.status === colStatus && visibleIds.has(cur.id)) return cur.id
+      cur = cur.parentId ? taskById[cur.parentId] : null
+    }
+    return null
+  }
+
   function getChildrenInCol(taskId, colStatus) {
     return visibleTasks
-      .filter(t => t.parentId && t.status === colStatus && topAncestorId(t.id) === taskId)
+      .filter(t => t.parentId && t.status === colStatus && nearestAncestorInCol(t, colStatus) === taskId)
       .sort((a, b) => a.order - b.order)
   }
 
   function getOrphanSubsInCol(colStatus) {
     return visibleTasks
-      .filter(t => t.parentId && t.status === colStatus && taskById[topAncestorId(t.id)]?.status !== colStatus)
+      .filter(t => t.parentId && t.status === colStatus && nearestAncestorInCol(t, colStatus) === null)
       .sort((a, b) => a.order - b.order)
   }
 
@@ -789,6 +894,135 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
           if (!l) return null
           return <span key={id} className="kanban-label-chip" style={{ background: l.color }} title={l.name}>{l.name}</span>
         })}
+      </div>
+    )
+  }
+
+  // Every descendant of any task (getChildrenOf only answers for top-level cards).
+  function getDescendantsOf(taskId) {
+    const out = []
+    const stack = [taskId]
+    const seen = new Set()
+    while (stack.length) {
+      const id = stack.pop()
+      for (const t of boardTasks) {
+        if (t.parentId === id && !seen.has(t.id)) { seen.add(t.id); out.push(t); stack.push(t.id) }
+      }
+    }
+    return out
+  }
+
+  // One renderer for parents and children alike: a child gets the identical card
+  // body plus its child markers (indent rail, breadcrumb, sub badge, dimming).
+  function renderTaskCard(task, col, { depth = 0, orphan = false } = {}) {
+    const isChild = depth > 0 || orphan
+    const parent = task.parentId ? taskById[task.parentId] : null
+    const descendants = getDescendantsOf(task.id)
+    const doneDescendants = descendants.filter(c => c.status === 'done').length
+    const overdue = isOverdue(task.dueDate)
+    const dropClass = !isChild && dragOverCard?.id === task.id ? ` kanban-card--drop-${dragOverCard.pos}` : ''
+    const kids = getChildrenInCol(task.id, col.status)
+    const groupClass = [
+      'kanban-card-group',
+      isChild && !orphan ? 'kanban-card-group--child' : '',
+      animatingOut.has(task.id) ? 'kanban-card-group--leaving' : '',
+    ].filter(Boolean).join(' ')
+
+    return (
+      <div key={task.id} className={groupClass}>
+        <div
+          className={`kanban-card${isChild ? ' kanban-card--child' : ''}${draggingId === task.id ? ' kanban-card--dragging' : ''}${dropClass}`}
+          draggable
+          role="button"
+          tabIndex={0}
+          onClick={() => openEdit(task)}
+          onKeyDown={e => { if (e.key === 'Enter') openEdit(task) }}
+          onContextMenu={e => handleCardContextMenu(e, task)}
+          onDragStart={e => onDragStart(e, task.id)}
+          onDragOver={isChild ? undefined : e => onCardDragOver(e, task)}
+          onDrop={isChild ? undefined : e => onCardDrop(e, task, col.status)}
+          onDragEnd={onDragEnd}
+        >
+          {isChild && parent && (
+            <div
+              className="kanban-card-parent-crumb"
+              role="button"
+              tabIndex={0}
+              title={`Parent: ${parent.title}`}
+              onClick={e => { e.stopPropagation(); openEdit(parent) }}
+              onKeyDown={e => { if (e.key === 'Enter') { e.stopPropagation(); openEdit(parent) } }}
+            >
+              <span className="kanban-card-parent-crumb-arrow">↳</span>
+              {parent.number && <span className="task-number" style={{ fontSize: 9 }}>{parent.number}</span>}
+              <span className="kanban-card-parent-crumb-title">{parent.title}</span>
+            </div>
+          )}
+          {task.cover?.dataUrl && (
+            <div className="kanban-card-cover" style={{ backgroundImage: `url(${task.cover.dataUrl})` }} />
+          )}
+          {renderCardLabels(task)}
+          <div className="kanban-card-header">
+            {isChild && <span className="kanban-sub-badge" title="Sub-task">↳ sub</span>}
+            {(task.seq != null || task.number) && <span className="task-id-badge" style={{ fontSize: 10 }}>{task.seq != null ? (taskPrefix ? `${taskPrefix}-${task.seq}` : `#${task.seq}`) : `#${task.number}`}</span>}
+            {task.number && <span className="task-number" style={{ fontSize: 10 }}>{task.number}</span>}
+            {canEditAll && (
+              <button
+                className="kanban-card-edit-btn"
+                onClick={e => { e.stopPropagation(); openEdit(task) }}
+                title="Edit task"
+              >✎</button>
+            )}
+          </div>
+          <div className="kanban-card-title">{task.title}</div>
+          <div className="kanban-card-meta">
+            {task.priority && (
+              <span
+                className="task-meta-chip"
+                style={{
+                  color: PRIORITY_COLOR[task.priority],
+                  borderColor: `${PRIORITY_COLOR[task.priority]}44`,
+                  background: `${PRIORITY_COLOR[task.priority]}11`,
+                }}
+              >
+                {PRIORITY_LABEL[task.priority]}
+              </span>
+            )}
+            {task.dueDate && (
+              <span className={`task-meta-chip${overdue ? ' task-due' : ''}`}>
+                {overdue ? '⚠ ' : ''}{formatDate(task.dueDate)}
+              </span>
+            )}
+            {descendants.length > 0 && (
+              <span className="task-meta-chip kanban-progress-chip">
+                {doneDescendants}/{descendants.length} sub
+              </span>
+            )}
+            {task.updates?.length > 0 && (
+              <span className="task-meta-chip" title={`${task.updates.length} comment(s)`}>💬 {task.updates.length}</span>
+            )}
+            {task.attachments?.length > 0 && (
+              <span className="task-meta-chip" title={`${task.attachments.length} attachment(s)`}>📎 {task.attachments.length}</span>
+            )}
+            {task.assignees?.map(a => (
+              <span key={a} className="kanban-assignee-avatar" title={a}>
+                {a.charAt(0).toUpperCase()}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {kids.length > 0 && (
+          <div className="kanban-child-cards">
+            {kids.map(kid => renderTaskCard(kid, col, { depth: depth + 1 }))}
+          </div>
+        )}
+
+        {canEditAll && (
+          <button
+            className="kanban-add-subtask-btn kanban-add-subtask-btn--card"
+            onClick={() => openSubAdd(task)}
+          >+ sub-task</button>
+        )}
       </div>
     )
   }
@@ -1035,260 +1269,9 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                 )}
 
                 <div className="kanban-cards">
-                  {colTasks.map(task => {
-                    const allChildren = getChildrenOf(task.id)
-                    const sameColChildren = getChildrenInCol(task.id, col.status)
-                    const doneChildren = allChildren.filter(c => c.status === 'done').length
-                    const overdue = isOverdue(task.dueDate)
-                    const dropClass = dragOverCard?.id === task.id ? ` kanban-card--drop-${dragOverCard.pos}` : ''
-                    return (
-                      <div key={task.id} className={`kanban-card-group${animatingOut.has(task.id) ? ' kanban-card-group--leaving' : ''}`}>
-                        <div
-                          className={`kanban-card${draggingId === task.id ? ' kanban-card--dragging' : ''}${dropClass}`}
-                          draggable
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => openEdit(task)}
-                          onKeyDown={e => { if (e.key === 'Enter') openEdit(task) }}
-                          onContextMenu={e => handleCardContextMenu(e, task)}
-                          onDragStart={e => onDragStart(e, task.id)}
-                          onDragOver={e => onCardDragOver(e, task)}
-                          onDrop={e => onCardDrop(e, task, col.status)}
-                          onDragEnd={onDragEnd}
-                        >
-                          {task.cover?.dataUrl && (
-                            <div className="kanban-card-cover" style={{ backgroundImage: `url(${task.cover.dataUrl})` }} />
-                          )}
-                          {renderCardLabels(task)}
-                          <div className="kanban-card-header">
-                            {(task.seq != null || task.number) && <span className="task-id-badge" style={{ fontSize: 10 }}>{task.seq != null ? (taskPrefix ? `${taskPrefix}-${task.seq}` : `#${task.seq}`) : `#${task.number}`}</span>}
-                            {task.number && <span className="task-number" style={{ fontSize: 10 }}>{task.number}</span>}
-                            {canEditAll && (
-                              <button
-                                className="kanban-card-edit-btn"
-                                onClick={e => { e.stopPropagation(); openEdit(task) }}
-                                title="Edit task"
-                              >✎</button>
-                            )}
-                          </div>
-                          <div className="kanban-card-title">{task.title}</div>
-                          <div className="kanban-card-meta">
-                            {task.priority && (
-                              <span
-                                className="task-meta-chip"
-                                style={{
-                                  color: PRIORITY_COLOR[task.priority],
-                                  borderColor: `${PRIORITY_COLOR[task.priority]}44`,
-                                  background: `${PRIORITY_COLOR[task.priority]}11`,
-                                }}
-                              >
-                                {PRIORITY_LABEL[task.priority]}
-                              </span>
-                            )}
-                            {task.dueDate && (
-                              <span className={`task-meta-chip${overdue ? ' task-due' : ''}`}>
-                                {overdue ? '⚠ ' : ''}{formatDate(task.dueDate)}
-                              </span>
-                            )}
-                            {allChildren.length > 0 && (
-                              <span className="task-meta-chip kanban-progress-chip">
-                                {doneChildren}/{allChildren.length} sub
-                              </span>
-                            )}
-                            {task.updates?.length > 0 && (
-                              <span className="task-meta-chip" title={`${task.updates.length} comment(s)`}>💬 {task.updates.length}</span>
-                            )}
-                            {task.attachments?.length > 0 && (
-                              <span className="task-meta-chip" title={`${task.attachments.length} attachment(s)`}>📎 {task.attachments.length}</span>
-                            )}
-                            {task.assignees?.map(a => (
-                              <span key={a} className="kanban-assignee-avatar" title={a}>
-                                {a.charAt(0).toUpperCase()}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
+                  {colTasks.map(task => renderTaskCard(task, col))}
 
-                        {sameColChildren.length > 0 && (
-                          <div className="kanban-subtasks">
-                            {sameColChildren.map(sub => {
-                              const subOverdue = isOverdue(sub.dueDate)
-                              const statusCol = columns.find(c => c.status === sub.status)
-                              return (
-                                <div
-                                  key={sub.id}
-                                  className={`kanban-subtask-row${draggingId === sub.id ? ' kanban-card--dragging' : ''}`}
-                                  draggable
-                                  role="button"
-                                  tabIndex={0}
-                                  onClick={() => openEdit(sub)}
-                                  onKeyDown={e => { if (e.key === 'Enter') openEdit(sub) }}
-                                  onContextMenu={e => handleCardContextMenu(e, sub)}
-                                  onDragStart={e => onDragStart(e, sub.id)}
-                                  onDragEnd={onDragEnd}
-                                >
-                                  <span className="kanban-subtask-title">{sub.number ? <span className="task-number" style={{ fontSize: 9, marginRight: 3 }}>{sub.number}</span> : null}{sub.title}</span>
-                                  <span className="kanban-subtask-actions">
-                                    {sub.priority && (
-                                      <span
-                                        className="task-meta-chip"
-                                        style={{
-                                          fontSize: 9,
-                                          padding: '1px 4px',
-                                          color: PRIORITY_COLOR[sub.priority],
-                                          borderColor: `${PRIORITY_COLOR[sub.priority]}44`,
-                                          background: `${PRIORITY_COLOR[sub.priority]}11`,
-                                        }}
-                                      >
-                                        {PRIORITY_LABEL[sub.priority]}
-                                      </span>
-                                    )}
-                                    {sub.dueDate && (
-                                      <span className={`task-meta-chip${subOverdue ? ' task-due' : ''}`} style={{ fontSize: 9, padding: '1px 4px' }}>
-                                        {subOverdue ? '⚠ ' : ''}{formatDate(sub.dueDate)}
-                                      </span>
-                                    )}
-                                    <select
-                                      className="kanban-subtask-status-select"
-                                      style={{ '--status-color': statusCol?.color || '#64748b' }}
-                                      value={sub.status}
-                                      disabled={!canChangeStatus(sub)}
-                                      onClick={e => e.stopPropagation()}
-                                      onChange={e => { e.stopPropagation(); updateStatus(sub.id, e.target.value) }}
-                                    >
-                                      {columns.map(c => (
-                                        <option key={c.status} value={c.status} disabled={!statusAllowedForUser(c.status)}>{c.label}</option>
-                                      ))}
-                                    </select>
-                                    {canEditAll && (
-                                      <button
-                                        className="kanban-card-edit-btn"
-                                        style={{ fontSize: 10, padding: '1px 4px' }}
-                                        onClick={e => { e.stopPropagation(); openEdit(sub) }}
-                                        title="Edit subtask"
-                                      >✎</button>
-                                    )}
-                                  </span>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        )}
-
-                        {canEditAll && (
-                          subAddFor === task.id ? (
-                            <div className="kanban-add-subtask-block kanban-inline-subtask-add">
-                              <div className="kanban-add-subtask-row">
-                                <span className="kanban-subtask-indent-arrow">↳</span>
-                                <input
-                                  className="form-input kanban-add-subtask-input"
-                                  placeholder="Sub-task title"
-                                  value={subAddForm.title}
-                                  autoFocus
-                                  onChange={e => setSubAddForm(p => ({ ...p, title: e.target.value }))}
-                                  onKeyDown={e => {
-                                    if (e.key === 'Enter') addSubtask(task)
-                                    if (e.key === 'Escape') { setSubAddFor(null); setSubAddForm({ title: '', priority: 'medium' }) }
-                                  }}
-                                />
-                                <select
-                                  className="form-input kanban-add-subtask-priority"
-                                  value={subAddForm.priority}
-                                  onChange={e => setSubAddForm(p => ({ ...p, priority: e.target.value }))}
-                                >
-                                  <option value="low">Low</option>
-                                  <option value="medium">Med</option>
-                                  <option value="high">High</option>
-                                  <option value="critical">Crit</option>
-                                </select>
-                              </div>
-                              <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-                                <button className="btn-primary" style={{ fontSize: 11, padding: '3px 10px' }} onClick={() => addSubtask(task)} disabled={!subAddForm.title.trim()}>Add</button>
-                                <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px' }} onClick={() => { setSubAddFor(null); setSubAddForm({ title: '', priority: 'medium' }) }}>✕</button>
-                              </div>
-                            </div>
-                          ) : (
-                            <button
-                              className="kanban-add-subtask-btn kanban-add-subtask-btn--card"
-                              onClick={() => { setSubAddFor(task.id); setSubAddForm({ title: '', priority: 'medium' }) }}
-                            >+ sub-task</button>
-                          )
-                        )}
-                      </div>
-                    )
-                  })}
-
-                  {getOrphanSubsInCol(col.status).map(sub => {
-                    const parent = taskById[sub.parentId]
-                    const subOverdue = isOverdue(sub.dueDate)
-                    const statusCol = columns.find(c => c.status === sub.status)
-                    return (
-                      <div key={sub.id} className={`kanban-card-group${animatingOut.has(sub.id) ? ' kanban-card-group--leaving' : ''}`}>
-                        {parent && (
-                          <div className="kanban-subtask-parent-label">
-                            ↳ {parent.number ? <span className="task-number" style={{ fontSize: 9, marginRight: 2 }}>{parent.number}</span> : null}{parent.title}
-                          </div>
-                        )}
-                        <div
-                          className={`kanban-subtask-row kanban-subtask-row--orphan${draggingId === sub.id ? ' kanban-card--dragging' : ''}`}
-                          draggable
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => openEdit(sub)}
-                          onKeyDown={e => { if (e.key === 'Enter') openEdit(sub) }}
-                          onContextMenu={e => handleCardContextMenu(e, sub)}
-                          onDragStart={e => onDragStart(e, sub.id)}
-                          onDragEnd={onDragEnd}
-                        >
-                          <span className="kanban-subtask-title">
-                            {sub.number ? <span className="task-number" style={{ fontSize: 9, marginRight: 3 }}>{sub.number}</span> : null}
-                            {sub.title}
-                          </span>
-                          <span className="kanban-subtask-actions">
-                            {sub.priority && (
-                              <span
-                                className="task-meta-chip"
-                                style={{
-                                  fontSize: 9,
-                                  padding: '1px 4px',
-                                  color: PRIORITY_COLOR[sub.priority],
-                                  borderColor: `${PRIORITY_COLOR[sub.priority]}44`,
-                                  background: `${PRIORITY_COLOR[sub.priority]}11`,
-                                }}
-                              >
-                                {PRIORITY_LABEL[sub.priority]}
-                              </span>
-                            )}
-                            {sub.dueDate && (
-                              <span className={`task-meta-chip${subOverdue ? ' task-due' : ''}`} style={{ fontSize: 9, padding: '1px 4px' }}>
-                                {subOverdue ? '⚠ ' : ''}{formatDate(sub.dueDate)}
-                              </span>
-                            )}
-                            <select
-                              className="kanban-subtask-status-select"
-                              style={{ '--status-color': statusCol?.color || '#64748b' }}
-                              value={sub.status}
-                              disabled={!canChangeStatus(sub)}
-                              onClick={e => e.stopPropagation()}
-                              onChange={e => { e.stopPropagation(); updateStatus(sub.id, e.target.value) }}
-                            >
-                              {columns.map(c => (
-                                <option key={c.status} value={c.status} disabled={!statusAllowedForUser(c.status)}>{c.label}</option>
-                              ))}
-                            </select>
-                            {canEditAll && (
-                              <button
-                                className="kanban-card-edit-btn"
-                                style={{ fontSize: 10, padding: '1px 4px' }}
-                                onClick={() => openEdit(sub)}
-                                title="Edit subtask"
-                              >✎</button>
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })}
+                  {getOrphanSubsInCol(col.status).map(sub => renderTaskCard(sub, col, { orphan: true }))}
 
                   {visibleTasks.filter(t => t.status === col.status).length === 0 && addingFor !== col.status && quickAddFor !== col.status && (
                     <div className="kanban-empty">No tasks</div>
@@ -1483,6 +1466,106 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
         </div>
       )}
 
+      {subAddFor && taskById[subAddFor] && (() => {
+        const parent = taskById[subAddFor]
+        return (
+          <div
+            className="kanban-modal-overlay"
+            onClick={e => { if (e.target === e.currentTarget) closeSubAdd() }}
+            onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); closeSubAdd() } }}
+          >
+            <div className="kanban-modal">
+              <div className="kanban-modal-header">
+                <span>Add Sub-task</span>
+                <button className="kanban-modal-close" onClick={closeSubAdd}>✕</button>
+              </div>
+              <div className="task-form">
+                <div className="kanban-sub-parent">
+                  <span className="kanban-subtask-indent-arrow" aria-hidden="true">↳</span>
+                  under <strong>{parent.title}</strong>
+                  {taskLabel(parent) && <span className="kanban-sub-parent-id">{taskLabel(parent)}</span>}
+                </div>
+                <input
+                  ref={subTitleRef}
+                  className="form-input"
+                  placeholder="Title *"
+                  value={subAddForm.title}
+                  autoFocus
+                  onChange={e => setSubAddForm(p => ({ ...p, title: e.target.value }))}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.nativeEvent?.isComposing) { e.preventDefault(); addSubtask(parent) }
+                  }}
+                />
+                <textarea
+                  className="form-input task-desc-input"
+                  placeholder="Description (optional)"
+                  rows={2}
+                  value={subAddForm.description}
+                  onChange={e => setSubAddForm(p => ({ ...p, description: e.target.value }))}
+                />
+
+                {labels.length > 0 && (
+                  <div className="task-assignees-selector">
+                    <span className="task-assignees-label">Labels:</span>
+                    <div className="task-assignees-list">
+                      {labels.map(l => {
+                        const on = subAddForm.labelIds.includes(l.id)
+                        return (
+                          <button
+                            key={l.id}
+                            type="button"
+                            className="kanban-label-chip kanban-label-chip--toggle"
+                            style={{ background: on ? l.color : 'transparent', color: on ? '#fff' : l.color, borderColor: l.color }}
+                            onClick={() => toggleSubLabel(l.id)}
+                          >{on ? '✓ ' : ''}{l.name}</button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <div className="task-form-row">
+                  <select className="form-input" value={subAddForm.status} onChange={e => setSubAddForm(p => ({ ...p, status: e.target.value }))}>
+                    {columns.map(c => <option key={c.status} value={c.status}>{c.label}</option>)}
+                  </select>
+                  <select className="form-input" value={subAddForm.priority} onChange={e => setSubAddForm(p => ({ ...p, priority: e.target.value }))}>
+                    <option value="low">Low priority</option>
+                    <option value="medium">Medium priority</option>
+                    <option value="high">High priority</option>
+                    <option value="critical">Critical priority</option>
+                  </select>
+                </div>
+                <AssigneeInput
+                  value={subAddForm.assignees}
+                  options={assignees}
+                  onChange={next => setSubAddForm(p => ({ ...p, assignees: next }))}
+                />
+                <div className="task-form-row">
+                  <input className="form-input" type="date" title="Start date" value={subAddForm.startDate} onChange={e => setSubAddForm(p => ({ ...p, startDate: e.target.value }))} />
+                  <input className="form-input" type="date" title="Due date" value={subAddForm.dueDate} onChange={e => setSubAddForm(p => ({ ...p, dueDate: e.target.value }))} />
+                </div>
+
+                <div className="kanban-sub-modal-actions">
+                  <label className="kanban-sub-another" title="Keep this dialog open after adding">
+                    <input type="checkbox" checked={subAddAnother} onChange={e => setSubAddAnother(e.target.checked)} />
+                    Add another
+                  </label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn-ghost" onClick={closeSubAdd}>Cancel</button>
+                    <SubmitButton
+                      className="btn-primary"
+                      onClick={() => addSubtask(parent)}
+                      disabled={!subAddForm.title.trim()}
+                      busyLabel="Adding…"
+                    >Add Sub-task</SubmitButton>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {editingTask && editForm && (
         <div
           className="kanban-modal-overlay"
@@ -1490,7 +1573,46 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
         >
           <div className="kanban-modal">
             <div className="kanban-modal-header">
-              <span>Edit Task</span>
+              <div className="kanban-modal-nav">
+                {editStack.length > 0 && (
+                  <button className="kanban-modal-back" onClick={backEdit} title="Back">←</button>
+                )}
+                {(() => {
+                  const chain = ancestorChain(editingTask)
+                  // Deep chains collapse the middle: root › … › parent.
+                  const shown = chain.length > 3 ? [chain[0], null, ...chain.slice(-2)] : chain
+                  const hidden = chain.length > 3 ? chain.slice(1, -2) : []
+                  return (
+                    <div className="kanban-modal-title-block">
+                      {chain.length > 0 && (
+                        <nav className="kanban-modal-crumbs" aria-label="Task ancestors">
+                          {shown.map((a, i) => [
+                            i > 0 && <span key={`s${i}`} className="kanban-modal-crumb-sep" aria-hidden="true">›</span>,
+                            a ? (
+                              <button
+                                key={a.id}
+                                className="kanban-modal-crumb"
+                                onClick={() => navEdit(a)}
+                                title={`Open ${taskLabel(a)} ${a.title}`.trim()}
+                              >
+                                {taskLabel(a) && <span className="kanban-modal-crumb-id">{taskLabel(a)}</span>}
+                                <span className="kanban-modal-crumb-title">{a.title}</span>
+                              </button>
+                            ) : (
+                              <span key={`gap${i}`} className="kanban-modal-crumb-ellipsis" title={hidden.map(h => h.title).join(' › ')}>…</span>
+                            ),
+                          ])}
+                        </nav>
+                      )}
+                      <div className="kanban-modal-title">
+                        {chain.length > 0 && <span className="kanban-modal-title-arrow" aria-hidden="true">↳</span>}
+                        {taskLabel(editingTask) && <span className="task-id-badge" style={{ fontSize: 10 }}>{taskLabel(editingTask)}</span>}
+                        <span className="kanban-modal-title-text">{chain.length ? editingTask.title : 'Edit Task'}</span>
+                      </div>
+                    </div>
+                  )
+                })()}
+              </div>
               <button className="kanban-modal-close" onClick={closeEdit}>✕</button>
             </div>
             <div className="task-form">
@@ -1567,6 +1689,47 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                   onChange={e => setEditForm(p => ({ ...p, dueDate: e.target.value }))}
                 />
               </div>
+
+              {/* Sub-tasks: check off inline, or click through to edit one */}
+              {(() => {
+                const kids = directChildren(editingTask.id)
+                if (!kids.length) return null
+                const doneCount = kids.filter(k => k.status === 'done').length
+                return (
+                  <div className="kanban-subtask-section">
+                    <div className="task-assignees-label" style={{ marginBottom: 6 }}>
+                      Sub-tasks <span className="kanban-subtask-count">{doneCount}/{kids.length}</span>
+                    </div>
+                    <div className="kanban-subtask-list">
+                      {kids.map(child => {
+                        const done = child.status === 'done'
+                        const allowed = canChangeStatus(child)
+                        return (
+                          <div key={child.id} className={`kanban-subtask-row${done ? ' kanban-subtask-row--done' : ''}`}>
+                            <input
+                              type="checkbox"
+                              checked={done}
+                              disabled={!allowed}
+                              title={allowed ? (done ? 'Mark not done' : 'Mark done') : 'No permission to change status'}
+                              onChange={() => toggleChildDone(child)}
+                            />
+                            <button
+                              type="button"
+                              className="kanban-subtask-open"
+                              onClick={() => navEdit(child)}
+                              title={`Open ${child.title}`}
+                            >
+                              {taskLabel(child) && <span className="task-id-badge" style={{ fontSize: 9 }}>{taskLabel(child)}</span>}
+                              <span className="kanban-subtask-title">{child.title}</span>
+                              <span className="kanban-subtask-chevron" aria-hidden="true">›</span>
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })()}
 
               {/* Attachments + cover */}
               <div className="kanban-attach-section">
