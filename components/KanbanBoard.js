@@ -5,9 +5,11 @@ import AssigneeInput from './AssigneeInput'
 import SubmitButton from './SubmitButton'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
+import FilterMultiSelect, { DatePicker } from './FilterMultiSelect'
 import { DEFAULT_COLUMNS, COL_COLORS, readColumns, writeColumns, labelForStatus } from '../lib/kanban-columns'
 import { taskShareLink, copyText } from '../lib/task-link'
 
+const PRIORITY_ORDER = ['critical', 'high', 'medium', 'low']
 const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
 const PRIORITY_LABEL = { low: 'Low', medium: 'Med', high: 'High', critical: 'Crit' }
 
@@ -25,6 +27,17 @@ function isOverdue(dueDate) {
 function formatDate(d) {
   if (!d) return null
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+// Picker options are plain YYYY-MM-DD strings — parse them literally so a UTC
+// midnight date never renders as the previous day.
+function formatIsoDate(v) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v || '')
+  if (!m) return v
+  const [, y, mo, d] = m
+  return `${MONTH_ABBR[+mo - 1]} ${+d}, ${y}`
 }
 
 // Resolve @mentions in comment text against the assignee pool. Matches username,
@@ -143,11 +156,31 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   const [labels, setLabels] = useState([])
   const [animatingOut, setAnimatingOut] = useState(new Set())
   const [kbSearch, setKbSearch] = useState('')
-  const [kbPriority, setKbPriority] = useState('')
-  const [kbStatus, setKbStatus] = useState('')
+  const [kbPriorities, setKbPriorities] = useState([])   // multi-select
+  const [kbStatuses, setKbStatuses] = useState([])       // multi-select
   const [kbDate, setKbDate] = useState('')
+  const [kbStartFrom, setKbStartFrom] = useState('')
+  const [kbStartTo, setKbStartTo] = useState('')
+  const [kbDueFrom, setKbDueFrom] = useState('')
+  const [kbDueTo, setKbDueTo] = useState('')
+  const [kbDueDates, setKbDueDates] = useState([])       // specific YYYY-MM-DD picks
   const [kbPerson, setKbPerson] = useState('')
   const [kbLabel, setKbLabel] = useState('')
+
+  function toggleKbStatus(s) {
+    setKbStatuses(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])
+  }
+  function toggleKbPriority(p) {
+    setKbPriorities(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p])
+  }
+  function toggleKbDueDate(d) {
+    setKbDueDates(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d])
+  }
+  function clearKbFilters() {
+    setKbSearch(''); setKbPriorities([]); setKbStatuses([]); setKbDate('')
+    setKbStartFrom(''); setKbStartTo(''); setKbDueFrom(''); setKbDueTo(''); setKbDueDates([])
+    setKbPerson(''); setKbLabel('')
+  }
 
   // Comments
   const [commentText, setCommentText] = useState('')
@@ -236,9 +269,16 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   function matchesFilters(t) {
     const sq = kbSearch.toLowerCase()
     if (sq && !t.title.toLowerCase().includes(sq)) return false
-    if (kbPriority && (t.priority || 'medium') !== kbPriority) return false
-    if (kbStatus && t.status !== kbStatus) return false
+    if (kbPriorities.length && !kbPriorities.includes(t.priority || 'medium')) return false
+    if (kbStatuses.length && !kbStatuses.includes(t.status || 'todo')) return false
     if (kbLabel && !(Array.isArray(t.labelIds) && t.labelIds.includes(kbLabel))) return false
+    const sd = (t.startDate || '').slice(0, 10)
+    if (kbStartFrom && !(sd && sd >= kbStartFrom)) return false
+    if (kbStartTo && !(sd && sd <= kbStartTo)) return false
+    const dd = (t.dueDate || '').slice(0, 10)
+    if (kbDueFrom && !(dd && dd >= kbDueFrom)) return false
+    if (kbDueTo && !(dd && dd <= kbDueTo)) return false
+    if (kbDueDates.length && !kbDueDates.includes(dd)) return false
     if (kbPerson) {
       const pq = kbPerson.toLowerCase().trim()
       const ta = Array.isArray(t.assignees) ? t.assignees : []
@@ -261,7 +301,13 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     return true
   }
 
-  const hasKbFilters = kbSearch || kbPriority || kbStatus || kbDate || kbPerson || kbLabel
+  // Distinct due dates present on the board (YYYY-MM-DD), ascending — the "Pick dates" options.
+  const availableDueDates = [...new Set(
+    boardTasks.map(t => (t.dueDate || '').slice(0, 10)).filter(Boolean)
+  )].sort()
+
+  const hasKbFilters = !!(kbSearch || kbPriorities.length || kbStatuses.length || kbDate ||
+    kbStartFrom || kbStartTo || kbDueFrom || kbDueTo || kbDueDates.length || kbPerson || kbLabel)
   // A match on a parent OR any descendant (child, grandchild) should surface the
   // whole card family — so filtering by a person/name works regardless of which
   // level of the tree carries the assignee/title.
@@ -1056,17 +1102,42 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
             <button className="btn-ghost search-clear" onClick={() => setKbSearch('')} title="Clear">&#x2715;</button>
           )}
         </div>
-        <select className="form-input filter-select" value={kbPriority} onChange={e => setKbPriority(e.target.value)}>
-          <option value="">All priorities</option>
-          <option value="critical">Critical</option>
-          <option value="high">High</option>
-          <option value="medium">Medium</option>
-          <option value="low">Low</option>
-        </select>
-        <select className="form-input filter-select" value={kbStatus} onChange={e => setKbStatus(e.target.value)}>
-          <option value="">All statuses</option>
-          {columns.map(c => <option key={c.status} value={c.status}>{c.label}</option>)}
-        </select>
+        <FilterMultiSelect
+          label="Status"
+          options={columns.map(c => ({ value: c.status, label: c.label }))}
+          selected={kbStatuses}
+          onToggle={toggleKbStatus}
+          onClear={() => setKbStatuses([])}
+        />
+        <FilterMultiSelect
+          label="Priority"
+          options={PRIORITY_ORDER.map(p => ({ value: p, label: p.charAt(0).toUpperCase() + p.slice(1) }))}
+          selected={kbPriorities}
+          onToggle={toggleKbPriority}
+          onClear={() => setKbPriorities([])}
+        />
+        <div className="tt-date-filter" title="Filter by start date">
+          <span className="tt-date-filter-label">Start</span>
+          <input type="date" className="form-input tt-date-input" value={kbStartFrom} onChange={e => setKbStartFrom(e.target.value)} title="Start date from" />
+          <span className="tt-date-filter-sep">–</span>
+          <input type="date" className="form-input tt-date-input" value={kbStartTo} onChange={e => setKbStartTo(e.target.value)} title="Start date to" />
+        </div>
+        <div className="tt-date-filter" title="Filter by due date">
+          <span className="tt-date-filter-label">Due</span>
+          <input type="date" className="form-input tt-date-input" value={kbDueFrom} onChange={e => setKbDueFrom(e.target.value)} title="Due date from" />
+          <span className="tt-date-filter-sep">–</span>
+          <input type="date" className="form-input tt-date-input" value={kbDueTo} onChange={e => setKbDueTo(e.target.value)} title="Due date to" />
+        </div>
+        {availableDueDates.length > 0 && (
+          <DatePicker
+            label="Due dates"
+            dates={availableDueDates}
+            selected={kbDueDates}
+            onToggle={toggleKbDueDate}
+            onClear={() => setKbDueDates([])}
+            format={formatIsoDate}
+          />
+        )}
         {labels.length > 0 && (
           <select className="form-input filter-select" value={kbLabel} onChange={e => setKbLabel(e.target.value)}>
             <option value="">All labels</option>
@@ -1117,7 +1188,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
           </button>
         )}
         {hasKbFilters && (
-          <button className="btn-ghost" style={{ whiteSpace: 'nowrap', fontSize: 12 }} onClick={() => { setKbSearch(''); setKbPriority(''); setKbStatus(''); setKbDate(''); setKbPerson(''); setKbLabel('') }}>
+          <button className="btn-ghost" style={{ whiteSpace: 'nowrap', fontSize: 12 }} onClick={clearKbFilters}>
             Clear filters
           </button>
         )}

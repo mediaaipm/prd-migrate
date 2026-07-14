@@ -1,3 +1,17 @@
+> **ARCHIVED — NOT THE CURRENT SPEC.**
+>
+> This is the original v1 vision (May 2025): a Git-native, database-less PRD system
+> backed by GitHub commits and rendered as a Graphify knowledge graph.
+>
+> **That is not what was built.** The shipped product is a Redis-backed PRD + task
+> management tool. No GitHub sync engine exists; GitHub is not the source of truth;
+> there is no graph visualization UI.
+>
+> Kept because the graph/impact-analysis direction is still a plausible future phase.
+> For the current spec see [PRD.md](../PRD.md).
+
+---
+
 PRD — ProductGraph OS (Working Name)
 Version
 1.0.0 (MVP)
