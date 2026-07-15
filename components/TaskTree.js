@@ -4,6 +4,7 @@ import { enqueue } from '../lib/submit-queue'
 import { taskDraft, taskCreateBody } from '../lib/task-draft'
 import { hasPerm, isSuperAdmin } from '../lib/client-permissions'
 import AssigneeInput from './AssigneeInput'
+import AutoTextarea from './AutoTextarea'
 import SubmitButton from './SubmitButton'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
@@ -224,7 +225,7 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreato
       {quickAdd && (
         <input className="form-input task-num-input" placeholder="# override (e.g. 1.2.3)" value={form.numberOverride} onChange={f('numberOverride')} title="Custom number (leave blank for auto)" />
       )}
-      <textarea className="form-input task-desc-input" placeholder="Description (optional)" value={form.description} onChange={f('description')} rows={2} />
+      <AutoTextarea className="form-input task-desc-input" placeholder="Description (optional)" value={form.description} onChange={f('description')} />
       <div className="task-form-row">
         <select className="form-input" value={form.status} onChange={f('status')}>
           {columns.map(c => <option key={c.status} value={c.status}>{c.label}</option>)}

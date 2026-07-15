@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { enqueue, onSync } from '../lib/submit-queue'
 import { taskDraft, taskCreateBody } from '../lib/task-draft'
 import AssigneeInput from './AssigneeInput'
+import AutoTextarea from './AutoTextarea'
 import SubmitButton from './SubmitButton'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
@@ -184,6 +185,10 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
 
   // Comments
   const [commentText, setCommentText] = useState('')
+
+  // Updates panel — reachable straight from a card, no edit rights needed.
+  const [updatesFor, setUpdatesFor] = useState(null)   // task id
+  const [updateText, setUpdateText] = useState('')
 
   // Right-click activity/history (viewable by anyone with project access)
   const [ctxMenu, setCtxMenu] = useState(null)   // { x, y, task }
@@ -636,19 +641,37 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     closeEdit()
   }
 
-  function postComment() {
-    if (!commentText.trim() || !editingTask) return
-    const newUpdate = {
+  function makeUpdate(text) {
+    return {
       id: `upd-${Date.now()}`,
-      text: commentText.trim(),
+      text: text.trim(),
       author: currentUser?.name || currentUser?.username || null,
-      mentions: parseMentions(commentText, assignees),
+      mentions: parseMentions(text, assignees),
       createdAt: new Date().toISOString(),
     }
-    const nextUpdates = [...(editForm.updates || []), newUpdate]
+  }
+
+  function postComment() {
+    if (!commentText.trim() || !editingTask) return
+    const nextUpdates = [...(editForm.updates || []), makeUpdate(commentText)]
     setEditForm(p => ({ ...p, updates: nextUpdates }))
     setCommentText('')
     enqueueUpdate(editingTask.id, { updates: nextUpdates }, 'Post comment')
+  }
+
+  // Post from the card's Updates panel. The patch carries only `updates`, so the
+  // server's self-service path lets a non-admin assignee post without task edit rights.
+  function postUpdate(task) {
+    if (!updateText.trim() || !task) return
+    const existing = Array.isArray(task.updates) ? task.updates : []
+    enqueueUpdate(task.id, { updates: [...existing, makeUpdate(updateText)] }, 'Post update')
+    setUpdateText('')
+  }
+
+  function openUpdates(e, task) {
+    e.stopPropagation()
+    setUpdatesFor(task.id)
+    setUpdateText('')
   }
 
   // --- Attachments / cover ---
@@ -1023,6 +1046,11 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
             {task.number && <span className="task-number" style={{ fontSize: 10 }}>{task.number}</span>}
             <button
               className="kanban-card-edit-btn"
+              onClick={e => openUpdates(e, task)}
+              title="Updates"
+            >💬</button>
+            <button
+              className="kanban-card-edit-btn"
               onClick={e => copyCardLink(e, task)}
               title="Copy link to this task"
             >{copiedId === task.id ? '✓' : '🔗'}</button>
@@ -1059,7 +1087,14 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
               </span>
             )}
             {task.updates?.length > 0 && (
-              <span className="task-meta-chip" title={`${task.updates.length} comment(s)`}>💬 {task.updates.length}</span>
+              <span
+                className="task-meta-chip task-updates-badge"
+                role="button"
+                tabIndex={0}
+                title={`${task.updates.length} update(s) — click to open`}
+                onClick={e => openUpdates(e, task)}
+                onKeyDown={e => { if (e.key === 'Enter') openUpdates(e, task) }}
+              >💬 {task.updates.length}</span>
             )}
             {task.attachments?.length > 0 && (
               <span className="task-meta-chip" title={`${task.attachments.length} attachment(s)`}>📎 {task.attachments.length}</span>
@@ -1590,10 +1625,9 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                     if (e.key === 'Enter' && !e.nativeEvent?.isComposing) { e.preventDefault(); addSubtask(parent) }
                   }}
                 />
-                <textarea
+                <AutoTextarea
                   className="form-input task-desc-input"
                   placeholder="Description (optional)"
-                  rows={2}
                   value={subAddForm.description}
                   onChange={e => setSubAddForm(p => ({ ...p, description: e.target.value }))}
                 />
@@ -1660,6 +1694,64 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
         )
       })()}
 
+      {updatesFor && taskById[updatesFor] && (() => {
+        const task = taskById[updatesFor]
+        const list = Array.isArray(task.updates) ? task.updates : []
+        const close = () => { setUpdatesFor(null); setUpdateText('') }
+        return (
+          <div
+            className="kanban-modal-overlay"
+            onClick={e => { if (e.target === e.currentTarget) close() }}
+            onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); close() } }}
+          >
+            <div className="kanban-modal">
+              <div className="kanban-modal-header">
+                <div className="kanban-modal-title">
+                  {taskLabel(task) && <span className="task-id-badge" style={{ fontSize: 10 }}>{taskLabel(task)}</span>}
+                  <span className="kanban-modal-title-text">{task.title}</span>
+                </div>
+                <button className="kanban-modal-close" onClick={close}>✕</button>
+              </div>
+              <div className="task-updates-panel">
+                <div className="task-updates-list">
+                  {list.length === 0 ? (
+                    <div className="task-updates-empty">No updates yet.</div>
+                  ) : (
+                    [...list].reverse().map(u => (
+                      <div key={u.id} className="task-update-item">
+                        <div className="task-update-meta">
+                          {u.author && <span className="task-update-author">{u.author}</span>}
+                          <span className="task-update-time">{new Date(u.createdAt).toLocaleString()}</span>
+                        </div>
+                        <div className="task-update-text">{u.text}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className="task-update-form">
+                  <input
+                    className="form-input"
+                    placeholder="Add an update… use @name to mention"
+                    value={updateText}
+                    autoFocus
+                    onChange={e => setUpdateText(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); postUpdate(task) } }}
+                    style={{ flex: 1, fontSize: 12 }}
+                  />
+                  <SubmitButton
+                    className="btn-primary"
+                    onClick={() => postUpdate(task)}
+                    disabled={!updateText.trim()}
+                    busyLabel="Posting…"
+                    style={{ fontSize: 12, padding: '5px 12px', whiteSpace: 'nowrap' }}
+                  >Post</SubmitButton>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {editingTask && editForm && (
         <div
           className="kanban-modal-overlay"
@@ -1717,12 +1809,11 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                 onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))}
                 autoFocus
               />
-              <textarea
+              <AutoTextarea
                 className="form-input task-desc-input"
                 placeholder="Description (optional)"
                 value={editForm.description}
                 onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))}
-                rows={2}
               />
 
               {/* Labels */}
