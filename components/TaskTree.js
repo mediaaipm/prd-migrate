@@ -115,15 +115,13 @@ function buildTree(tasks, sortBy = 'order') {
 
 // Build a pruned tree of the matched tasks plus every ancestor needed to reach
 // them, so a matched child is always shown under its parent, plus every
-// descendant of a matched task so a matched parent shows its whole subtree.
+// ancestor of a matched task so a matched child renders under its parent path.
+// A matched parent does NOT drag in unmatched children — a person search surfaces
+// only the tasks that person is actually on.
 // Tasks that did not themselves match are flagged `__context` for dimmed display.
 function buildFilteredTree(allTasks, matched, sortBy = 'order') {
   const byId = {}
-  const childrenOf = {}
-  allTasks.forEach(t => {
-    byId[t.id] = t
-    if (t.parentId) (childrenOf[t.parentId] = childrenOf[t.parentId] || []).push(t.id)
-  })
+  allTasks.forEach(t => { byId[t.id] = t })
   const matchedIds = new Set(matched.map(t => t.id))
   const includeIds = new Set(matchedIds)
   matched.forEach(t => {
@@ -133,14 +131,6 @@ function buildFilteredTree(allTasks, matched, sortBy = 'order') {
       pid = byId[pid].parentId
     }
   })
-  // Pull in the full subtree under each matched task.
-  const queue = [...matchedIds]
-  while (queue.length) {
-    const id = queue.shift()
-    for (const cid of childrenOf[id] || []) {
-      if (!includeIds.has(cid)) { includeIds.add(cid); queue.push(cid) }
-    }
-  }
   const included = allTasks
     .filter(t => includeIds.has(t.id))
     .map(t => ({ ...t, __context: !matchedIds.has(t.id) }))
@@ -945,6 +935,8 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
           t.title.toLowerCase().includes(q) ||
           (t.description || '').toLowerCase().includes(q) ||
           taskAssignees.some(a => a.toLowerCase().includes(q)) ||
+          (Array.isArray(t.updates) && t.updates.some(u => Array.isArray(u.mentions) && u.mentions.some(m => (m || '').toLowerCase().includes(q)))) ||
+          (t.id || '').toString().toLowerCase().includes(q) ||
           (t.number || '').toString().includes(q) ||
           (t.autoNumber || '').toString().includes(q) ||
           (t.numberOverride || '').toString().includes(q)
@@ -1237,7 +1229,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
         ) : (
           <div className="task-list">
             {filteredTree.map(node => (
-              <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} columns={columns} focusId={focusTaskId} expandSignal={expandSignal} />
+              <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={canDrag ? dnd : null} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} columns={columns} focusId={focusTaskId} expandSignal={expandSignal} />
             ))}
           </div>
         )

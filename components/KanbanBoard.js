@@ -272,8 +272,31 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   )
 
   function matchesFilters(t) {
-    const sq = kbSearch.toLowerCase()
-    if (sq && !t.title.toLowerCase().includes(sq)) return false
+    const sq = kbSearch.toLowerCase().trim()
+    const searchAssignees = Array.isArray(t.assignees)
+      ? t.assignees.some(a => ((typeof a === 'object' ? a?.name : a) || '').toLowerCase().includes(sq))
+      : false
+    // @mentions of a person in this card's comments/updates also count as a match.
+    const searchMentions = Array.isArray(t.updates)
+      ? t.updates.some(u => Array.isArray(u.mentions) && u.mentions.some(m => (m || '').toLowerCase().includes(sq)))
+      : false
+    // If the query matches a real user's name, treat it as a person search: surface
+    // ONLY tasks that person is on (assignee or @mention), never tasks that merely
+    // contain the name in their title/description.
+    const isPersonQuery = !!sq && assignees.some(p => (p.name || '').toLowerCase().includes(sq))
+    if (sq) {
+      if (isPersonQuery) {
+        if (!(searchAssignees || searchMentions)) return false
+      } else if (!(
+        t.title.toLowerCase().includes(sq) ||
+        (t.id || '').toString().toLowerCase().includes(sq) ||
+        (t.number || '').toString().includes(sq) ||
+        (t.autoNumber || '').toString().includes(sq) ||
+        (t.numberOverride || '').toString().includes(sq) ||
+        searchAssignees ||
+        searchMentions
+      )) return false
+    }
     if (kbPriorities.length && !kbPriorities.includes(t.priority || 'medium')) return false
     if (kbStatuses.length && !kbStatuses.includes(t.status || 'todo')) return false
     if (kbLabel && !(Array.isArray(t.labelIds) && t.labelIds.includes(kbLabel))) return false
@@ -313,17 +336,15 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
 
   const hasKbFilters = !!(kbSearch || kbPriorities.length || kbStatuses.length || kbDate ||
     kbStartFrom || kbStartTo || kbDueFrom || kbDueTo || kbDueDates.length || kbPerson || kbLabel)
-  // A match on a parent OR any descendant (child, grandchild) should surface the
-  // whole card family — so filtering by a person/name works regardless of which
-  // level of the tree carries the assignee/title.
+  // Strict match: show ONLY the cards that themselves match. A matched sub-task whose
+  // parent did not match renders as an orphan card with a parent breadcrumb (via
+  // getOrphanSubsInCol) — the non-matching parent is not drawn as its own card. So
+  // searching a person surfaces exactly the tasks that person is on (assignee/@mention),
+  // never the parent as a bare context card.
   const matchIds = new Set(boardTasks.filter(matchesFilters).map(t => t.id))
-  const familyMatch = new Set() // top-ancestor ids whose family has ≥1 direct match
-  boardTasks.forEach(t => { if (matchIds.has(t.id)) familyMatch.add(topAncestorId(t.id)) })
   function isVisible(t) {
     if (!hasKbFilters) return true
-    if (matchIds.has(t.id)) return true
-    if (!t.parentId) return familyMatch.has(t.id)   // top card: show if any descendant matches
-    return matchIds.has(topAncestorId(t.id))        // child: show if its top card matched
+    return matchIds.has(t.id)
   }
   const visibleTasks = boardTasks.filter(isVisible)
   const visibleIds = new Set(visibleTasks.map(t => t.id))
@@ -1129,7 +1150,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
         <div className="search-bar" style={{ flex: 1, minWidth: 160 }}>
           <input
             className="form-input search-input"
-            placeholder="Search tasks…"
+            placeholder="Search tasks or people…"
             value={kbSearch}
             onChange={e => setKbSearch(e.target.value)}
           />

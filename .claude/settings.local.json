@@ -291,7 +291,9 @@
       "Bash(\"C:/Python314/python.exe\" -c \"import graphify, os; print\\(os.path.dirname\\(graphify.__file__\\)\\)\")",
       "PowerShell(& \"C:\\\\Python314\\\\python.exe\" -m graphify --help 2>&1 | Select-Object -First 40)",
       "PowerShell($p = \"$env:LOCALAPPDATA\\\\uv\\\\tools\\\\graphifyy\\\\Scripts\\\\python.exe\"; if\\(Test-Path $p\\){ & $p -m graphify --help 2>&1 | Select-Object -First 40 } else { Write-Output \"no venv python at $p\"; Get-ChildItem \"$env:LOCALAPPDATA\\\\uv\\\\tools\\\\graphifyy\" -ErrorAction SilentlyContinue })",
-      "PowerShell(Get-ChildItem *)"
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(npx next lint --dir components 2>&1)",
+      "PowerShell(graphify update . 2>&1)"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects",
