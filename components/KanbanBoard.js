@@ -7,7 +7,8 @@ import SubmitButton from './SubmitButton'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
 import FilterMultiSelect, { DatePicker } from './FilterMultiSelect'
-import { DEFAULT_COLUMNS, COL_COLORS, readColumns, writeColumns, labelForStatus } from '../lib/kanban-columns'
+import { DEFAULT_COLUMNS, COL_COLORS, useColumns, saveColumns, labelForStatus } from '../lib/kanban-columns'
+import { isSuperAdmin } from '../lib/client-permissions'
 import { taskShareLink, copyText } from '../lib/task-link'
 
 const PRIORITY_ORDER = ['critical', 'high', 'medium', 'low']
@@ -114,30 +115,50 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     return list.includes(status)
   }
 
-  const [columns, setColumns] = useState(() => readColumns(apiBase))
+  // The column layout is global per project and owned by super admins; everyone
+  // else sees it read-only. `columns` mirrors the server copy so an edit paints
+  // immediately, then reverts if the PUT is rejected.
+  const canEditColumns = isSuperAdmin(currentUser)
+  const serverColumns = useColumns(slug)
+  const [columns, setColumns] = useState(serverColumns)
+  const [colError, setColError] = useState('')
 
-  // Persisting broadcasts, so the task list and calendar pick the change up live.
-  useEffect(() => {
-    writeColumns(apiBase, columns)
-  }, [columns, apiBase])
+  useEffect(() => { setColumns(serverColumns) }, [serverColumns])
+
+  function commitColumns(next) {
+    setColumns(next)
+    setColError('')
+    // Saving broadcasts, so the task list and calendar pick the change up live.
+    saveColumns(slug, next).catch(err => {
+      setColError(err.message || 'Could not save columns')
+      setColumns(serverColumns)
+    })
+  }
 
   // Reconcile columns with statuses present in tasks. A task set (e.g. from the
   // calendar) to a status with no column would otherwise vanish from the board.
+  // Local only — a stray status must not rewrite the shared layout, and only a
+  // super admin could persist it anyway.
   useEffect(() => {
-    const known = new Set(columns.map(c => c.status))
-    const fallback = DEFAULT_COLUMNS.reduce((m, c) => (m[c.status] = c, m), {})
-    const missing = []
-    for (const t of tasks) {
-      if (t.archived || !t.status || known.has(t.status)) continue
-      known.add(t.status)
-      missing.push(fallback[t.status] || {
-        status: t.status,
-        label: labelForStatus(t.status),
-        color: COL_COLORS[(columns.length + missing.length) % COL_COLORS.length],
-      })
-    }
-    if (missing.length) setColumns(prev => [...prev, ...missing])
-  }, [tasks]) // eslint-disable-line react-hooks/exhaustive-deps
+    // Resolve against `prev`, not the render's `columns`: this effect and the
+    // sync above can fire in the same commit, and a status the incoming server
+    // copy already defines must not be appended a second time.
+    setColumns(prev => {
+      const known = new Set(prev.map(c => c.status))
+      const fallback = DEFAULT_COLUMNS.reduce((m, c) => (m[c.status] = c, m), {})
+      const missing = []
+      for (const t of tasks) {
+        if (t.archived || !t.status || known.has(t.status)) continue
+        known.add(t.status)
+        missing.push(fallback[t.status] || {
+          status: t.status,
+          label: labelForStatus(t.status),
+          color: COL_COLORS[(prev.length + missing.length) % COL_COLORS.length],
+        })
+      }
+      return missing.length ? [...prev, ...missing] : prev
+    })
+  }, [tasks, serverColumns]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [draggingId, setDraggingId] = useState(null)
   const [dragOverStatus, setDragOverStatus] = useState(null)
@@ -831,8 +852,9 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     dragTypeRef.current = null
   }
 
-  // Column drag (reorder)
+  // Column drag (reorder) — super admin only; the order is shared by all users.
   function onColDragStart(e, status) {
+    if (!canEditColumns) return
     dragTypeRef.current = 'col'
     setDraggingColStatus(status)
     e.dataTransfer.effectAllowed = 'move'
@@ -849,55 +871,57 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   function onColDrop(e, toStatus) {
     if (dragTypeRef.current !== 'col') return
     e.preventDefault()
-    if (draggingColStatus && draggingColStatus !== toStatus) {
-      setColumns(prev => {
-        const arr = [...prev]
-        const fromIdx = arr.findIndex(c => c.status === draggingColStatus)
-        const toIdx = arr.findIndex(c => c.status === toStatus)
-        if (fromIdx === -1 || toIdx === -1) return prev
+    if (canEditColumns && draggingColStatus && draggingColStatus !== toStatus) {
+      const arr = [...columns]
+      const fromIdx = arr.findIndex(c => c.status === draggingColStatus)
+      const toIdx = arr.findIndex(c => c.status === toStatus)
+      if (fromIdx !== -1 && toIdx !== -1) {
         const [col] = arr.splice(fromIdx, 1)
         arr.splice(toIdx, 0, col)
-        return arr
-      })
+        commitColumns(arr)
+      }
     }
     setDraggingColStatus(null)
     setDragOverColStatus(null)
     dragTypeRef.current = null
   }
 
-  // Column CRUD
+  // Column CRUD — super admin only, and every change is global.
   function addColumn() {
-    if (!newColForm.label.trim()) return
+    if (!canEditColumns || !newColForm.label.trim()) return
     const status = slugify(newColForm.label.trim(), columns.map(c => c.status))
-    setColumns(prev => [...prev, { status, label: newColForm.label.trim(), color: newColForm.color }])
+    commitColumns([...columns, { status, label: newColForm.label.trim(), color: newColForm.color }])
     setNewColForm({ label: '', color: COL_COLORS[0] })
     setAddingCol(false)
   }
 
   function startRenameCol(status, currentLabel) {
+    if (!canEditColumns) return
     setEditingColStatus(status)
     setEditingColLabel(currentLabel)
   }
 
   function commitRenameCol(status) {
-    if (editingColLabel.trim()) {
-      setColumns(prev => prev.map(c => c.status === status ? { ...c, label: editingColLabel.trim() } : c))
+    if (canEditColumns && editingColLabel.trim()) {
+      commitColumns(columns.map(c => c.status === status ? { ...c, label: editingColLabel.trim() } : c))
     }
     setEditingColStatus(null)
     setEditingColLabel('')
   }
 
   function changeColColor(status, color) {
-    setColumns(prev => prev.map(c => c.status === status ? { ...c, color } : c))
+    if (!canEditColumns) return
+    commitColumns(columns.map(c => c.status === status ? { ...c, color } : c))
   }
 
   function deleteColumn(status) {
+    if (!canEditColumns) return
     const taskCount = boardTasks.filter(t => t.status === status).length
     if (taskCount > 0) {
       alert(`Cannot delete: ${taskCount} task${taskCount !== 1 ? 's' : ''} in this column. Move them first.`)
       return
     }
-    setColumns(prev => prev.filter(c => c.status !== status))
+    commitColumns(columns.filter(c => c.status !== status))
   }
 
   function toggleEditLabel(id) {
@@ -1249,6 +1273,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
           </button>
         )}
       </div>
+      {colError && <div className="kanban-col-error">{colError}</div>}
       <div
         ref={boardWrapperRef}
         className="kanban-board-wrapper"
@@ -1284,18 +1309,19 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
               >
                 <div
                   className="kanban-column-header"
-                  draggable
+                  draggable={canEditColumns}
                   onDragStart={e => onColDragStart(e, col.status)}
                   onDragEnd={onDragEnd}
-                  title="Drag to reorder column"
+                  title={canEditColumns ? 'Drag to reorder column (applies to everyone)' : undefined}
                 >
                   <div className="kanban-column-title">
-                    <span className="kanban-col-drag-handle">⠿</span>
+                    {canEditColumns && <span className="kanban-col-drag-handle">⠿</span>}
                     <span
                       className="kanban-column-dot"
-                      style={{ background: col.color, cursor: 'pointer' }}
-                      title="Change color"
+                      style={{ background: col.color, ...(canEditColumns ? { cursor: 'pointer' } : {}) }}
+                      title={canEditColumns ? 'Change color' : undefined}
                       onClick={e => {
+                        if (!canEditColumns) return
                         e.stopPropagation()
                         setEditingColStatus(editingColStatus === col.status ? null : col.status)
                         setEditingColLabel(col.label)
@@ -1317,7 +1343,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                     ) : (
                       <span
                         className="kanban-col-label"
-                        title="Click to rename"
+                        title={canEditColumns ? 'Click to rename' : undefined}
                         onClick={e => { e.stopPropagation(); startRenameCol(col.status, col.label) }}
                       >{col.label}</span>
                     )}
@@ -1334,12 +1360,14 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                         onClick={() => addingFor === col.status ? setAddingFor(null) : startAdding(col.status)}
                         title={`Add task to ${col.label}`}
                       >+</button>
-                      <button
-                        className="kanban-col-delete-btn"
-                        onMouseDown={e => e.stopPropagation()}
-                        onClick={() => deleteColumn(col.status)}
-                        title="Delete column"
-                      >✕</button>
+                      {canEditColumns && (
+                        <button
+                          className="kanban-col-delete-btn"
+                          onMouseDown={e => e.stopPropagation()}
+                          onClick={() => deleteColumn(col.status)}
+                          title="Delete column"
+                        >✕</button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1492,7 +1520,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                 </div>
               </div>
             </div>
-          ) : canEditAll ? (
+          ) : canEditColumns ? (
             <button className="kanban-add-col-btn" onClick={() => setAddingCol(true)}>
               + Add column
             </button>

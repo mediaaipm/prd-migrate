@@ -41,7 +41,8 @@ Next.js (pages router) + Upstash Redis. Product requirements & task management t
 | `pages/api/projects/` | REST: projects, versions, tasks, proposals, sprints |
 | `pages/index.js` | Project list |
 | `pages/projects/[slug]/tasks.js` | Task list + kanban toggle |
-| `components/KanbanBoard.js` | Kanban — columns persisted in localStorage per apiBase |
+| `components/KanbanBoard.js` | Kanban — columns are global per project, superadmin-only edit |
+| `lib/kanban-columns.js` | Column layout: server is truth (`columns:{slug}`), localStorage is a first-paint cache |
 | `components/TaskTree.js` | Tree list view with inline edit |
 | `components/Nav.js` | Top nav |
 | `styles/globals.css` | All styles — no CSS modules |

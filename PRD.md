@@ -163,14 +163,20 @@ Fields: `id`, `seq`, `title`, `description`, `status`, `priority`, `assignees[]`
 
 ### 4.5 Statuses & Kanban
 Default columns: `backlog`, `todo`, `in-progress`, `in-review`, `blocked`, `done`.
-Columns are **editable per board** — add, rename, recolor, remove.
+Columns are **editable by super admins only, and every edit is global**: order,
+labels and colors are stored server-side per project (`columns:{slug}`, exposed at
+`GET/PUT /api/projects/{slug}/columns`) and every user of the project sees the same
+layout. The layout is shared by the main board and every version-scoped board.
+Other roles see the board read-only — no drag handle, rename, recolor, add or
+delete. `localStorage` still caches the last known layout, but only to avoid a
+first-paint flash of the defaults; the server copy always wins.
 
-> **Known gap (R-4):** columns live in `localStorage`, keyed by apiBase
-> ([lib/kanban-columns.js](lib/kanban-columns.js)) — they are per-browser, not
-> per-project. A custom column one person creates is invisible to everyone else,
-> even though the task statuses it produces are shared. `columnsWithTaskStatuses()`
-> papers over this by synthesizing a column for any unrecognized status found on a
-> task, so nothing is *hidden* — but the board layout does not sync.
+`columnsWithTaskStatuses()` still synthesizes a column for any unrecognized status
+found on a task, so a task parked in a foreign status is never hidden. That
+reconciliation is local-only — it does not rewrite the shared layout.
+
+> **R-4 (resolved):** columns previously lived in `localStorage` keyed by apiBase,
+> so a custom column one person created was invisible to everyone else.
 
 ### 4.6 Views
 - **Tree** ([TaskTree.js](components/TaskTree.js)) — nested list, inline edit, drag to

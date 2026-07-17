@@ -2148,6 +2148,17 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .kanban-col-color-swatch:hover { transform: scale(1.2); }
 .kanban-col-color-swatch.active { border-color: var(--text); transform: scale(1.15); }
 
+/* Column save failure (e.g. no longer a super admin) */
+.kanban-col-error {
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border: 1px solid #dc2626;
+  border-radius: 6px;
+  background: rgba(220, 38, 38, 0.08);
+  color: #dc2626;
+  font-size: 12px;
+}
+
 /* Add column button */
 .kanban-add-col-btn {
   align-self: flex-start;

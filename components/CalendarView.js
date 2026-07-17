@@ -120,9 +120,9 @@ function dueKey(task) {
   return ymd(d)
 }
 
-export default function CalendarView({ tasks, apiBase, currentUser }) {
+export default function CalendarView({ tasks, apiBase, slug, currentUser }) {
   const today = new Date()
-  const savedColumns = useColumns(apiBase)
+  const savedColumns = useColumns(slug)
   const columns = columnsWithTaskStatuses(savedColumns, tasks)
   const [ctxMenu, setCtxMenu] = useState(null)   // { x, y, task }
   const [historyTask, setHistoryTask] = useState(null)

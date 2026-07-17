@@ -874,9 +874,9 @@ export default function TasksPage({ currentUser }) {
           {loading ? <TaskSkeleton /> : viewMode === 'kanban' ? (
             <KanbanBoard key={apiBase} tasks={tasks} apiBase={apiBase} slug={slug} currentUser={currentUser} taskAcl={taskAcl} onAclChange={setTaskAcl} taskPrefix={taskPrefix} onPrefixChange={setTaskPrefix} taskSeqStart={taskSeqStart} onSeqStartChange={setTaskSeqStart} focusTaskId={focusTaskId} />
           ) : viewMode === 'calendar' ? (
-            <CalendarView tasks={tasks} apiBase={apiBase} currentUser={currentUser} />
+            <CalendarView tasks={tasks} apiBase={apiBase} slug={slug} currentUser={currentUser} />
           ) : (
-            <TaskTree tasks={tasks} apiBase={apiBase} onRefresh={refreshTasks} currentUser={currentUser} taskAcl={taskAcl} taskPrefix={taskPrefix} focusTaskId={focusTaskId} />
+            <TaskTree tasks={tasks} apiBase={apiBase} slug={slug} onRefresh={refreshTasks} currentUser={currentUser} taskAcl={taskAcl} taskPrefix={taskPrefix} focusTaskId={focusTaskId} />
           )}
         </div>
 

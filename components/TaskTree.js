@@ -806,7 +806,7 @@ function countDescendants(node) {
   return count
 }
 
-export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskAcl, taskPrefix, focusTaskId }) {
+export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser, taskAcl, taskPrefix, focusTaskId }) {
   const [addingRoot, setAddingRoot] = useState(false)
   const [expandSignal, setExpandSignal] = useState(null)  // { n, value } broadcast to every TaskNode
   const [copiedAll, setCopiedAll] = useState(0)  // count of links in the last copy, 0 = idle
@@ -820,7 +820,7 @@ export default function TaskTree({ tasks, apiBase, onRefresh, currentUser, taskA
   function taskLabel(t) {
     return taskPrefix && t.seq != null ? `${taskPrefix}-${t.seq}` : (t.number ? `#${t.number}` : '')
   }
-  const savedColumns = useColumns(apiBase)
+  const savedColumns = useColumns(slug)
   const [assignees, setAssignees] = useState([])
   // Manual order is the default: it is the only sort where the rendered position matches
   // the `order` field that numbers (1.2.3, 1.2.4 …) are derived from, so a drag both
