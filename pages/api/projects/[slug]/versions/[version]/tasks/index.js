@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     return res.status(200).json(await listTasks(slug, version));
   }
   if (req.method === 'POST') {
-    if (!requirePermission('task:create')(req, res)) return;
+    if (!await requirePermission('task:create', slug)(req, res)) return;
     const { id, title, description, status, priority, assignee, assignees, startDate, dueDate, parentId, numberOverride, attachments, cover, labelIds } = req.body || {};
     if (!title) return res.status(400).json({ error: 'title is required' });
     // Prefer a name the creator typed in the form; fall back to the logged-in user.

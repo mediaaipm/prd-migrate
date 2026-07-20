@@ -20,9 +20,9 @@ async function getTasksForProject(slug) {
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end()
-  if (!await requirePermission('read')(req, res)) return
-
   const { slug } = req.query
+  if (!await requirePermission('read', slug)(req, res)) return
+
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 

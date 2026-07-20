@@ -3,9 +3,10 @@ let _kv;
 function getKv() { if (!_kv) _kv = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN }); return _kv; }
 const { logAudit } = require('../../../lib/audit-log')
 const { ALL_PERMISSIONS } = require('../../../lib/permissions')
+const { getGlobalRolePolicy } = require('../../../lib/role-policy')
 const { findUsersByUsername } = require('../../../lib/user-lookup')
 
-function buildUser(name, username, profile) {
+function buildUser(name, username, profile, viewerPerms, restrictedStatuses) {
   const role = profile.role || ''
   let permissions = ALL_PERMISSIONS
   if (role === 'admin' && profile.permissions) {
@@ -23,7 +24,16 @@ function buildUser(name, username, profile) {
       try { assignedProjects = JSON.parse(profile.assignedProjects) } catch {}
     }
   }
-  return { name, username, isAdmin: role === 'admin' || role === 'superadmin', role, permissions, assignedProjects }
+  const user = { name, username, isAdmin: role === 'admin' || role === 'superadmin', role, permissions, assignedProjects }
+  // Viewers carry their capability set (from the global role policy) so the
+  // session enforces exactly what the superadmin granted the `user` role.
+  // restrictedStatuses is a UI hint so the board/list hide statuses the server
+  // would reject anyway (enforcement lives in the task update handlers).
+  if (role !== 'admin' && role !== 'superadmin') {
+    user.viewerPerms = viewerPerms || []
+    user.restrictedStatuses = restrictedStatuses || []
+  }
+  return user
 }
 
 export default async function handler(req, res) {
@@ -40,6 +50,12 @@ export default async function handler(req, res) {
     return res.json({ ok: true, user: adminUser })
   }
 
+  // Global-default capability set for this login. Per-project overrides are
+  // applied client-side on the tasks page (and enforced server-side per request).
+  const rolePolicy = await getGlobalRolePolicy()
+  const viewerPerms = rolePolicy.user
+  const restrictedStatuses = rolePolicy.userRestrictedStatuses
+
   // Every stored profile with this username whose password matches.
   const matches = await findUsersByUsername(username)
   const valid = matches.filter(m => m.profile.password === password)
@@ -54,7 +70,7 @@ export default async function handler(req, res) {
     if (selectedName) {
       const chosen = valid.find(m => m.name === selectedName)
       if (!chosen) return res.status(400).json({ error: 'Select a valid account.' })
-      const user = buildUser(chosen.name, username, chosen.profile)
+      const user = buildUser(chosen.name, username, chosen.profile, viewerPerms, restrictedStatuses)
       req.headers['x-user'] = JSON.stringify(user)
       await logAudit(req, 'login', 'auth', { username, selectedName })
       return res.json({ ok: true, user })
@@ -66,7 +82,7 @@ export default async function handler(req, res) {
   }
 
   const { name, profile } = valid[0]
-  const user = buildUser(name, username, profile)
+  const user = buildUser(name, username, profile, viewerPerms, restrictedStatuses)
   req.headers['x-user'] = JSON.stringify(user)
   await logAudit(req, 'login', 'auth', { username })
   return res.json({ ok: true, user })

@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     return res.status(200).json(p);
   }
   if (req.method === 'PUT') {
-    if (!requirePermission('proposal:update')(req, res)) return;
+    if (!await requirePermission('proposal:update', slug)(req, res)) return;
     const updates = req.body || {};
     const p = await updateProposal(slug, id, updates);
     if (!p) return res.status(404).json({ error: 'Proposal not found' });
@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     return res.status(200).json(p);
   }
   if (req.method === 'DELETE') {
-    if (!requirePermission('proposal:delete')(req, res)) return;
+    if (!await requirePermission('proposal:delete', slug)(req, res)) return;
     const ok = await deleteProposal(slug, id);
     if (!ok) return res.status(404).json({ error: 'Proposal not found' });
     await logAudit(req, 'delete_proposal', 'proposal', { slug, proposalId: id });

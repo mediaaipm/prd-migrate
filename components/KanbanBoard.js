@@ -4,6 +4,7 @@ import { taskDraft, taskCreateBody } from '../lib/task-draft'
 import AssigneeInput from './AssigneeInput'
 import AutoTextarea from './AutoTextarea'
 import SubmitButton from './SubmitButton'
+import MentionInput from './MentionInput'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
 import FilterMultiSelect, { DatePicker } from './FilterMultiSelect'
@@ -106,8 +107,13 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   const isMine = task => !!currentUser?.name && (Array.isArray(task?.assignees) ? task.assignees : (task?.assignee ? [task.assignee] : []))
     .some(a => (typeof a === 'object' ? a?.name : a) === currentUser.name)
   const canChangeStatus = task => canEditAll || isMine(task)
+  // Global superadmin blocklist: statuses a regular user may never set (any project).
+  // Admins/superadmin are exempt. Mirrors the server check in the task update route.
+  const isPriv = !!currentUser?.isAdmin
+  const restrictedStatuses = new Set(currentUser?.restrictedStatuses || [])
   // Project ACL: which statuses a non-admin assignee may set (admins unrestricted).
   const statusAllowedForUser = status => {
+    if (!isPriv && restrictedStatuses.has(status)) return false
     if (canEditAll) return true
     if (taskAcl?.assigneeCanChangeStatus === false) return false
     const list = taskAcl?.assigneeStatuses
@@ -311,6 +317,8 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
       } else if (!(
         t.title.toLowerCase().includes(sq) ||
         (t.id || '').toString().toLowerCase().includes(sq) ||
+        (t.seq != null && t.seq.toString() === sq) ||
+        (t.seq != null && taskLabel(t).toLowerCase().includes(sq)) ||
         (t.number || '').toString().includes(sq) ||
         (t.autoNumber || '').toString().includes(sq) ||
         (t.numberOverride || '').toString().includes(sq) ||
@@ -1778,13 +1786,14 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                   )}
                 </div>
                 <div className="task-update-form">
-                  <input
+                  <MentionInput
                     className="form-input"
                     placeholder="Add an update… use @name to mention"
                     value={updateText}
                     autoFocus
-                    onChange={e => setUpdateText(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); postUpdate(task) } }}
+                    people={assignees}
+                    onChange={setUpdateText}
+                    onSubmit={() => postUpdate(task)}
                     style={{ flex: 1, fontSize: 12 }}
                   />
                   <SubmitButton
@@ -2006,12 +2015,13 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                   )}
                 </div>
                 <div className="task-update-form">
-                  <input
+                  <MentionInput
                     className="form-input"
                     placeholder="Comment… use @name to mention"
                     value={commentText}
-                    onChange={e => setCommentText(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); postComment() } }}
+                    people={assignees}
+                    onChange={setCommentText}
+                    onSubmit={postComment}
                     style={{ flex: 1, fontSize: 12 }}
                   />
                   <button className="btn-primary" onClick={postComment} disabled={!commentText.trim()} style={{ fontSize: 12, padding: '5px 12px', whiteSpace: 'nowrap' }}>Post</button>

@@ -3,7 +3,7 @@ const { getSnapshot, deleteSnapshot } = require('../../../../lib/snapshot-store'
 const { logAudit } = require('../../../../lib/audit-log')
 
 export default async function handler(req, res) {
-  if (!requirePermission('snapshot:manage')(req, res)) return
+  if (!await requirePermission('snapshot:manage')(req, res)) return
 
   const { id } = req.query
 

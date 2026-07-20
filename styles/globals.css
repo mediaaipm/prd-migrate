@@ -1093,6 +1093,12 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .assignee-suggest-item.active,
 .assignee-suggest-item:hover { background: rgba(124,58,237,.1); color: var(--accent); }
 
+/* @mention autocomplete (comment/update inputs) */
+.mention-input-wrap { position: relative; flex: 1; }
+.mention-input-wrap .form-input { width: 100%; }
+.mention-suggest { left: 0; }
+.mention-suggest-handle { color: var(--muted); font-size: 12px; }
+
 /* Assignee badge on task row */
 .task-assignee-badge { color: #5b21b6; border-color: rgba(91,33,182,.25); background: rgba(124,58,237,.07); }
 

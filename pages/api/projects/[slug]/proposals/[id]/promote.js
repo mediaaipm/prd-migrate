@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { slug, id } = req.query;
   if (!await requireProjectAccess(slug, req, res)) return;
-  if (!requirePermission('proposal:promote')(req, res)) return;
+  if (!await requirePermission('proposal:promote', slug)(req, res)) return;
   const { bumpType } = req.body || {};
   const version = await promoteProposal(slug, id, bumpType || 'minor');
   if (!version) return res.status(404).json({ error: 'Proposal not found' });

@@ -4,8 +4,9 @@ const { recordTaskUpdate } = require('../../../../../../../lib/task-history-stor
 const { notifyTaskChange } = require('../../../../../../../lib/notification-store');
 const { requireAdmin } = require('../../../../../../../lib/require-admin');
 const { requireSuperAdmin } = require('../../../../../../../lib/require-superadmin');
-const { requireProjectAccess, hasPermission, isAssignee, assigneeStatusAllowed } = require('../../../../../../../lib/require-permission');
+const { requireProjectAccess, hasPermission, isAssignee, assigneeStatusAllowed, isPrivileged } = require('../../../../../../../lib/require-permission');
 const { getProject } = require('../../../../../../../lib/prd-store');
+const { getEffectiveRolePolicy, isStatusRestricted } = require('../../../../../../../lib/role-policy');
 
 export default async function handler(req, res) {
   const { slug, version, taskId } = req.query;
@@ -23,12 +24,20 @@ export default async function handler(req, res) {
     // Regular users may change ONLY the status of tasks they're on (subject to the
     // project ACL). Full edits require task:update — held by subadmins/superadmin.
     const statusOnly = Object.keys(updates).length > 0 && Object.keys(updates).every(k => k === 'status');
-    let allowed = hasPermission(req, 'task:update');
+    let allowed = await hasPermission(req, 'task:update', slug);
     if (!allowed && statusOnly && isAssignee(req, before)) {
       const project = await getProject(slug);
       allowed = assigneeStatusAllowed(project?.taskAcl, updates.status);
     }
     if (!allowed) return res.status(403).json({ error: 'Permission denied: task:update' });
+    // Per-project, superadmin-defined blocklist: regular users cannot move a task
+    // into these statuses. Admins/superadmin are exempt.
+    if ('status' in updates && !isPrivileged(req)) {
+      const { userRestrictedStatuses } = await getEffectiveRolePolicy(slug);
+      if (isStatusRestricted(userRestrictedStatuses, updates.status)) {
+        return res.status(403).json({ error: `Only an admin can move a task to "${updates.status}".` });
+      }
+    }
     // Changing a task's display id is an admin-level action.
     if ('seq' in updates && !requireAdmin(req, res)) return;
     // Flag/unflag the task for repeated delay reminders (see /api/cron/delayed-reminders).

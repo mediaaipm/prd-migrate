@@ -3,7 +3,7 @@ const { createSnapshot, listSnapshots } = require('../../../../lib/snapshot-stor
 const { logAudit } = require('../../../../lib/audit-log')
 
 export default async function handler(req, res) {
-  if (!requirePermission('snapshot:manage')(req, res)) return
+  if (!await requirePermission('snapshot:manage')(req, res)) return
 
   if (req.method === 'GET') {
     const snapshots = await listSnapshots()

@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    if (!requirePermission('assignee:manage')(req, res)) return
+    if (!await requirePermission('assignee:manage')(req, res)) return
     const { name, username, password } = req.body || {}
     if (!name || !name.trim()) return res.status(400).json({ error: 'name required' })
     const trimName = name.trim()

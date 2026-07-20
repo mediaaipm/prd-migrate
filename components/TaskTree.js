@@ -374,8 +374,13 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
   const canDelete = isSuperAdmin(currentUser) // superadmin only, by policy
   // Regular users (assignees) may still change the status of their own tasks.
   const canChangeStatus = canEdit || isMine
+  // Global superadmin blocklist: statuses a regular user may never set (any project).
+  // Admins/superadmin are exempt. Mirrors the server check in the task update route.
+  const isPriv = !!currentUser?.isAdmin
+  const restrictedStatuses = new Set(currentUser?.restrictedStatuses || [])
   // Project ACL: which statuses a non-admin assignee may set (task:update unrestricted).
   const statusAllowed = status => {
+    if (!isPriv && restrictedStatuses.has(status)) return false
     if (canEdit) return true
     if (taskAcl?.assigneeCanChangeStatus === false) return false
     const list = taskAcl?.assigneeStatuses
@@ -937,6 +942,8 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
           taskAssignees.some(a => a.toLowerCase().includes(q)) ||
           (Array.isArray(t.updates) && t.updates.some(u => Array.isArray(u.mentions) && u.mentions.some(m => (m || '').toLowerCase().includes(q)))) ||
           (t.id || '').toString().toLowerCase().includes(q) ||
+          (t.seq != null && t.seq.toString() === q) ||
+          (t.seq != null && taskLabel(t).toLowerCase().includes(q)) ||
           (t.number || '').toString().includes(q) ||
           (t.autoNumber || '').toString().includes(q) ||
           (t.numberOverride || '').toString().includes(q)

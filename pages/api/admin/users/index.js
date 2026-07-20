@@ -4,6 +4,7 @@ function getKv() { if (!_kv) _kv = new Redis({ url: process.env.UPSTASH_REDIS_RE
 const { logAudit } = require('../../../../lib/audit-log')
 const { requireSuperAdmin } = require('../../../../lib/require-superadmin')
 const { ALL_PERMISSIONS } = require('../../../../lib/permissions')
+const { getGlobalRolePolicy } = require('../../../../lib/role-policy')
 
 export default async function handler(req, res) {
   if (!requireSuperAdmin(req, res)) return
@@ -40,7 +41,8 @@ export default async function handler(req, res) {
     if (!username || !username.trim()) return res.status(400).json({ error: 'username required' })
     if (!password) return res.status(400).json({ error: 'password required' })
     const trimName = name.trim()
-    const perms = Array.isArray(permissions) ? permissions : ALL_PERMISSIONS
+    // Explicit list wins; otherwise seed from the global admin role policy.
+    const perms = Array.isArray(permissions) ? permissions : (await getGlobalRolePolicy()).admin
     const { assignedProjects } = req.body || {}
     await getKv().sadd('assignees', trimName)
     await getKv().hset(`user:${trimName}`, {

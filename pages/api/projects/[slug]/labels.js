@@ -10,20 +10,20 @@ export default async function handler(req, res) {
     return res.status(200).json(await listLabels(slug))
   }
   if (req.method === 'POST') {
-    if (!requirePermission('task:update')(req, res)) return
+    if (!await requirePermission('task:update', slug)(req, res)) return
     const { name, color } = req.body || {}
     const label = await createLabel(slug, name, color)
     await logAudit(req, 'create_label', 'label', { slug, name: label.name })
     return res.status(201).json(label)
   }
   if (req.method === 'PUT') {
-    if (!requirePermission('task:update')(req, res)) return
+    if (!await requirePermission('task:update', slug)(req, res)) return
     const label = await updateLabel(slug, id, req.body || {})
     if (!label) return res.status(404).json({ error: 'Not found' })
     return res.status(200).json(label)
   }
   if (req.method === 'DELETE') {
-    if (!requirePermission('task:update')(req, res)) return
+    if (!await requirePermission('task:update', slug)(req, res)) return
     const ok = await deleteLabel(slug, id)
     if (!ok) return res.status(404).json({ error: 'Not found' })
     await logAudit(req, 'delete_label', 'label', { slug, id })

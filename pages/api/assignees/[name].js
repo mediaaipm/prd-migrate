@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   const { name } = req.query
 
   if (req.method === 'DELETE') {
-    if (!requirePermission('assignee:manage')(req, res)) return
+    if (!await requirePermission('assignee:manage')(req, res)) return
     await getKv().srem(KEY, name)
     await getKv().del(`user:${name}`)
     await logAudit(req, 'delete_user', 'user', { name })

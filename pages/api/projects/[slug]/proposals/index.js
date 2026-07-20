@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     return res.status(200).json(await listProposals(slug));
   }
   if (req.method === 'POST') {
-    if (!requirePermission('proposal:create')(req, res)) return;
+    if (!await requirePermission('proposal:create', slug)(req, res)) return;
     const { title, description, content, assignee, startDate, dueDate } = req.body || {};
     if (!title) return res.status(400).json({ error: 'title is required' });
     const proposal = await createProposal(slug, title, description, content, assignee, startDate, dueDate);

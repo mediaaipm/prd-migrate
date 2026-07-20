@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     return res.status(200).json(all);
   }
   if (req.method === 'POST') {
-    if (!requirePermission('project:create')(req, res)) return;
+    if (!await requirePermission('project:create')(req, res)) return;
     const { name, description, status, priority, members, taskPrefix, taskSeqStart } = req.body || {};
     if (!name) return res.status(400).json({ error: 'name is required' });
     const project = await createProject(name, description, { status, priority, members, taskPrefix, taskSeqStart });

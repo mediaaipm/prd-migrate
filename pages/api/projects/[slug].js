@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     return res.status(200).json(project);
   }
   if (req.method === 'PUT') {
-    if (!requirePermission('project:update')(req, res)) return;
+    if (!await requirePermission('project:update', slug)(req, res)) return;
     const { name, description, status, priority, members, taskAcl, taskPrefix, taskSeqStart } = req.body || {};
     const project = await updateProject(slug, { name, description, status, priority, members, taskAcl, taskPrefix, taskSeqStart });
     if (!project) return res.status(404).json({ error: 'Project not found' });

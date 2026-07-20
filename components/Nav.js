@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import Image from 'next/image'
 import { apiFetch } from '../lib/api-fetch'
+import { isSuperAdmin } from '../lib/client-permissions'
 import { enqueue } from '../lib/submit-queue'
 import { useQueueState, LEAVE_WARNING } from '../lib/use-submit-queue'
 
@@ -31,7 +32,7 @@ export default function Nav() {
     try {
       const raw = localStorage.getItem('ss_auth')
       if (!raw) return
-      if (raw === '1') setCurrentUser({ name: 'Admin', username: 'admin' })
+      if (raw === '1') setCurrentUser({ name: 'Admin', username: 'admin', isAdmin: true, role: 'superadmin' })
       else setCurrentUser(JSON.parse(raw))
     } catch {}
   }, [])
@@ -104,6 +105,9 @@ export default function Nav() {
         </Link>
       )}
       <Link href="/admin" className={`nav-link${pathname === '/admin' ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>Admin</Link>
+      {isSuperAdmin(currentUser) && (
+        <Link href="/settings/roles" className={`nav-link${pathname === '/settings/roles' ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>Access Control</Link>
+      )}
       <div className="nav-notif">
         <button className="nav-notif-bell" onClick={() => setShowNotifs(v => !v)} title="Notifications" aria-label="Notifications">
           🔔

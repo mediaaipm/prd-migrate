@@ -293,7 +293,11 @@
       "PowerShell($p = \"$env:LOCALAPPDATA\\\\uv\\\\tools\\\\graphifyy\\\\Scripts\\\\python.exe\"; if\\(Test-Path $p\\){ & $p -m graphify --help 2>&1 | Select-Object -First 40 } else { Write-Output \"no venv python at $p\"; Get-ChildItem \"$env:LOCALAPPDATA\\\\uv\\\\tools\\\\graphifyy\" -ErrorAction SilentlyContinue })",
       "PowerShell(Get-ChildItem *)",
       "PowerShell(npx next lint --dir components 2>&1)",
-      "PowerShell(graphify update . 2>&1)"
+      "PowerShell(graphify update . 2>&1)",
+      "Bash(curl -s -o /dev/null -w \"GET /api/projects -> %{http_code}\\\\n\" http://localhost:3000/api/projects -H 'X-User: {\"name\":\"Admin\",\"username\":\"admin\",\"isAdmin\":true,\"role\":\"superadmin\"}' --max-time 5)",
+      "Bash(curl -s -o /dev/null -w \"PUT role-policy -> %{http_code}\\\\n\" -X PUT http://localhost:3000/api/admin/role-policy -H 'Content-Type: application/json' -H 'X-User: {\"name\":\"Admin\",\"username\":\"admin\",\"isAdmin\":true,\"role\":\"superadmin\"}' -d '{\"user\":[],\"admin\":[]}' --max-time 8)",
+      "Bash(netstat -ano)",
+      "Bash(tasklist)"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects",

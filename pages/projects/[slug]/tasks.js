@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import Nav from '../../../components/Nav'
@@ -559,6 +559,7 @@ export default function TasksPage({ currentUser }) {
   const { slug, version, task: focusTaskId } = router.query
 
   const [projectName, setProjectName] = useState('')
+  const [access, setAccess] = useState(null)
   const [taskAcl, setTaskAcl] = useState(null)
   const [taskPrefix, setTaskPrefix] = useState('')
   const [taskSeqStart, setTaskSeqStart] = useState(1)
@@ -649,6 +650,33 @@ export default function TasksPage({ currentUser }) {
         }
       })
   }, [router.isReady, slug])
+
+  // This project's effective role policy (per-project overrides fold in here).
+  useEffect(() => {
+    if (!router.isReady || !slug) return
+    apiFetch(`/api/projects/${slug}/access`)
+      .then(r => r.ok ? r.json() : null)
+      .then(a => setAccess(a))
+      .catch(() => {})
+  }, [router.isReady, slug])
+
+  // The session user carries global-default perms; overlay this project's policy so
+  // the board/list only offer what the server will accept here. Superadmin is
+  // unaffected (hasPerm short-circuits on role). Admins are capped by the project's
+  // admin policy; viewers use the project's user policy + status blocklist.
+  const scopedUser = useMemo(() => {
+    if (!currentUser || !access) return currentUser
+    if (currentUser.role === 'superadmin' || (currentUser.isAdmin && !currentUser.role)) return currentUser
+    const u = { ...currentUser }
+    if (currentUser.role === 'admin') {
+      const personal = Array.isArray(currentUser.permissions) ? currentUser.permissions : []
+      u.permissions = personal.filter(p => (access.admin || []).includes(p))
+    } else {
+      u.viewerPerms = access.user || []
+    }
+    u.restrictedStatuses = access.userRestrictedStatuses || []
+    return u
+  }, [currentUser, access])
 
   useEffect(() => {
     if (!router.isReady) return
@@ -872,11 +900,11 @@ export default function TasksPage({ currentUser }) {
             </div>
           </div>
           {loading ? <TaskSkeleton /> : viewMode === 'kanban' ? (
-            <KanbanBoard key={apiBase} tasks={tasks} apiBase={apiBase} slug={slug} currentUser={currentUser} taskAcl={taskAcl} onAclChange={setTaskAcl} taskPrefix={taskPrefix} onPrefixChange={setTaskPrefix} taskSeqStart={taskSeqStart} onSeqStartChange={setTaskSeqStart} focusTaskId={focusTaskId} />
+            <KanbanBoard key={apiBase} tasks={tasks} apiBase={apiBase} slug={slug} currentUser={scopedUser} taskAcl={taskAcl} onAclChange={setTaskAcl} taskPrefix={taskPrefix} onPrefixChange={setTaskPrefix} taskSeqStart={taskSeqStart} onSeqStartChange={setTaskSeqStart} focusTaskId={focusTaskId} />
           ) : viewMode === 'calendar' ? (
-            <CalendarView tasks={tasks} apiBase={apiBase} slug={slug} currentUser={currentUser} />
+            <CalendarView tasks={tasks} apiBase={apiBase} slug={slug} currentUser={scopedUser} />
           ) : (
-            <TaskTree tasks={tasks} apiBase={apiBase} slug={slug} onRefresh={refreshTasks} currentUser={currentUser} taskAcl={taskAcl} taskPrefix={taskPrefix} focusTaskId={focusTaskId} />
+            <TaskTree tasks={tasks} apiBase={apiBase} slug={slug} onRefresh={refreshTasks} currentUser={scopedUser} taskAcl={taskAcl} taskPrefix={taskPrefix} focusTaskId={focusTaskId} />
           )}
         </div>
 
