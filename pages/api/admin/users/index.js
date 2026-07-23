@@ -5,6 +5,7 @@ const { logAudit } = require('../../../../lib/audit-log')
 const { requireSuperAdmin } = require('../../../../lib/require-superadmin')
 const { ALL_PERMISSIONS } = require('../../../../lib/permissions')
 const { getGlobalRolePolicy } = require('../../../../lib/role-policy')
+const { hashPassword } = require('../../../../lib/password')
 
 export default async function handler(req, res) {
   if (!requireSuperAdmin(req, res)) return
@@ -47,7 +48,7 @@ export default async function handler(req, res) {
     await getKv().sadd('assignees', trimName)
     await getKv().hset(`user:${trimName}`, {
       username: username.trim(),
-      password,
+      password: hashPassword(password),
       role: 'admin',
       permissions: JSON.stringify(perms),
       assignedProjects: JSON.stringify(Array.isArray(assignedProjects) ? assignedProjects : null),

@@ -14,12 +14,14 @@ function LoginScreen({ onLogin }) {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: form.username, password: form.password, selectedName }),
       })
       const data = await res.json()
       if (res.ok && data.ok) {
-        localStorage.setItem('ss_auth', JSON.stringify(data.user))
+        // The session cookie is already set by the response; onLogin caches the
+        // profile for display.
         onLogin(data.user)
       } else if (res.ok && data.chooseAccount) {
         setAccountOptions(data.options)
@@ -117,24 +119,40 @@ export default function App({ Component, pageProps }) {
   const [authed, setAuthed] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
 
+  // The session lives in an HttpOnly cookie the page cannot read, so the server is
+  // asked who we are. `ss_auth` survives only as a display cache for components
+  // that read the current user synchronously (Nav, permission-gated UI) — it is
+  // never proof of anything, and gets rewritten from the server's answer.
   useEffect(() => {
-    const raw = localStorage.getItem('ss_auth')
-    if (!raw) { setAuthed(false); return }
-    // Support legacy '1' value from old sessions
-    if (raw === '1') {
-      setCurrentUser({ name: 'Admin', username: 'admin', isAdmin: true, role: 'superadmin' })
-      setAuthed(true)
-    } else {
-      try {
-        setCurrentUser(JSON.parse(raw))
-        setAuthed(true)
-      } catch {
+    let alive = true
+    fetch('/api/auth/me', { credentials: 'same-origin' })
+      .then(async res => {
+        if (!alive) return
+        if (res.ok) {
+          const data = await res.json()
+          try { localStorage.setItem('ss_auth', JSON.stringify(data.user)) } catch {}
+          setCurrentUser(data.user)
+          setAuthed(true)
+        } else {
+          try { localStorage.removeItem('ss_auth') } catch {}
+          setAuthed(false)
+        }
+      })
+      .catch(() => {
+        // Network failure, not a rejected session — keep any cached profile so a
+        // blip doesn't bounce the user to the login screen. Writes still 401.
+        if (!alive) return
+        try {
+          const raw = localStorage.getItem('ss_auth')
+          if (raw && raw !== '1') { setCurrentUser(JSON.parse(raw)); setAuthed(true); return }
+        } catch {}
         setAuthed(false)
-      }
-    }
+      })
+    return () => { alive = false }
   }, [])
 
   function handleLogin(user) {
+    try { localStorage.setItem('ss_auth', JSON.stringify(user)) } catch {}
     setCurrentUser(user)
     setAuthed(true)
   }

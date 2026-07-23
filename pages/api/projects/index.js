@@ -4,12 +4,14 @@ function getKv() { if (!_kv) _kv = new Redis({ url: process.env.UPSTASH_REDIS_RE
 const { listProjects, createProject } = require('../../../lib/prd-store');
 const { logAudit } = require('../../../lib/audit-log');
 const { requirePermission } = require('../../../lib/require-permission');
+const { getSessionUser } = require('../../../lib/session');
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
+    const user = getSessionUser(req)
+    if (!user) return res.status(401).json({ error: 'Not signed in.' })
     const all = await listProjects();
     try {
-      const user = JSON.parse(req.headers['x-user'] || '{}')
       if (user.role === 'admin') {
         const profile = await getKv().hgetall('user:' + user.name) || {}
         let assigned = profile.assignedProjects

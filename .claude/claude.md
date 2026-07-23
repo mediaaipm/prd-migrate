@@ -19,7 +19,7 @@ Next.js (pages router) + Upstash Redis. Product requirements & task management t
 - Frontend: Next.js, React, vanilla CSS (`styles/globals.css`)
 - Backend: Next.js API routes (`pages/api/`)
 - Store: Upstash Redis via `lib/prd-store.js`
-- Auth: session cookie, roles: `viewer` / `admin` / `superAdmin`
+- Auth: HMAC-signed HttpOnly session cookie (`prd_session`), roles: `viewer` / `admin` / `superAdmin`. Passwords stored as scrypt hashes.
 
 **Key entities:**
 - **Project**: `{ slug, name, description, status, priority, members[], createdAt, latestVersion, pendingProposals }`
@@ -35,7 +35,10 @@ Next.js (pages router) + Upstash Redis. Product requirements & task management t
 | Path | Purpose |
 |------|---------|
 | `lib/prd-store.js` | All Redis CRUD — single source of truth |
-| `lib/api-fetch.js` | Client-side fetch wrapper (adds auth headers) |
+| `lib/session.js` | Signed session cookie — **the only** source of request identity |
+| `lib/password.js` | scrypt hash/verify (accepts legacy plaintext, flags for re-hash) |
+| `lib/login-rate-limit.js` | Per-username + per-IP login throttle |
+| `lib/api-fetch.js` | Client-side fetch wrapper (session rides on the cookie) |
 | `lib/require-permission.js` | `requirePermission(perm)` middleware |
 | `lib/require-superadmin.js` | Super-admin gate |
 | `pages/api/projects/` | REST: projects, versions, tasks, proposals, sprints |
@@ -52,7 +55,9 @@ Next.js (pages router) + Upstash Redis. Product requirements & task management t
 ## Code Conventions
 
 - API routes: use `requirePermission` or `requireSuperAdmin` before mutations
-- Client fetches: always use `apiFetch`, not raw `fetch` (adds auth)
+- Never read identity from a request header. `getSessionUser(req)` from `lib/session.js` is the only entry point
+- Never store a password without `hashPassword()`
+- Client fetches: always use `apiFetch`, not raw `fetch`
 - Redis keys: `project:{slug}`, `task:{slug}:{id}`, `version:{slug}:{ver}`, `sprint:{slug}:{id}`
 - Tasks are flat in Redis; `buildTree()` in TaskTree constructs hierarchy client-side
 - Slug = lowercased kebab-case project name (immutable after creation)
@@ -72,7 +77,12 @@ npm run build   # production build
 npm run start   # production server
 ```
 
-Env vars needed: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+Env vars: see `.env.example`. Required — `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `AUTH_SECRET`, `SUPERADMIN_PASSWORD_HASH`.
+
+```bash
+node scripts/set-superadmin.js '<password>'   # prints AUTH_SECRET + password hash
+node scripts/hash-passwords.js --dry-run      # migrate plaintext passwords in Redis
+```
 
 ---
 

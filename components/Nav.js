@@ -82,9 +82,9 @@ export default function Nav() {
     setShowNotifs(false)
   }, [pathname])
 
-  // Not queued, and blocked while the queue is draining: signing out clears `ss_auth`,
-  // which is where apiFetch reads the X-User header from. Every queued write would then
-  // be sent unauthenticated, get a 403, and park.
+  // Not queued, and blocked while the queue is draining: signing out clears the
+  // session cookie, so every queued write would then be sent unauthenticated, get
+  // a 401, and park.
   async function handleSignOut() {
     if (pending > 0) {
       alert(LEAVE_WARNING)

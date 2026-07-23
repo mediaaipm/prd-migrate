@@ -5,6 +5,8 @@ const { logAudit } = require('../../../lib/audit-log')
 const { requirePermission } = require('../../../lib/require-permission')
 const { requireSuperAdmin } = require('../../../lib/require-superadmin')
 const { renameUser, RenameError } = require('../../../lib/rename-user')
+const { hashPassword } = require('../../../lib/password')
+const { getSessionUser } = require('../../../lib/session')
 
 const KEY = 'assignees'
 
@@ -38,10 +40,17 @@ export default async function handler(req, res) {
       }
     }
 
+    // This branch rewrites credentials, so it needs its own gate — the rename check
+    // above only covers requests that carry a newName. Without this, any signed-in
+    // user could set anyone's password, including a superadmin's.
+    const session = getSessionUser(req) || {}
+    if (session.name !== name && !await requirePermission('assignee:manage')(req, res)) return
+
     const existing = await getKv().hgetall(`user:${name}`) || {}
     await getKv().hset(`user:${name}`, {
       username: username !== undefined ? username.trim() : (existing.username || ''),
-      password: password !== undefined && password !== '' ? password : (existing.password || ''),
+      // A blank field means "keep current"; anything else is hashed before storage.
+      password: password !== undefined && password !== '' ? hashPassword(password) : (existing.password || ''),
     })
     await logAudit(req, 'update_user_credentials', 'user', { name, changedFields: [username !== undefined && 'username', password ? 'password' : null].filter(Boolean) })
     return res.json({ ok: true })

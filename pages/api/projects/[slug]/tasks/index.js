@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     if (!title) return res.status(400).json({ error: 'title is required' });
     // Prefer a name the creator typed in the form; fall back to the logged-in user.
     let assignedBy = (req.body && typeof req.body.assignedBy === 'string' && req.body.assignedBy.trim()) || null;
-    if (!assignedBy) { try { assignedBy = (JSON.parse(req.headers['x-user'] || '{}').name) || null; } catch {} }
+    if (!assignedBy) assignedBy = getAuditUser(req)?.name || null;
     let task;
     try {
       task = await createTask(slug, v, { id, title, description, status, priority, assignee, assignees, assignedBy, startDate, dueDate, parentId, numberOverride, attachments, cover, labelIds });

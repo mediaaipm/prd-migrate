@@ -3,11 +3,14 @@ let _kv;
 function getKv() { if (!_kv) _kv = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN }); return _kv; }
 const { logAudit } = require('../../../lib/audit-log')
 const { requirePermission } = require('../../../lib/require-permission')
+const { hashPassword } = require('../../../lib/password')
+const { getSessionUser } = require('../../../lib/session')
 
 const KEY = 'assignees'
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
+    if (!getSessionUser(req)) return res.status(401).json({ error: 'Not signed in.' })
     const members = await getKv().smembers(KEY)
     const names = (members || []).sort()
     const profiles = await Promise.all(names.map(async name => {
@@ -25,7 +28,7 @@ export default async function handler(req, res) {
     await getKv().sadd(KEY, trimName)
     await getKv().hset(`user:${trimName}`, {
       username: username?.trim() || '',
-      password: password || '',
+      password: password ? hashPassword(password) : '',
     })
     await logAudit(req, 'create_user', 'user', { name: trimName })
     return res.status(201).json({ name: trimName })

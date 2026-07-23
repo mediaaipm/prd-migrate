@@ -306,7 +306,12 @@
       "Bash(cp c:/PRD_Manager/lib/api-fetch.js ./api-fetch.mjs)",
       "Bash(sed -i \"s|from './api-fetch'|from './api-fetch.mjs'|\" submit-queue.mjs)",
       "PowerShell(node \"C:\\\\Users\\\\hardik\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--PRD-Manager\\\\132f0156-8735-402a-9236-46a0de6478b2\\\\scratchpad\\\\queue-sim.mjs\"; \"exit=$LASTEXITCODE\")",
-      "Bash(node \"C:/Users/hardik/AppData/Local/Temp/claude/c--PRD-Manager/132f0156-8735-402a-9236-46a0de6478b2/scratchpad/queue-sim-old.mjs\")"
+      "Bash(node \"C:/Users/hardik/AppData/Local/Temp/claude/c--PRD-Manager/132f0156-8735-402a-9236-46a0de6478b2/scratchpad/queue-sim-old.mjs\")",
+      "Bash(xargs ls -la)",
+      "Bash(awk '{print $5, $9}')",
+      "Bash(xargs wc -l)",
+      "Bash(AUTH_SECRET=test-secret-that-is-long-enough node -e ' *)",
+      "Bash(echo \"---exit:$?\")"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects",

@@ -5,6 +5,7 @@ const { logAudit } = require('../../../../lib/audit-log')
 const { requireSuperAdmin } = require('../../../../lib/require-superadmin')
 const { ALL_PERMISSIONS } = require('../../../../lib/permissions')
 const { renameUser, RenameError } = require('../../../../lib/rename-user')
+const { hashPassword } = require('../../../../lib/password')
 
 function existingPerms(profile) {
   if (!profile.permissions) return ALL_PERMISSIONS
@@ -48,7 +49,8 @@ export default async function handler(req, res) {
       : (existing.assignedProjects || 'null')
     await getKv().hset(`user:${target}`, {
       username: username !== undefined ? username.trim() : (existing.username || ''),
-      password: password && password !== '' ? password : (existing.password || ''),
+      // A blank field means "keep current"; anything else is hashed before storage.
+      password: password && password !== '' ? hashPassword(password) : (existing.password || ''),
       // Preserve superadmin; editing a superadmin must not silently demote them.
       role: existing.role === 'superadmin' ? 'superadmin' : 'admin',
       permissions: JSON.stringify(perms),
