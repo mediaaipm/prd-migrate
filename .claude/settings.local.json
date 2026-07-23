@@ -297,7 +297,16 @@
       "Bash(curl -s -o /dev/null -w \"GET /api/projects -> %{http_code}\\\\n\" http://localhost:3000/api/projects -H 'X-User: {\"name\":\"Admin\",\"username\":\"admin\",\"isAdmin\":true,\"role\":\"superadmin\"}' --max-time 5)",
       "Bash(curl -s -o /dev/null -w \"PUT role-policy -> %{http_code}\\\\n\" -X PUT http://localhost:3000/api/admin/role-policy -H 'Content-Type: application/json' -H 'X-User: {\"name\":\"Admin\",\"username\":\"admin\",\"isAdmin\":true,\"role\":\"superadmin\"}' -d '{\"user\":[],\"admin\":[]}' --max-time 8)",
       "Bash(netstat -ano)",
-      "Bash(tasklist)"
+      "Bash(tasklist)",
+      "PowerShell(node \"C:\\\\Users\\\\hardik\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--PRD-Manager\\\\132f0156-8735-402a-9236-46a0de6478b2\\\\scratchpad\\\\lock-check.js\")",
+      "PowerShell(node \"C:\\\\Users\\\\hardik\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--PRD-Manager\\\\132f0156-8735-402a-9236-46a0de6478b2\\\\scratchpad\\\\concurrent-create.js\")",
+      "PowerShell(node \"C:\\\\Users\\\\hardik\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--PRD-Manager\\\\132f0156-8735-402a-9236-46a0de6478b2\\\\scratchpad\\\\control-unlocked.js\")",
+      "Bash(python -)",
+      "Bash(cp c:/PRD_Manager/lib/submit-queue.js ./submit-queue.mjs)",
+      "Bash(cp c:/PRD_Manager/lib/api-fetch.js ./api-fetch.mjs)",
+      "Bash(sed -i \"s|from './api-fetch'|from './api-fetch.mjs'|\" submit-queue.mjs)",
+      "PowerShell(node \"C:\\\\Users\\\\hardik\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--PRD-Manager\\\\132f0156-8735-402a-9236-46a0de6478b2\\\\scratchpad\\\\queue-sim.mjs\"; \"exit=$LASTEXITCODE\")",
+      "Bash(node \"C:/Users/hardik/AppData/Local/Temp/claude/c--PRD-Manager/132f0156-8735-402a-9236-46a0de6478b2/scratchpad/queue-sim-old.mjs\")"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects",

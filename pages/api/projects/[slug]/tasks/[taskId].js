@@ -8,6 +8,17 @@ const { getProject } = require('../../../../../lib/prd-store');
 const { getEffectiveRolePolicy, isStatusRestricted } = require('../../../../../lib/role-policy');
 
 export default async function handler(req, res) {
+  try {
+    return await route(req, res);
+  } catch (e) {
+    // Contended task-list lock. 503 is transient for the client write queue, so the
+    // mutation is replayed instead of being dropped.
+    if (e && e.code === 'TASK_LOCK') return res.status(503).json({ error: e.message });
+    throw e;
+  }
+}
+
+async function route(req, res) {
   const { slug, taskId, version } = req.query;
   if (!await requireProjectAccess(slug, req, res)) return;
   const v = version || null;

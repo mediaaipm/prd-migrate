@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import Nav from '../../../components/Nav'
@@ -98,8 +98,8 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
   const sprints = useOptimistic(serverSprints, { entity: 'sprint', scope: `/api/projects/${slug}/sprint` })
 
   const loadSprints = useCallback(() => {
-    if (!slug) return
-    apiFetch(`/api/projects/${slug}/sprint`)
+    if (!slug) return Promise.resolve()
+    return apiFetch(`/api/projects/${slug}/sprint`)
       .then(r => r.ok ? r.json() : [])
       .then(data => { setServerSprints(Array.isArray(data) ? data : []); setLoadingS(false) })
       .catch(() => setLoadingS(false))
@@ -107,7 +107,7 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
 
   useEffect(() => { loadSprints() }, [loadSprints])
   useEffect(() => onSync(item => {
-    if (item.optimistic?.entity === 'sprint') loadSprints()
+    if (item.optimistic?.entity === 'sprint') return loadSprints()
   }), [loadSprints])
   useEffect(() => { if (refreshTrigger > 0) loadSprints() }, [refreshTrigger]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -592,15 +592,29 @@ export default function TasksPage({ currentUser }) {
   // its POST is still in flight.
   const tasks = useOptimistic(serverTasks, { entity: 'task', scope: apiBase, cascade: true })
 
+  // Refetches fire from several places at once (initial load, every queue sync, sprint
+  // changes). Responses can land out of order, so an older one must never overwrite a
+  // newer list — that is how a just-created task disappears again after saving.
+  const loadSeq = useRef(0)
+
+  // Returns the in-flight promise: onSync awaits it, so a synced write stays on the
+  // optimistic overlay until the refreshed server data is actually in state.
   const loadTasks = useCallback((opts = {}) => {
-    if (!apiBase) return
+    if (!apiBase) return Promise.resolve()
     // Skeleton only on initial load. Background refreshes (status change, drag,
     // reorder) keep the board mounted to avoid a whole-page flicker.
     if (!opts.background) setLoading(true)
-    fetch(apiBase)
-      .then(r => r.ok ? r.json() : [])
-      .then(data => { setServerTasks(data); setLoading(false); setSprintRefreshTrigger(n => n + 1) })
-      .catch(() => setLoading(false))
+    const seq = ++loadSeq.current
+    return apiFetch(apiBase)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (seq !== loadSeq.current) return // a newer fetch already answered
+        // A failed GET means "unknown", not "empty" — keep what we have rather than
+        // blanking the list.
+        if (Array.isArray(data)) { setServerTasks(data); setSprintRefreshTrigger(n => n + 1) }
+        setLoading(false)
+      })
+      .catch(() => { if (seq === loadSeq.current) setLoading(false) })
   }, [apiBase])
 
   const refreshTasks = useCallback(() => loadTasks({ background: true }), [loadTasks])
@@ -614,7 +628,8 @@ export default function TasksPage({ currentUser }) {
     const scoped = item.optimistic
       ? item.optimistic.entity === 'task' && item.optimistic.scope === apiBase
       : typeof item.url === 'string' && item.url.startsWith(apiBase)
-    if (scoped) refreshTasks()
+    // Returned so the queue holds the item until this refetch has landed.
+    if (scoped) return refreshTasks()
   }), [apiBase, refreshTasks])
 
   function openIdSettings() {

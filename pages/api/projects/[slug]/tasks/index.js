@@ -18,7 +18,15 @@ export default async function handler(req, res) {
     // Prefer a name the creator typed in the form; fall back to the logged-in user.
     let assignedBy = (req.body && typeof req.body.assignedBy === 'string' && req.body.assignedBy.trim()) || null;
     if (!assignedBy) { try { assignedBy = (JSON.parse(req.headers['x-user'] || '{}').name) || null; } catch {} }
-    const task = await createTask(slug, v, { id, title, description, status, priority, assignee, assignees, assignedBy, startDate, dueDate, parentId, numberOverride, attachments, cover, labelIds });
+    let task;
+    try {
+      task = await createTask(slug, v, { id, title, description, status, priority, assignee, assignees, assignedBy, startDate, dueDate, parentId, numberOverride, attachments, cover, labelIds });
+    } catch (e) {
+      // Someone else is mid-write on this list. 503 keeps the item in the client's
+      // write queue, which replays it — never a silent loss.
+      if (e && e.code === 'TASK_LOCK') return res.status(503).json({ error: e.message });
+      throw e;
+    }
     // A replay of a create we already committed — the audit and history entries exist.
     if (!task[REPLAYED]) {
       await Promise.all([

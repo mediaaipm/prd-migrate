@@ -411,7 +411,7 @@ function AdminsTab() {
   // Pull the authoritative record once a queued admin write lands. Password saves
   // carry no descriptor, so fall back to matching the URL.
   useEffect(() => onSync(item => {
-    if (item.optimistic?.entity === 'admin' || (!item.optimistic && item.url.startsWith('/api/admin/users'))) fetchAdmins()
+    if (item.optimistic?.entity === 'admin' || (!item.optimistic && item.url.startsWith('/api/admin/users'))) return fetchAdmins()
   }), [])
 
   async function fetchAdmins() {
@@ -828,7 +828,7 @@ function Snapshots() {
   useEffect(() => { fetchSnapshots() }, [])
 
   useEffect(() => onSync(item => {
-    if (item.optimistic?.entity === 'snapshot') fetchSnapshots()
+    if (item.optimistic?.entity === 'snapshot') return fetchSnapshots()
   }), [])
 
   async function fetchSnapshots() {
@@ -985,7 +985,7 @@ export default function AdminPage({ currentUser }) {
   useEffect(() => { fetchUsers() }, [])
 
   useEffect(() => onSync(item => {
-    if (item.optimistic?.entity === 'user') fetchUsers()
+    if (item.optimistic?.entity === 'user') return fetchUsers()
   }), [])
 
   async function fetchUsers() {

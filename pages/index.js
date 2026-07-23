@@ -31,7 +31,7 @@ export default function Home({ currentUser }) {
 
   // Pull the authoritative record once the server has it (createdAt, latestVersion).
   useEffect(() => onSync(item => {
-    if (item.optimistic?.entity === 'project') fetchProjects()
+    if (item.optimistic?.entity === 'project') return fetchProjects()
   }), [])
 
   async function fetchProjects() {
