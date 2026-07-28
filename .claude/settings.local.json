@@ -327,7 +327,10 @@
       "PowerShell(\"--- .vercel ---\")",
       "PowerShell(cd C:\\\\PRD_Manager; npm run build 2>&1 | Select-String -Pattern \"error|Error|Failed|failed|warn\" | Select-Object -First 20; \"--- exit: $LASTEXITCODE ---\")",
       "PowerShell(cd C:\\\\PRD_Manager; npm run build 2>&1 | Select-String -Pattern \"Error|error|Failed|failed\" | Select-Object -First 15; \"--- exit: $LASTEXITCODE ---\"; git status --short)",
-      "PowerShell(cd C:\\\\PRD_Manager; npm run build 2>&1 | Select-String -Pattern \"Error|error|Failed|failed\" | Select-Object -First 10; \"--- exit: $LASTEXITCODE ---\")"
+      "PowerShell(cd C:\\\\PRD_Manager; npm run build 2>&1 | Select-String -Pattern \"Error|error|Failed|failed\" | Select-Object -First 10; \"--- exit: $LASTEXITCODE ---\")",
+      "Bash(curl -s -i -X POST https://aipm-tasks.vercel.app/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"__probe_nonexistent__\",\"password\":\"x\"}')",
+      "Bash(curl -s -o /dev/null -w \"home %{http_code}\\\\n\" https://aipm-tasks.vercel.app/)",
+      "Bash(curl -s -i -X POST https://aipm-tasks.vercel.app/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"__probe2__\",\"password\":\"x\"}')"
     ],
     "additionalDirectories": [
       "c:\\HVWork\\PRD_Manager\\pages\\projects",
