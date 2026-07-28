@@ -1,5 +1,6 @@
 import { getProject } from '../../../../lib/prd-store'
 import { createTask } from '../../../../lib/task-store'
+import { requirePermission, requireProjectAccess } from '../../../../lib/require-permission'
 
 function parseCSVLine(line) {
   const result = []
@@ -24,6 +25,12 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
 
   const { slug, version } = req.query
+
+  // Same hole export.js had, on the write side: anyone who could guess a slug could
+  // bulk-create tasks in that project. Gated like POST /tasks.
+  if (!await requireProjectAccess(slug, req, res)) return
+  if (!await requirePermission('task:create', slug)(req, res)) return
+
   const project = await getProject(slug)
   if (!project) return res.status(404).json({ error: 'Project not found' })
 
