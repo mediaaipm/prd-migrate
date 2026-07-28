@@ -124,6 +124,79 @@ Available at `/admin` (admin users only):
 
 ---
 
+## Storage: keys, attachments, and retention
+
+Everything lives in one Upstash Redis store. There is no blob storage — task
+attachments are held inline on the task record as base64 data URLs.
+
+### Key families
+
+| Key | Contents | Bounded by | Cleaned up by |
+|---|---|---|---|
+| `project:{slug}` | project metadata | — | project delete |
+| `tasks:{slug}:{version\|__root}` | the whole task list for one version, **including attachment bytes** | 1 MB/attachment, 20/task | task delete |
+| `version:{slug}:{ver}` | markdown | — | version delete |
+| `sprint:{slug}:{id}` | sprint + task ids | — | sprint delete |
+| `taskhistory:{slug}:{ver}:{taskId}` | per-task activity | 500 entries (`ltrim`) | **nothing — see below** |
+| `audit:logs` | global audit trail | 2000 entries (`zremrangebyrank`) | automatic |
+| `snapshot:{id}` | full serialization of every project, version, proposal and task | **nothing** | manual, admin UI |
+| `columns:{slug}`, `labels:{slug}` | board config | — | project delete |
+| `user:{name}`, `group:{id}`, `user-groups:{name}` | accounts and access | — | user/group delete |
+| `notifications:{name}` | per-user feed | — | user delete |
+| `login-fail:*` | rate-limit counters | TTL | automatic |
+
+### Attachments
+
+Uploads are capped at **1 MB per file and 20 per task**, enforced both in the form
+and server-side in the task create/update routes. Nothing resizes or recompresses
+them, so the cap is the only limit on what a task can carry.
+
+**Attachment bytes never appear on a list response.** Task lists, reorder responses
+and sprint payloads carry metadata plus a `url` pointing at
+`/api/projects/{slug}/media/{taskId}/{attId}`, which serves the bytes with an ETag
+and a one-year immutable cache. Sending base64 inline instead is what exhausted the
+Vercel Fast Origin Transfer quota: every board load, and every drag-reorder,
+re-sent every image, and none of it could be cached.
+
+Two rules keep that working — break either and you either reintroduce the transfer
+cost or lose data:
+
+1. Every route returning task objects passes them through `stripTaskMedia` /
+   `stripTasksMedia` (`lib/task-media.js`).
+2. Every route accepting task objects back passes them through `mergeTaskMedia`,
+   which restores the bytes the client could not send. Without it, saving a task
+   edited from a stripped list response overwrites the attachment with its
+   stripped twin.
+
+Covers store `{ attId }` only — a reference to an attachment already on the task,
+never a second copy of the bytes. `lib/attachment-src.js` (`attSrc` / `coverSrc`)
+resolves either form for rendering, including newly-picked files that only exist
+locally.
+
+### Known gaps
+
+- **Snapshots have no retention.** Each one embeds every task and every attachment,
+  so N snapshots hold N+1 copies of every image. They are the largest thing in the
+  store and are only deleted by hand. Trimming them is a durability tradeoff:
+  per the PRD, Redis is the only copy and snapshots stand in for point-in-time
+  recovery.
+- **`deleteTaskHistory` is never called.** Deleting a task leaves its
+  `taskhistory:*` key behind. Each is capped at 500 entries, so the waste is
+  bounded per key but unbounded in key count.
+
+### Inventory
+
+```bash
+node scripts/store-report.js              # totals by key prefix
+node scripts/store-report.js --top 30     # largest individual keys
+node scripts/store-report.js --json s.json  # snapshot the numbers to diff later
+```
+
+Read-only — it writes and deletes nothing. Run it before and after any cleanup, and
+periodically to catch growth early.
+
+---
+
 ## Active Sprint — Full Guide
 
 ### What Is an Active Sprint?

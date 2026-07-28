@@ -5,36 +5,36 @@ const { logAudit } = require('../../../lib/audit-log')
 const { ALL_PERMISSIONS } = require('../../../lib/permissions')
 const { getGlobalRolePolicy } = require('../../../lib/role-policy')
 const { findUsersByUsername } = require('../../../lib/user-lookup')
+const { getUserAccess } = require('../../../lib/user-access')
 const { hashPassword, verifyPassword } = require('../../../lib/password')
 const { setSessionCookie } = require('../../../lib/session')
 const { checkLoginRateLimit, recordLoginFailure, clearLoginFailures } = require('../../../lib/login-rate-limit')
 
-function buildUser(name, username, profile, viewerPerms, restrictedStatuses) {
+// `access` is the merged personal + group grant from lib/user-access.js; `policy`
+// is the global role policy that caps it.
+function buildUser(name, username, profile, access, policy) {
   const role = profile.role || ''
-  let permissions = ALL_PERMISSIONS
-  if (role === 'admin' && profile.permissions) {
-    try {
-      permissions = Array.isArray(profile.permissions)
-        ? profile.permissions
-        : JSON.parse(profile.permissions)
-    } catch { permissions = ALL_PERMISSIONS }
+  const ceiling = role === 'admin' ? policy.admin : policy.user
+  const granted = access.permissions || ceiling
+  const effective = granted.filter(p => ceiling.includes(p))
+
+  const user = {
+    name,
+    username,
+    isAdmin: role === 'admin' || role === 'superadmin',
+    role,
+    permissions: role === 'superadmin' ? ALL_PERMISSIONS : effective,
+    // null means "every project"; an array restricts the project list and every
+    // project-scoped route (enforced server-side in requireProjectAccess).
+    assignedProjects: access.projects,
+    groups: access.groups,
   }
-  let assignedProjects = null
-  if (role === 'admin' && profile.assignedProjects) {
-    if (Array.isArray(profile.assignedProjects)) {
-      assignedProjects = profile.assignedProjects
-    } else {
-      try { assignedProjects = JSON.parse(profile.assignedProjects) } catch {}
-    }
-  }
-  const user = { name, username, isAdmin: role === 'admin' || role === 'superadmin', role, permissions, assignedProjects }
-  // Viewers carry their capability set (from the global role policy) so the
-  // session enforces exactly what the superadmin granted the `user` role.
-  // restrictedStatuses is a UI hint so the board/list hide statuses the server
-  // would reject anyway (enforcement lives in the task update handlers).
+  // Viewers carry their capability set so the client only offers what the server
+  // will allow. restrictedStatuses is a UI hint so the board/list hide statuses
+  // the server would reject anyway (enforcement lives in the task update handlers).
   if (role !== 'admin' && role !== 'superadmin') {
-    user.viewerPerms = viewerPerms || []
-    user.restrictedStatuses = restrictedStatuses || []
+    user.viewerPerms = effective
+    user.restrictedStatuses = policy.userRestrictedStatuses || []
   }
   return user
 }
@@ -82,8 +82,6 @@ export default async function handler(req, res) {
   // Global-default capability set for this login. Per-project overrides are
   // applied client-side on the tasks page (and enforced server-side per request).
   const rolePolicy = await getGlobalRolePolicy()
-  const viewerPerms = rolePolicy.user
-  const restrictedStatuses = rolePolicy.userRestrictedStatuses
 
   // Every stored profile with this username whose password matches.
   const matches = await findUsersByUsername(username)
@@ -107,7 +105,7 @@ export default async function handler(req, res) {
     if (selectedName) {
       const chosen = valid.find(m => m.name === selectedName)
       if (!chosen) return res.status(400).json({ error: 'Select a valid account.' })
-      const user = buildUser(chosen.name, username, chosen.profile, viewerPerms, restrictedStatuses)
+      const user = buildUser(chosen.name, username, chosen.profile, await getUserAccess(chosen.name), rolePolicy)
       setSessionCookie(res, user)
       await clearLoginFailures(req, username)
       await logAudit(req, 'login', 'auth', { username, selectedName }, user)
@@ -120,7 +118,7 @@ export default async function handler(req, res) {
   }
 
   const { name, profile } = valid[0]
-  const user = buildUser(name, username, profile, viewerPerms, restrictedStatuses)
+  const user = buildUser(name, username, profile, await getUserAccess(name), rolePolicy)
   setSessionCookie(res, user)
   await clearLoginFailures(req, username)
   await logAudit(req, 'login', 'auth', { username }, user)

@@ -4,7 +4,7 @@ function getKv() { if (!_kv) _kv = new Redis({ url: process.env.UPSTASH_REDIS_RE
 const { getProject, listProposals } = require('../../../../lib/prd-store')
 const { getAuditLogs } = require('../../../../lib/audit-log')
 const { getSprints } = require('../../../../lib/sprint-store')
-const { requirePermission } = require('../../../../lib/require-permission')
+const { requirePermission, requireProjectAccess } = require('../../../../lib/require-permission')
 
 async function getTasksForProject(slug) {
   const versionIds = await getKv().smembers(`versions:${slug}`)
@@ -21,7 +21,8 @@ async function getTasksForProject(slug) {
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end()
   const { slug } = req.query
-  if (!await requirePermission('read', slug)(req, res)) return
+  if (!await requireProjectAccess(slug, req, res)) return
+  if (!await requirePermission('dashboard:view', slug)(req, res)) return
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)

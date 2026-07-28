@@ -7,6 +7,7 @@ const { requireSuperAdmin } = require('../../../../../../../lib/require-superadm
 const { requireProjectAccess, hasPermission, isAssignee, assigneeStatusAllowed, isPrivileged } = require('../../../../../../../lib/require-permission');
 const { getProject } = require('../../../../../../../lib/prd-store');
 const { getEffectiveRolePolicy, isStatusRestricted } = require('../../../../../../../lib/role-policy');
+const { stripTaskMedia, stripTasksMedia, mergeTaskMedia, validateAttachments, AttachmentError } = require('../../../../../../../lib/task-media');
 
 export default async function handler(req, res) {
   const { slug, version, taskId } = req.query;
@@ -15,10 +16,10 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const task = await getTask(slug, version, taskId);
     if (!task) return res.status(404).json({ error: 'Not found' });
-    return res.status(200).json(task);
+    return res.status(200).json(stripTaskMedia(task, slug, version));
   }
   if (req.method === 'PUT') {
-    const updates = req.body || {};
+    let updates = req.body || {};
     const before = await getTask(slug, version, taskId);
     if (!before) return res.status(404).json({ error: 'Not found' });
     // Regular users may change ONLY the status of tasks they're on (subject to the
@@ -45,17 +46,21 @@ export default async function handler(req, res) {
       updates.dueDelayed = !!(before.dueDate && updates.dueDate && new Date(updates.dueDate) > new Date(before.dueDate));
     }
     if (updates.status === 'done') updates.dueDelayed = false;
+    // Restore the attachment bytes the client could not send back — see lib/task-media.js.
     let task;
     try {
+      validateAttachments(updates.attachments);
+      updates = mergeTaskMedia(updates, before);
       task = await updateTask(slug, version, taskId, updates);
     } catch (e) {
+      if (e instanceof AttachmentError) return res.status(413).json({ error: e.message });
       if (e && e.code === 'TASK_ID') return res.status(409).json({ error: e.message });
       throw e;
     }
     await logAudit(req, 'update_task', 'task', { slug, version, taskId, fields: Object.keys(updates) });
     await recordTaskUpdate(slug, version, taskId, getAuditUser(req), before, updates);
     await notifyTaskChange(getAuditUser(req)?.name, { slug, version, before, updates });
-    return res.status(200).json(task);
+    return res.status(200).json(stripTaskMedia(task, slug, version));
   }
   if (req.method === 'DELETE') {
     // Deletion is superadmin-only. Subadmins can create/edit/assign but never delete.
@@ -69,23 +74,23 @@ export default async function handler(req, res) {
     if (action === 'boardReorder') {
       const tasks = await reorderBoard(slug, version, status, Array.isArray(orderedIds) ? orderedIds : []);
       await logAudit(req, 'board_reorder', 'task', { slug, version, status, count: (orderedIds || []).length });
-      return res.status(200).json(tasks);
+      return res.status(200).json(stripTasksMedia(tasks, slug, version));
     }
     if (action === 'restorePositions') {
       const tasks = await restorePositions(slug, version, Array.isArray(positions) ? positions : []);
       await logAudit(req, 'restore_positions', 'task', { slug, version, count: (positions || []).length });
-      return res.status(200).json(tasks);
+      return res.status(200).json(stripTasksMedia(tasks, slug, version));
     }
     if (action === 'move') {
       const tasks = await moveTask(slug, version, taskId, targetId, position);
       if (!tasks) return res.status(404).json({ error: 'Not found' });
       await logAudit(req, 'move_task', 'task', { slug, version, taskId, targetId, position });
-      return res.status(200).json(tasks);
+      return res.status(200).json(stripTasksMedia(tasks, slug, version));
     }
     const tasks = await reorderTask(slug, version, taskId, direction);
     if (!tasks) return res.status(404).json({ error: 'Not found' });
     await logAudit(req, 'reorder_task', 'task', { slug, version, taskId, direction });
-    return res.status(200).json(tasks);
+    return res.status(200).json(stripTasksMedia(tasks, slug, version));
   }
   res.status(405).json({ error: 'Method not allowed' });
 }

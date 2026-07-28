@@ -7,6 +7,7 @@ const { requireSuperAdmin } = require('../../../lib/require-superadmin')
 const { renameUser, RenameError } = require('../../../lib/rename-user')
 const { hashPassword } = require('../../../lib/password')
 const { getSessionUser } = require('../../../lib/session')
+const { removeUserFromAllGroups } = require('../../../lib/group-store')
 
 const KEY = 'assignees'
 
@@ -17,6 +18,7 @@ export default async function handler(req, res) {
     if (!await requirePermission('assignee:manage')(req, res)) return
     await getKv().srem(KEY, name)
     await getKv().del(`user:${name}`)
+    await removeUserFromAllGroups(name)
     await logAudit(req, 'delete_user', 'user', { name })
     return res.status(204).end()
   }

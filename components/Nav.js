@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import Image from 'next/image'
 import { apiFetch } from '../lib/api-fetch'
-import { isSuperAdmin } from '../lib/client-permissions'
+import { isSuperAdmin, canView } from '../lib/client-permissions'
 import { enqueue } from '../lib/submit-queue'
 import { useQueueState, LEAVE_WARNING } from '../lib/use-submit-queue'
 
@@ -97,14 +97,20 @@ export default function Nav() {
 
   const links = (
     <>
-      <Link href="/" className={`nav-link${pathname === '/' || pathname.startsWith('/projects') ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>Projects</Link>
-      <Link href="/dashboard" className={`nav-link${pathname === '/dashboard' ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>Dashboard</Link>
-      {projectSlug && (
+      {canView(currentUser, 'project') && (
+        <Link href="/" className={`nav-link${pathname === '/' || pathname.startsWith('/projects') ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>Projects</Link>
+      )}
+      {canView(currentUser, 'dashboard') && (
+        <Link href="/dashboard" className={`nav-link${pathname === '/dashboard' ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>Dashboard</Link>
+      )}
+      {projectSlug && canView(currentUser, 'dashboard') && (
         <Link href={`/projects/${projectSlug}/dashboard`} className={`nav-link${pathname.endsWith('/dashboard') && pathname.startsWith('/projects') ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>
           Project Dashboard
         </Link>
       )}
-      <Link href="/admin" className={`nav-link${pathname === '/admin' ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>Admin</Link>
+      {(currentUser?.isAdmin || currentUser?.role === 'admin') && (
+        <Link href="/admin" className={`nav-link${pathname === '/admin' ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>Admin</Link>
+      )}
       {isSuperAdmin(currentUser) && (
         <Link href="/settings/roles" className={`nav-link${pathname === '/settings/roles' ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>Access Control</Link>
       )}

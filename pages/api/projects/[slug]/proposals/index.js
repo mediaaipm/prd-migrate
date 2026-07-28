@@ -6,6 +6,7 @@ export default async function handler(req, res) {
   const { slug } = req.query;
   if (!await requireProjectAccess(slug, req, res)) return;
   if (req.method === 'GET') {
+    if (!await requirePermission('proposal:view', slug)(req, res)) return;
     return res.status(200).json(await listProposals(slug));
   }
   if (req.method === 'POST') {

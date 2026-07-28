@@ -3,7 +3,7 @@ let _kv;
 function getKv() { if (!_kv) _kv = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN }); return _kv; }
 const { logAudit } = require('../../../../lib/audit-log')
 const { requireSuperAdmin } = require('../../../../lib/require-superadmin')
-const { ALL_PERMISSIONS } = require('../../../../lib/permissions')
+const { ALL_PERMISSIONS, PERMS_VERSION } = require('../../../../lib/permissions')
 
 // Bulk-set the permission list on every secondary admin (role: 'admin') at once.
 // Super-admin only. Body may pass `permissions` to apply a specific set;
@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     const profile = await getKv().hgetall(`user:${name}`) || {}
     if (profile.role !== 'admin') continue
     // Single-field HSET — leaves username/password/assignedProjects untouched.
-    await getKv().hset(`user:${name}`, { permissions: JSON.stringify(perms) })
+    await getKv().hset(`user:${name}`, { permissions: JSON.stringify(perms), permsV: String(PERMS_VERSION) })
     updated++
   }
 

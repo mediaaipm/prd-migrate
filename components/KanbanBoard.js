@@ -11,6 +11,7 @@ import FilterMultiSelect, { DatePicker } from './FilterMultiSelect'
 import { DEFAULT_COLUMNS, COL_COLORS, useColumns, saveColumns, labelForStatus } from '../lib/kanban-columns'
 import { isSuperAdmin } from '../lib/client-permissions'
 import { taskShareLink, copyText } from '../lib/task-link'
+import { attSrc, coverSrc } from '../lib/attachment-src'
 
 const PRIORITY_ORDER = ['critical', 'high', 'medium', 'low']
 const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
@@ -755,7 +756,9 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     }))
   }
   function setCover(att) {
-    setEditForm(p => ({ ...p, cover: { dataUrl: att.dataUrl, attId: att.id } }))
+    // Reference only — the bytes already live on the attachment, and storing a
+    // second copy here doubled every covered image in redis and on the wire.
+    setEditForm(p => ({ ...p, cover: { attId: att.id } }))
   }
   function clearCover() {
     setEditForm(p => ({ ...p, cover: null }))
@@ -1089,8 +1092,8 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
               <span className="kanban-card-parent-crumb-title">{parent.title}</span>
             </div>
           )}
-          {task.cover?.dataUrl && (
-            <div className="kanban-card-cover" style={{ backgroundImage: `url(${task.cover.dataUrl})` }} />
+          {coverSrc(task) && (
+            <div className="kanban-card-cover" style={{ backgroundImage: `url(${coverSrc(task)})` }} />
           )}
           {renderCardLabels(task)}
           <div className="kanban-card-header">
@@ -1977,11 +1980,11 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                       return (
                         <div key={att.id} className="kanban-attach-item">
                           {isImg
-                            ? <a href={att.dataUrl} target="_blank" rel="noopener noreferrer" title="View"><img src={att.dataUrl} alt={att.name} className="kanban-attach-thumb" /></a>
+                            ? <a href={attSrc(att)} target="_blank" rel="noopener noreferrer" title="View"><img src={attSrc(att)} alt={att.name} className="kanban-attach-thumb" /></a>
                             : <span className="kanban-attach-file">📄</span>}
-                          <a href={att.dataUrl} target="_blank" rel="noopener noreferrer" className="kanban-attach-name" title={att.name}>{att.name}</a>
-                          <a href={att.dataUrl} target="_blank" rel="noopener noreferrer" className="btn-ghost" style={{ fontSize: 11 }} title="View">View</a>
-                          <a href={att.dataUrl} download={att.name} className="btn-ghost" style={{ fontSize: 11 }} title="Download">Download</a>
+                          <a href={attSrc(att)} target="_blank" rel="noopener noreferrer" className="kanban-attach-name" title={att.name}>{att.name}</a>
+                          <a href={attSrc(att)} target="_blank" rel="noopener noreferrer" className="btn-ghost" style={{ fontSize: 11 }} title="View">View</a>
+                          <a href={attSrc(att)} download={att.name} className="btn-ghost" style={{ fontSize: 11 }} title="Download">Download</a>
                           {isImg && (
                             <button type="button" className="btn-ghost" style={{ fontSize: 11 }} onClick={() => isCover ? clearCover() : setCover(att)}>
                               {isCover ? 'Unset cover' : 'Set cover'}

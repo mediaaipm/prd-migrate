@@ -4,6 +4,7 @@ function getKv() { if (!_kv) _kv = new Redis({ url: process.env.UPSTASH_REDIS_RE
 const { listProjects, listProposals } = require('../../../lib/prd-store')
 const { getAuditLogs } = require('../../../lib/audit-log')
 const { getSprints } = require('../../../lib/sprint-store')
+const { requirePermission, visibleProjects } = require('../../../lib/require-permission')
 
 async function getTasksForProject(slug) {
   // Load root tasks + all version-scoped tasks
@@ -24,8 +25,11 @@ export default async function handler(req, res) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
+  if (!await requirePermission('dashboard:view')(req, res)) return
+
   try {
-    const projects = await listProjects()
+    // Only roll up the projects this account is allowed to see.
+    const projects = await visibleProjects(req, await listProjects())
     if (!projects.length) {
       return res.status(200).json({ overdue: [], unassigned: [], lastUpdates: [], upcoming: [], workload: [], completion: [], activeSprints: [] })
     }

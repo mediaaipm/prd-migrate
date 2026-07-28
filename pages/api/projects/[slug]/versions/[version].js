@@ -1,12 +1,13 @@
 const { getVersion, saveVersion, deleteVersion } = require('../../../../../lib/prd-store');
 const { logAudit } = require('../../../../../lib/audit-log');
-const { requireProjectAccess } = require('../../../../../lib/require-permission');
+const { requirePermission, requireProjectAccess } = require('../../../../../lib/require-permission');
 const { requireSuperAdmin } = require('../../../../../lib/require-superadmin');
 
 export default async function handler(req, res) {
   const { slug, version } = req.query;
   if (!await requireProjectAccess(slug, req, res)) return;
   if (req.method === 'GET') {
+    if (!await requirePermission('version:view', slug)(req, res)) return;
     const v = await getVersion(slug, version);
     if (!v) return res.status(404).json({ error: 'Version not found' });
     await logAudit(req, 'view_version', 'version', { slug, version });

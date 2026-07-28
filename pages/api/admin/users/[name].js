@@ -3,9 +3,10 @@ let _kv;
 function getKv() { if (!_kv) _kv = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN }); return _kv; }
 const { logAudit } = require('../../../../lib/audit-log')
 const { requireSuperAdmin } = require('../../../../lib/require-superadmin')
-const { ALL_PERMISSIONS } = require('../../../../lib/permissions')
+const { ALL_PERMISSIONS, PERMS_VERSION } = require('../../../../lib/permissions')
 const { renameUser, RenameError } = require('../../../../lib/rename-user')
 const { hashPassword } = require('../../../../lib/password')
+const { removeUserFromAllGroups } = require('../../../../lib/group-store')
 
 function existingPerms(profile) {
   if (!profile.permissions) return ALL_PERMISSIONS
@@ -21,6 +22,7 @@ export default async function handler(req, res) {
   if (req.method === 'DELETE') {
     await getKv().srem('assignees', name)
     await getKv().del(`user:${name}`)
+    await removeUserFromAllGroups(name)
     await logAudit(req, 'delete_admin', 'user', { name })
     return res.status(204).end()
   }
@@ -54,6 +56,7 @@ export default async function handler(req, res) {
       // Preserve superadmin; editing a superadmin must not silently demote them.
       role: existing.role === 'superadmin' ? 'superadmin' : 'admin',
       permissions: JSON.stringify(perms),
+      permsV: String(PERMS_VERSION),
       assignedProjects: newAssigned,
     })
     await logAudit(req, 'update_admin', 'user', { name: target, permissions: perms, assignedProjects: assignedProjects !== undefined ? assignedProjects : undefined })

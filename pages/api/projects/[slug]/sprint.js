@@ -1,10 +1,13 @@
 const { getSprints, saveSprint, deleteSprint } = require('../../../../lib/sprint-store')
 const { listTasks } = require('../../../../lib/task-store')
-const { requireProjectAccess } = require('../../../../lib/require-permission')
+const { requirePermission, requireProjectAccess } = require('../../../../lib/require-permission')
+const { stripTasksMedia } = require('../../../../lib/task-media')
 
-async function hydrate(sprint, taskMap) {
+async function hydrate(sprint, taskMap, slug) {
   const tasks = (sprint.taskIds || []).map(id => taskMap[id]).filter(Boolean)
-  return { ...sprint, tasks }
+  // Sprints embed whole task objects; without this the board's sprint view
+  // re-downloaded every attachment on every load.
+  return { ...sprint, tasks: stripTasksMedia(tasks, slug, null) }
 }
 
 export default async function handler(req, res) {
@@ -12,10 +15,11 @@ export default async function handler(req, res) {
   if (!await requireProjectAccess(slug, req, res)) return
 
   if (req.method === 'GET') {
+    if (!await requirePermission('sprint:view', slug)(req, res)) return
     const allTasks = await listTasks(slug, null)
     const taskMap = Object.fromEntries(allTasks.map(t => [t.id, t]))
     const sprints = await getSprints(slug)
-    const hydrated = await Promise.all(sprints.map(s => hydrate(s, taskMap)))
+    const hydrated = await Promise.all(sprints.map(s => hydrate(s, taskMap, slug)))
     return res.status(200).json(hydrated)
   }
 
@@ -37,7 +41,7 @@ export default async function handler(req, res) {
     const allTasks = await listTasks(slug, null)
     const taskMap = Object.fromEntries(allTasks.map(t => [t.id, t]))
     await saveSprint(slug, sprint)
-    return res.status(200).json(await hydrate(sprint, taskMap))
+    return res.status(200).json(await hydrate(sprint, taskMap, slug))
   }
 
   if (req.method === 'PUT') {
@@ -59,7 +63,7 @@ export default async function handler(req, res) {
     const allTasks = await listTasks(slug, null)
     const taskMap = Object.fromEntries(allTasks.map(t => [t.id, t]))
     await saveSprint(slug, updated)
-    return res.status(200).json(await hydrate(updated, taskMap))
+    return res.status(200).json(await hydrate(updated, taskMap, slug))
   }
 
   if (req.method === 'DELETE') {

@@ -6,6 +6,7 @@ const { requirePermission, requireProjectAccess, hasPermission, isAssignee, assi
 const { requireSuperAdmin } = require('../../../../../lib/require-superadmin');
 const { getProject } = require('../../../../../lib/prd-store');
 const { getEffectiveRolePolicy, isStatusRestricted } = require('../../../../../lib/role-policy');
+const { stripTaskMedia, stripTasksMedia, mergeTaskMedia, validateAttachments, AttachmentError } = require('../../../../../lib/task-media');
 
 export default async function handler(req, res) {
   try {
@@ -26,10 +27,10 @@ async function route(req, res) {
   if (req.method === 'GET') {
     const task = await getTask(slug, v, taskId);
     if (!task) return res.status(404).json({ error: 'Not found' });
-    return res.status(200).json(task);
+    return res.status(200).json(stripTaskMedia(task, slug, v));
   }
   if (req.method === 'PUT') {
-    const updates = req.body || {};
+    let updates = req.body || {};
     const before = await getTask(slug, v, taskId);
     if (!before) return res.status(404).json({ error: 'Not found' });
     // Regular users may change ONLY the status of tasks they're on (subject to the
@@ -58,10 +59,16 @@ async function route(req, res) {
       updates.dueDelayed = !!(before.dueDate && updates.dueDate && new Date(updates.dueDate) > new Date(before.dueDate));
     }
     if (updates.status === 'done') updates.dueDelayed = false;
+    // The client edited a task it read from a stripped list response, so any
+    // attachment it did not re-upload arrives without its bytes. Put them back
+    // from `before` or the save would wipe the image.
     let task;
     try {
+      validateAttachments(updates.attachments);
+      updates = mergeTaskMedia(updates, before);
       task = await updateTask(slug, v, taskId, updates);
     } catch (e) {
+      if (e instanceof AttachmentError) return res.status(413).json({ error: e.message });
       if (e && e.code === 'TASK_ID') return res.status(409).json({ error: e.message });
       throw e;
     }
@@ -70,7 +77,7 @@ async function route(req, res) {
     await logAudit(req, 'update_task', 'task', details);
     await recordTaskUpdate(slug, v, taskId, getAuditUser(req), before, updates);
     await notifyTaskChange(getAuditUser(req)?.name, { slug, version: v, before, updates });
-    return res.status(200).json(task);
+    return res.status(200).json(stripTaskMedia(task, slug, v));
   }
   if (req.method === 'DELETE') {
     // Deletion is superadmin-only. Subadmins can create/edit/assign but never delete.
@@ -85,23 +92,23 @@ async function route(req, res) {
     if (action === 'boardReorder') {
       const tasks = await reorderBoard(slug, v, status, Array.isArray(orderedIds) ? orderedIds : []);
       await logAudit(req, 'board_reorder', 'task', { slug, version: v, status, count: (orderedIds || []).length });
-      return res.status(200).json(tasks);
+      return res.status(200).json(stripTasksMedia(tasks, slug, v));
     }
     if (action === 'restorePositions') {
       const tasks = await restorePositions(slug, v, Array.isArray(positions) ? positions : []);
       await logAudit(req, 'restore_positions', 'task', { slug, version: v, count: (positions || []).length });
-      return res.status(200).json(tasks);
+      return res.status(200).json(stripTasksMedia(tasks, slug, v));
     }
     if (action === 'move') {
       const tasks = await moveTask(slug, v, taskId, targetId, position);
       if (!tasks) return res.status(404).json({ error: 'Not found' });
       await logAudit(req, 'move_task', 'task', { slug, version: v, taskId, targetId, position });
-      return res.status(200).json(tasks);
+      return res.status(200).json(stripTasksMedia(tasks, slug, v));
     }
     const tasks = await reorderTask(slug, v, taskId, direction);
     if (!tasks) return res.status(404).json({ error: 'Not found' });
     await logAudit(req, 'reorder_task', 'task', { slug, version: v, taskId, direction });
-    return res.status(200).json(tasks);
+    return res.status(200).json(stripTasksMedia(tasks, slug, v));
   }
   res.status(405).json({ error: 'Method not allowed' });
 }

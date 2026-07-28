@@ -683,11 +683,14 @@ export default function TasksPage({ currentUser }) {
     if (!currentUser || !access) return currentUser
     if (currentUser.role === 'superadmin' || (currentUser.isAdmin && !currentUser.role)) return currentUser
     const u = { ...currentUser }
+    // `effective` is what the server computed for THIS caller in THIS project
+    // (personal + group grant, capped by the project policy).
+    const effective = Array.isArray(access.effective) ? access.effective : null
     if (currentUser.role === 'admin') {
       const personal = Array.isArray(currentUser.permissions) ? currentUser.permissions : []
-      u.permissions = personal.filter(p => (access.admin || []).includes(p))
+      u.permissions = effective || personal.filter(p => (access.admin || []).includes(p))
     } else {
-      u.viewerPerms = access.user || []
+      u.viewerPerms = effective || access.user || []
     }
     u.restrictedStatuses = access.userRestrictedStatuses || []
     return u

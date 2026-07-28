@@ -15,10 +15,24 @@ export default function ProjectPage({ currentUser }) {
   const [proposalForm, setProposalForm] = useState({ title: '', description: '', assignee: '', startDate: '', dueDate: '' })
   const [submitting, setSubmitting] = useState(false)
   const [assignees, setAssignees] = useState([])
+  // What this caller may do/see in this project — personal + group grant capped by
+  // the project's role policy. Null until it loads; treat as permissive so the
+  // page does not flash empty for a fully-privileged user.
+  const [perms, setPerms] = useState(null)
 
   useEffect(() => {
     fetch('/api/assignees').then(r => r.ok ? r.json() : []).then(setAssignees).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (!slug) return
+    apiFetch(`/api/projects/${slug}/access`)
+      .then(r => r.ok ? r.json() : null)
+      .then(a => setPerms(Array.isArray(a?.effective) ? a.effective : null))
+      .catch(() => {})
+  }, [slug])
+
+  const can = perm => isSuperAdmin(currentUser) || (perms ? perms.includes(perm) : true)
 
   useEffect(() => {
     if (!slug) return
@@ -148,15 +162,21 @@ export default function ProjectPage({ currentUser }) {
             {project.description && <p>{project.description}</p>}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <Link href={`/projects/${slug}/dashboard`} className="btn-ghost" style={{ fontSize: 13, padding: '6px 14px', textDecoration: 'none' }}>
-              Dashboard
-            </Link>
-            <Link href={`/projects/${slug}/tasks`} className="btn-ghost" style={{ fontSize: 13, padding: '6px 14px', textDecoration: 'none' }}>
-              Tasks
-            </Link>
-            <button className="btn-primary" onClick={() => setShowProposal(v => !v)}>
-              {showProposal ? 'Cancel' : '+ New Proposal'}
-            </button>
+            {can('dashboard:view') && (
+              <Link href={`/projects/${slug}/dashboard`} className="btn-ghost" style={{ fontSize: 13, padding: '6px 14px', textDecoration: 'none' }}>
+                Dashboard
+              </Link>
+            )}
+            {can('task:view') && (
+              <Link href={`/projects/${slug}/tasks`} className="btn-ghost" style={{ fontSize: 13, padding: '6px 14px', textDecoration: 'none' }}>
+                Tasks
+              </Link>
+            )}
+            {can('proposal:create') && (
+              <button className="btn-primary" onClick={() => setShowProposal(v => !v)}>
+                {showProposal ? 'Cancel' : '+ New Proposal'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -208,6 +228,7 @@ export default function ProjectPage({ currentUser }) {
 
         <div className="section-grid">
           {/* Versions */}
+          {can('version:view') && (
           <section className="section-card">
             <div className="section-card-header">
               <span>PRD Versions</span>
@@ -262,8 +283,10 @@ export default function ProjectPage({ currentUser }) {
               </div>
             )}
           </section>
+          )}
 
           {/* Proposals */}
+          {can('proposal:view') && (
           <section className="section-card">
             <div className="section-card-header">
               <span>Proposals</span>
@@ -315,6 +338,7 @@ export default function ProjectPage({ currentUser }) {
               </div>
             )}
           </section>
+          )}
         </div>
       </main>
     </>

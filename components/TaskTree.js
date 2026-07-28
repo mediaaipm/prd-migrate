@@ -11,6 +11,7 @@ import TaskHistoryModal from './TaskHistoryModal'
 import FilterMultiSelect from './FilterMultiSelect'
 import { useColumns, columnsWithTaskStatuses, labelForStatus } from '../lib/kanban-columns'
 import { taskShareLink, copyText } from '../lib/task-link'
+import { attSrc, coverSrc } from '../lib/attachment-src'
 
 const MAX_ATTACH_BYTES = 1024 * 1024 // 1MB cap per image (stored inline as data URL in Redis)
 
@@ -207,7 +208,8 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreato
     }))
   }
   function toggleCover(att) {
-    setForm(p => ({ ...p, cover: p.cover?.attId === att.id ? null : { dataUrl: att.dataUrl, attId: att.id } }))
+    // Reference only — see setCover in KanbanBoard.
+    setForm(p => ({ ...p, cover: p.cover?.attId === att.id ? null : { attId: att.id } }))
   }
 
   const advanced = (
@@ -245,8 +247,8 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreato
               const isCover = form.cover?.attId === att.id
               return (
                 <div key={att.id} className={`task-form-thumb${isCover ? ' is-cover' : ''}`}>
-                  <a href={att.dataUrl} target="_blank" rel="noopener noreferrer" title={att.name}>
-                    <img src={att.dataUrl} alt={att.name} />
+                  <a href={attSrc(att)} target="_blank" rel="noopener noreferrer" title={att.name}>
+                    <img src={attSrc(att)} alt={att.name} />
                   </a>
                   <button type="button" className="task-form-thumb-cover" onClick={() => toggleCover(att)} title={isCover ? 'Unset cover' : 'Set as cover'}>{isCover ? '★' : '☆'}</button>
                   <button type="button" className="task-form-thumb-remove" onClick={() => removeImage(att.id)} title="Remove">✕</button>
@@ -562,8 +564,8 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
             {node.title}
           </span>
           {node.__context && <span className="task-context-tag" title="Shown as parent context">parent</span>}
-          {node.cover?.dataUrl && (
-            <img src={node.cover.dataUrl} alt="cover" className="task-row-cover" title="Cover image" />
+          {coverSrc(node) && (
+            <img src={coverSrc(node)} alt="cover" className="task-row-cover" title="Cover image" />
           )}
           {Array.isArray(node.attachments) && node.attachments.length > 0 && (
             <span className="task-meta-chip task-attach-chip" title={`${node.attachments.length} image(s)`}>🖼 {node.attachments.length}</span>
@@ -775,8 +777,8 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
                     <span className="task-detail-label">Images</span>
                     <div className="task-detail-thumbs">
                       {node.attachments.map(att => (
-                        <a key={att.id} href={att.dataUrl} target="_blank" rel="noopener noreferrer" title={att.name}>
-                          <img src={att.dataUrl} alt={att.name} className="task-detail-thumb" />
+                        <a key={att.id} href={attSrc(att)} target="_blank" rel="noopener noreferrer" title={att.name}>
+                          <img src={attSrc(att)} alt={att.name} className="task-detail-thumb" />
                         </a>
                       ))}
                     </div>

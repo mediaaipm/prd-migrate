@@ -3,7 +3,7 @@ let _kv;
 function getKv() { if (!_kv) _kv = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN }); return _kv; }
 const { logAudit } = require('../../../../lib/audit-log')
 const { requireSuperAdmin } = require('../../../../lib/require-superadmin')
-const { ALL_PERMISSIONS } = require('../../../../lib/permissions')
+const { ALL_PERMISSIONS, PERMS_VERSION } = require('../../../../lib/permissions')
 const { getGlobalRolePolicy } = require('../../../../lib/role-policy')
 const { hashPassword } = require('../../../../lib/password')
 
@@ -51,6 +51,7 @@ export default async function handler(req, res) {
       password: hashPassword(password),
       role: 'admin',
       permissions: JSON.stringify(perms),
+      permsV: String(PERMS_VERSION),
       assignedProjects: JSON.stringify(Array.isArray(assignedProjects) ? assignedProjects : null),
     })
     await logAudit(req, 'create_admin', 'user', { name: trimName })

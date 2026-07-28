@@ -7,6 +7,7 @@ import SubmitButton from './SubmitButton'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
 import { useColumns, columnsWithTaskStatuses } from '../lib/kanban-columns'
+import { attSrc, coverSrc } from '../lib/attachment-src'
 
 const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -53,7 +54,8 @@ function DayTaskForm({ initial, onSave, onCancel, label, assignees, columns = []
     }))
   }
   function toggleCover(att) {
-    setForm(p => ({ ...p, cover: p.cover?.attId === att.id ? null : { dataUrl: att.dataUrl, attId: att.id } }))
+    // Reference only — see setCover in KanbanBoard.
+    setForm(p => ({ ...p, cover: p.cover?.attId === att.id ? null : { attId: att.id } }))
   }
 
   return (
@@ -79,8 +81,8 @@ function DayTaskForm({ initial, onSave, onCancel, label, assignees, columns = []
               const isCover = form.cover?.attId === att.id
               return (
                 <div key={att.id} className={`task-form-thumb${isCover ? ' is-cover' : ''}`}>
-                  <a href={att.dataUrl} target="_blank" rel="noopener noreferrer" title={att.name}>
-                    <img src={att.dataUrl} alt={att.name} />
+                  <a href={attSrc(att)} target="_blank" rel="noopener noreferrer" title={att.name}>
+                    <img src={attSrc(att)} alt={att.name} />
                   </a>
                   <button type="button" className="task-form-thumb-cover" onClick={() => toggleCover(att)} title={isCover ? 'Unset cover' : 'Set as cover'}>{isCover ? '★' : '☆'}</button>
                   <button type="button" className="task-form-thumb-remove" onClick={() => removeImage(att.id)} title="Remove">✕</button>
@@ -262,10 +264,10 @@ export default function CalendarView({ tasks, apiBase, slug, currentUser }) {
                     title={t.title}
                     style={{ borderLeftColor: PRIORITY_COLOR[t.priority] || '#64748b' }}
                   >
-                    {t.cover?.dataUrl && <img src={t.cover.dataUrl} alt="" className="cal-task-cover" />}
+                    {coverSrc(t) && <img src={coverSrc(t)} alt="" className="cal-task-cover" />}
                     {t.number && <span className="cal-task-num">#{t.number}</span>}
                     <span className={t.status === 'done' ? 'cal-task-done' : ''}>{t.title}</span>
-                    {!t.cover?.dataUrl && Array.isArray(t.attachments) && t.attachments.length > 0 && <span className="cal-task-attach" title={`${t.attachments.length} image(s)`}>🖼</span>}
+                    {!coverSrc(t) && Array.isArray(t.attachments) && t.attachments.length > 0 && <span className="cal-task-attach" title={`${t.attachments.length} image(s)`}>🖼</span>}
                   </div>
                 ))}
               </div>
@@ -345,10 +347,10 @@ export default function CalendarView({ tasks, apiBase, slug, currentUser }) {
                       {orderDayTasks(openDayTasks).map(({ task: t, isChild }) => (
                         <div key={t.id} onContextMenu={e => handleTaskContextMenu(e, t)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 8, borderLeft: `3px solid ${PRIORITY_COLOR[t.priority] || '#64748b'}`, marginLeft: isChild ? 18 : 0 }}>
                           {isChild && <span style={{ color: '#94a3b8', fontSize: 12 }}>↳</span>}
-                          {t.cover?.dataUrl && <img src={t.cover.dataUrl} alt="" style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 5, border: '1px solid var(--border)' }} />}
+                          {coverSrc(t) && <img src={coverSrc(t)} alt="" style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 5, border: '1px solid var(--border)' }} />}
                           {t.number && <span style={{ fontSize: 11, color: '#94a3b8' }}>#{t.number}</span>}
                           <span style={{ flex: 1, fontSize: 13, textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>{t.title}</span>
-                          {!t.cover?.dataUrl && Array.isArray(t.attachments) && t.attachments.length > 0 && <span style={{ fontSize: 11 }} title={`${t.attachments.length} image(s)`}>🖼 {t.attachments.length}</span>}
+                          {!coverSrc(t) && Array.isArray(t.attachments) && t.attachments.length > 0 && <span style={{ fontSize: 11 }} title={`${t.attachments.length} image(s)`}>🖼 {t.attachments.length}</span>}
                           <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 10, background: '#f1f5f9', color: '#475569' }}>{t.status}</span>
                           {!isChild && canCreate && <button className="btn-ghost" style={{ fontSize: 12, padding: '3px 8px' }} title="Add sub-task" onClick={() => { setSubParent(t.id); setEditId('new') }}>+ sub</button>}
                           {canEdit && <button className="btn-ghost" style={{ fontSize: 12, padding: '3px 10px' }} onClick={() => setEditId(t.id)}>Edit</button>}

@@ -1,11 +1,12 @@
 const { listVersions, createVersion } = require('../../../../../lib/prd-store');
 const { logAudit } = require('../../../../../lib/audit-log');
-const { requireProjectAccess } = require('../../../../../lib/require-permission');
+const { requirePermission, requireProjectAccess } = require('../../../../../lib/require-permission');
 
 export default async function handler(req, res) {
   const { slug } = req.query;
   if (!await requireProjectAccess(slug, req, res)) return;
   if (req.method === 'GET') {
+    if (!await requirePermission('version:view', slug)(req, res)) return;
     return res.status(200).json(await listVersions(slug));
   }
   if (req.method === 'POST') {

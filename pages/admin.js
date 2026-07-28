@@ -3,6 +3,9 @@ import { useRouter } from 'next/router'
 import Nav from '../components/Nav'
 import { apiFetch } from '../lib/api-fetch'
 import { ALL_PERMISSIONS, PERMISSION_LABELS } from '../lib/permissions'
+import PermissionGrid, { ProjectPicker } from '../components/PermissionGrid'
+import GroupsTab from '../components/GroupsTab'
+import UserAccessEditor from '../components/UserAccessEditor'
 import SubmitButton from '../components/SubmitButton'
 import { enqueue, onSync } from '../lib/submit-queue'
 import { useOptimistic } from '../lib/optimistic'
@@ -228,13 +231,6 @@ function AdminPermissionEditor({ admin, onSaved }) {
     setPerms(prev => prev.includes(perm) ? prev.filter(p => p !== perm) : [...prev, perm])
   }
 
-  function toggleProject(slug) {
-    setAssignedProjects(prev => {
-      const arr = prev || projects.map(p => p.slug)
-      return arr.includes(slug) ? arr.filter(s => s !== slug) : [...arr, slug]
-    })
-  }
-
   function handleSave() {
     enqueue({
       url: `/api/admin/users/${encodeURIComponent(admin.name)}`,
@@ -246,87 +242,12 @@ function AdminPermissionEditor({ admin, onSaved }) {
     onSaved()
   }
 
-  const GROUPS = [
-    { label: 'Projects', perms: ['project:create', 'project:update'] },
-    { label: 'Proposals', perms: ['proposal:create', 'proposal:update', 'proposal:delete', 'proposal:promote'] },
-    { label: 'Tasks', perms: ['task:create', 'task:update', 'task:delete'] },
-    { label: 'Other', perms: ['assignee:manage', 'snapshot:manage', 'audit:view'] },
-  ]
-
-  const allSlugs = projects.map(p => p.slug)
-  const effectiveProjects = assignedProjects || allSlugs
-
   return (
     <div style={{ padding: '10px 16px 14px', background: 'var(--sidebar-bg)', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {GROUPS.map(group => (
-        <div key={group.label}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{group.label}</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {group.perms.map(perm => {
-              const active = perms.includes(perm)
-              return (
-                <button
-                  key={perm}
-                  type="button"
-                  onClick={() => toggle(perm)}
-                  style={{
-                    fontSize: 12, padding: '4px 10px', borderRadius: 5, cursor: 'pointer', border: '1px solid',
-                    borderColor: active ? 'var(--accent, #818cf8)' : 'var(--border)',
-                    background: active ? 'rgba(129,140,248,0.12)' : 'transparent',
-                    color: active ? 'var(--accent, #818cf8)' : 'var(--muted)',
-                    fontWeight: active ? 500 : 400,
-                  }}
-                >
-                  {active ? '✓ ' : ''}{PERMISSION_LABELS[perm]}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      ))}
+      <PermissionGrid selected={perms} onToggle={toggle} />
 
       {projects.length > 0 && (
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Project Access
-            </div>
-            <button
-              type="button"
-              onClick={() => setAssignedProjects(null)}
-              style={{ fontSize: 11, padding: '2px 7px', borderRadius: 4, cursor: 'pointer', border: '1px solid', borderColor: assignedProjects === null ? 'var(--accent, #818cf8)' : 'var(--border)', background: assignedProjects === null ? 'rgba(129,140,248,0.12)' : 'transparent', color: assignedProjects === null ? 'var(--accent, #818cf8)' : 'var(--muted)' }}
-            >
-              All projects
-            </button>
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {projects.map(p => {
-              const active = effectiveProjects.includes(p.slug)
-              return (
-                <button
-                  key={p.slug}
-                  type="button"
-                  onClick={() => {
-                    if (assignedProjects === null) {
-                      setAssignedProjects(allSlugs.filter(s => s !== p.slug))
-                    } else {
-                      toggleProject(p.slug)
-                    }
-                  }}
-                  style={{
-                    fontSize: 12, padding: '4px 10px', borderRadius: 5, cursor: 'pointer', border: '1px solid',
-                    borderColor: active ? 'var(--accent, #818cf8)' : 'var(--border)',
-                    background: active ? 'rgba(129,140,248,0.12)' : 'transparent',
-                    color: active ? 'var(--accent, #818cf8)' : 'var(--muted)',
-                    fontWeight: active ? 500 : 400,
-                  }}
-                >
-                  {active ? '✓ ' : ''}{p.name}
-                </button>
-              )
-            })}
-          </div>
-        </div>
+        <ProjectPicker projects={projects} value={assignedProjects} onChange={setAssignedProjects} />
       )}
 
       <div style={{ display: 'flex', gap: 8 }}>
@@ -659,6 +580,7 @@ function RoleBadge({ role }) {
 
 function UserRow({ user, onRemove, onSaved, isSuperAdmin }) {
   const [editing, setEditing] = useState(false)
+  const [access, setAccess] = useState(false)
   const [form, setForm] = useState({ username: user.username || '', password: '' })
   const [showPw, setShowPw] = useState(false)
   const [renaming, setRenaming] = useState(false)
@@ -747,10 +669,19 @@ function UserRow({ user, onRemove, onSaved, isSuperAdmin }) {
               Rename
             </button>
           )}
+          {isSuperAdmin && (
+            <button
+              className="btn-ghost"
+              style={{ fontSize: 12, padding: '4px 10px' }}
+              onClick={() => { setAccess(v => !v); setEditing(false) }}
+            >
+              {access ? 'Done' : 'Access'}
+            </button>
+          )}
           <button
             className="btn-ghost"
             style={{ fontSize: 12, padding: '4px 10px' }}
-            onClick={() => { setEditing(v => !v); setForm({ username: user.username || '', password: '' }) }}
+            onClick={() => { setEditing(v => !v); setAccess(false); setForm({ username: user.username || '', password: '' }) }}
           >
             {editing ? 'Cancel' : 'Set credentials'}
           </button>
@@ -813,6 +744,8 @@ function UserRow({ user, onRemove, onSaved, isSuperAdmin }) {
           )}
         </div>
       )}
+
+      {access && <UserAccessEditor userName={user.name} onSaved={onSaved} />}
     </li>
   )
 }
@@ -1033,7 +966,7 @@ export default function AdminPage({ currentUser }) {
         </div>
 
         <div style={{ display: 'flex', gap: 2, marginTop: 20 }}>
-          {['users', ...(isSuperAdmin ? ['admins'] : []), 'snapshots', 'audit'].map(t => (
+          {['users', ...(isSuperAdmin ? ['admins', 'groups'] : []), 'snapshots', 'audit'].map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -1045,7 +978,7 @@ export default function AdminPage({ currentUser }) {
                 borderBottom: tab === t ? '2px solid var(--accent, #818cf8)' : '2px solid transparent',
               }}
             >
-              {t === 'users' ? 'Users' : t === 'admins' ? 'Admins' : t === 'snapshots' ? 'Snapshots' : 'Audit Log'}
+              {t === 'users' ? 'Users' : t === 'admins' ? 'Admins' : t === 'groups' ? 'Groups' : t === 'snapshots' ? 'Snapshots' : 'Audit Log'}
             </button>
           ))}
         </div>
@@ -1127,6 +1060,7 @@ export default function AdminPage({ currentUser }) {
         )}
 
         {tab === 'admins' && isSuperAdmin && <AdminsTab />}
+        {tab === 'groups' && isSuperAdmin && <GroupsTab />}
         {tab === 'snapshots' && <Snapshots />}
         {tab === 'audit' && <AuditLog />}
       </main>

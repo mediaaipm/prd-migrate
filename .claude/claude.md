@@ -27,6 +27,14 @@ Next.js (pages router) + Upstash Redis. Product requirements & task management t
 - **Version**: markdown content per semver tag
 - **Proposal**: suggested changes to a version, status: `pending|promoted|rejected`
 - **Sprint**: groups tasks, status: `planned|active|completed`
+- **Group**: `{ id, name, description, permissions[], assignedProjects[]|null, members[] }` — a bundle of permissions + project visibility granted to every member (union, never subtractive). Superadmin-only.
+
+**Access model (three layers, all enforced server-side):**
+1. `role-policy` / `role-policy:{slug}` — the ceiling per role, per project (`/settings/roles`)
+2. personal grant on `user:{name}` — `permissions`, `assignedProjects` (Admin → Users → Access)
+3. groups the user belongs to — unioned into the personal grant
+Effective = (personal ∪ groups, or the whole role policy when nothing is set) ∩ role-policy ceiling.
+Visibility perms (`project:view`, `version:view`, `proposal:view`, `task:view`, `sprint:view`, `dashboard:view`, `audit:view`) gate the GET routes; `assignedProjects` decides *which* projects.
 
 ---
 
@@ -39,8 +47,15 @@ Next.js (pages router) + Upstash Redis. Product requirements & task management t
 | `lib/password.js` | scrypt hash/verify (accepts legacy plaintext, flags for re-hash) |
 | `lib/login-rate-limit.js` | Per-username + per-IP login throttle |
 | `lib/api-fetch.js` | Client-side fetch wrapper (session rides on the cookie) |
-| `lib/require-permission.js` | `requirePermission(perm)` middleware |
+| `lib/require-permission.js` | `requirePermission(perm, slug)`, `requireProjectAccess`, `visibleProjects` |
 | `lib/require-superadmin.js` | Super-admin gate |
+| `lib/permissions.js` | Permission catalogue + labels + role defaults (`PERMS_VERSION`) |
+| `lib/role-policy.js` | Per-role, per-project ceiling (`role-policy`, `role-policy:{slug}`) |
+| `lib/user-access.js` | Merged personal + group grant for one account (the resolver) |
+| `lib/group-store.js` | Group CRUD + membership (`groups`, `group:{id}`, `user-groups:{name}`) |
+| `components/PermissionGrid.js` | Shared permission chips + project picker |
+| `components/GroupsTab.js` | Admin → Groups: create/edit groups, add members |
+| `components/UserAccessEditor.js` | Admin → Users → Access: per-user perms, projects, groups |
 | `pages/api/projects/` | REST: projects, versions, tasks, proposals, sprints |
 | `pages/index.js` | Project list |
 | `pages/projects/[slug]/tasks.js` | Task list + kanban toggle |
@@ -58,7 +73,9 @@ Next.js (pages router) + Upstash Redis. Product requirements & task management t
 - Never read identity from a request header. `getSessionUser(req)` from `lib/session.js` is the only entry point
 - Never store a password without `hashPassword()`
 - Client fetches: always use `apiFetch`, not raw `fetch`
-- Redis keys: `project:{slug}`, `task:{slug}:{id}`, `version:{slug}:{ver}`, `sprint:{slug}:{id}`
+- Redis keys: `project:{slug}`, `task:{slug}:{id}`, `version:{slug}:{ver}`, `sprint:{slug}:{id}`, `group:{id}`, `user-groups:{name}`
+- Never read `user:{name}.permissions` directly — go through `getUserAccess()` so groups and the legacy-permission upgrade are applied
+- New permissions must be added to `ALL_PERMISSIONS` **and** `PERMISSION_GROUPS`, and `PERMS_VERSION`/`POLICY_VERSION` bumped if omitting them from a stored list would revoke access
 - Tasks are flat in Redis; `buildTree()` in TaskTree constructs hierarchy client-side
 - Slug = lowercased kebab-case project name (immutable after creation)
 - Status values: `backlog | todo | in-progress | in-review | done` (extendable via custom columns)

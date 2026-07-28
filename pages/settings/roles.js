@@ -2,45 +2,13 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import Nav from '../../components/Nav'
 import { apiFetch } from '../../lib/api-fetch'
-import { ALL_PERMISSIONS, PERMISSION_LABELS, PERMISSION_GROUPS } from '../../lib/permissions'
+import { ALL_PERMISSIONS } from '../../lib/permissions'
+import PermGrid from '../../components/PermissionGrid'
 import { isSuperAdmin } from '../../lib/client-permissions'
 import { DEFAULT_COLUMNS, labelForStatus } from '../../lib/kanban-columns'
 
 // Mirrors slugify() in KanbanBoard so a restricted key matches a custom column's key.
 const normStatus = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-
-function PermGrid({ selected, onToggle }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {PERMISSION_GROUPS.map(group => (
-        <div key={group.label}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{group.label}</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {group.perms.map(perm => {
-              const active = selected.includes(perm)
-              return (
-                <button
-                  key={perm}
-                  type="button"
-                  onClick={() => onToggle(perm)}
-                  style={{
-                    fontSize: 12, padding: '4px 10px', borderRadius: 5, cursor: 'pointer', border: '1px solid',
-                    borderColor: active ? 'var(--accent, #818cf8)' : 'var(--border)',
-                    background: active ? 'rgba(129,140,248,0.12)' : 'transparent',
-                    color: active ? 'var(--accent, #818cf8)' : 'var(--muted)',
-                    fontWeight: active ? 500 : 400,
-                  }}
-                >
-                  {active ? '✓ ' : ''}{PERMISSION_LABELS[perm]}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
 
 function RoleCard({ title, subtitle, perms, setPerms, footer }) {
   function toggle(perm) {

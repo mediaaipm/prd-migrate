@@ -1,5 +1,7 @@
 import { getProject, listVersions, getVersion } from '../../../../lib/prd-store'
 import { listTasks } from '../../../../lib/task-store'
+import { requirePermission, requireProjectAccess } from '../../../../lib/require-permission'
+import { stripTasksMedia } from '../../../../lib/task-media'
 
 function csvEscape(val) {
   if (val === null || val === undefined) return ''
@@ -13,7 +15,13 @@ function csvEscape(val) {
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end()
 
-  const { slug, format = 'json', version } = req.query
+  const { slug, format = 'json', version, media } = req.query
+
+  // This route had no identity check of any kind and no middleware covering it, so
+  // the full contents of any project — attachments included — were downloadable by
+  // anyone who could guess a slug.
+  if (!await requireProjectAccess(slug, req, res)) return
+  if (!await requirePermission('task:view', slug)(req, res)) return
 
   const project = await getProject(slug)
   if (!project) return res.status(404).json({ error: 'Project not found' })
@@ -42,11 +50,17 @@ export default async function handler(req, res) {
   const versions = await listVersions(slug)
   const prdVersions = await Promise.all(versions.map(v => getVersion(slug, v.version)))
 
-  const rootTasks = await listTasks(slug, null)
+  // Attachment bytes are excluded unless ?media=1. A project export otherwise drags
+  // the entire image library through a function every time someone clicks Export;
+  // without media the tasks carry `url`s that resolve against the media route.
+  const withMedia = media === '1'
+  const prep = (tasks, v) => (withMedia ? tasks : stripTasksMedia(tasks, slug, v))
+
+  const rootTasks = prep(await listTasks(slug, null), null)
   const versionTasksMap = {}
   for (const v of versions) {
     const vt = await listTasks(slug, v.version)
-    if (vt.length > 0) versionTasksMap[v.version] = vt
+    if (vt.length > 0) versionTasksMap[v.version] = prep(vt, v.version)
   }
 
   const payload = {

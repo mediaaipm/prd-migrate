@@ -1,29 +1,17 @@
-const { Redis } = require('@upstash/redis');
-let _kv;
-function getKv() { if (!_kv) _kv = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN }); return _kv; }
 const { listProjects, createProject } = require('../../../lib/prd-store');
 const { logAudit } = require('../../../lib/audit-log');
-const { requirePermission } = require('../../../lib/require-permission');
+const { requirePermission, hasPermission, visibleProjects } = require('../../../lib/require-permission');
 const { getSessionUser } = require('../../../lib/session');
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     const user = getSessionUser(req)
     if (!user) return res.status(401).json({ error: 'Not signed in.' })
+    // Visibility is two-layered: the `project:view` permission decides whether the
+    // account sees projects at all, the personal/group assignment decides which.
+    if (!await hasPermission(req, 'project:view')) return res.status(200).json([]);
     const all = await listProjects();
-    try {
-      if (user.role === 'admin') {
-        const profile = await getKv().hgetall('user:' + user.name) || {}
-        let assigned = profile.assignedProjects
-        if (assigned) {
-          if (typeof assigned === 'string') { try { assigned = JSON.parse(assigned) } catch { assigned = null } }
-          if (Array.isArray(assigned)) {
-            return res.status(200).json(all.filter(p => assigned.includes(p.slug)))
-          }
-        }
-      }
-    } catch {}
-    return res.status(200).json(all);
+    return res.status(200).json(await visibleProjects(req, all));
   }
   if (req.method === 'POST') {
     if (!await requirePermission('project:create')(req, res)) return;
