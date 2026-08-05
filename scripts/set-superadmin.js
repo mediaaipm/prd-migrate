@@ -23,9 +23,15 @@ if (password.length < 12) {
   process.exit(1)
 }
 
+const hash = hashPassword(password)
+
 console.log('')
+console.log('--- .env.local (dollar signs escaped: Next expands $VAR in env files) ---')
 console.log('AUTH_SECRET=' + crypto.randomBytes(32).toString('base64'))
 console.log('SUPERADMIN_USERNAME=admin')
-console.log('SUPERADMIN_PASSWORD_HASH=' + hashPassword(password))
+console.log('SUPERADMIN_PASSWORD_HASH=' + hash.split('$').join('\\$'))
+console.log('')
+console.log('--- hosting dashboard (paste raw, no escaping) ---')
+console.log(hash)
 console.log('')
 console.log('Keep AUTH_SECRET stable unless you want to sign everyone out.')
