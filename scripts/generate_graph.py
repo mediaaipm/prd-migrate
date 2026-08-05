@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""
+""" 
 Generate graph.json from:
   - prds/{slug}/meta.json + versions/*.json + proposals/*.json  (new project structure)
   - prds/*.md with YAML frontmatter                             (legacy flat PRDs)
