@@ -30,3 +30,6 @@ Thumbs.db
 
 .vercel
 .env*
+
+# Local Claude Code settings (may contain tokens)
+.claude/settings.local.json
