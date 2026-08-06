@@ -1092,8 +1092,11 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
               <span className="kanban-card-parent-crumb-title">{parent.title}</span>
             </div>
           )}
+          {/* An <img>, not a CSS background: a background-image cannot be lazy-loaded,
+              so a column of cards would fetch every cover at once whether or not any
+              of them was ever scrolled into view. */}
           {coverSrc(task) && (
-            <div className="kanban-card-cover" style={{ backgroundImage: `url(${coverSrc(task)})` }} />
+            <img src={coverSrc(task)} alt="" className="kanban-card-cover" loading="lazy" decoding="async" />
           )}
           {renderCardLabels(task)}
           <div className="kanban-card-header">
@@ -1980,7 +1983,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                       return (
                         <div key={att.id} className="kanban-attach-item">
                           {isImg
-                            ? <a href={attSrc(att)} target="_blank" rel="noopener noreferrer" title="View"><img src={attSrc(att)} alt={att.name} className="kanban-attach-thumb" /></a>
+                            ? <a href={attSrc(att)} target="_blank" rel="noopener noreferrer" title="View"><img src={attSrc(att)} alt={att.name} className="kanban-attach-thumb" loading="lazy" decoding="async" /></a>
                             : <span className="kanban-attach-file">📄</span>}
                           <a href={attSrc(att)} target="_blank" rel="noopener noreferrer" className="kanban-attach-name" title={att.name}>{att.name}</a>
                           <a href={attSrc(att)} target="_blank" rel="noopener noreferrer" className="btn-ghost" style={{ fontSize: 11 }} title="View">View</a>

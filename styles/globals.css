@@ -2273,9 +2273,19 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .kanban-add-labels { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 
 /* Card cover image */
+/* An <img> rather than a background-image so it can be lazy-loaded. The negative
+   margins cancel the card's 10px/12px padding to bleed the cover to the card edges,
+   so the width has to add those 12px back on each side. object-fit/position stand in
+   for what background-size/background-position used to do. */
 .kanban-card-cover {
-  height: 90px; margin: -10px -12px 8px; border-radius: var(--radius) var(--radius) 0 0;
-  background-size: cover; background-position: center;
+  display: block;
+  width: calc(100% + 24px);
+  height: 90px;
+  margin: -10px -12px 8px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  object-fit: cover;
+  object-position: center;
+  background: var(--bg); /* placeholder while the lazy image is still pending */
 }
 
 /* Within-column drop indicators */

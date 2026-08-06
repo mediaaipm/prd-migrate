@@ -565,7 +565,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
           </span>
           {node.__context && <span className="task-context-tag" title="Shown as parent context">parent</span>}
           {coverSrc(node) && (
-            <img src={coverSrc(node)} alt="cover" className="task-row-cover" title="Cover image" />
+            <img src={coverSrc(node)} alt="cover" className="task-row-cover" title="Cover image" loading="lazy" decoding="async" />
           )}
           {Array.isArray(node.attachments) && node.attachments.length > 0 && (
             <span className="task-meta-chip task-attach-chip" title={`${node.attachments.length} image(s)`}>🖼 {node.attachments.length}</span>
@@ -778,7 +778,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
                     <div className="task-detail-thumbs">
                       {node.attachments.map(att => (
                         <a key={att.id} href={attSrc(att)} target="_blank" rel="noopener noreferrer" title={att.name}>
-                          <img src={attSrc(att)} alt={att.name} className="task-detail-thumb" />
+                          <img src={attSrc(att)} alt={att.name} className="task-detail-thumb" loading="lazy" decoding="async" />
                         </a>
                       ))}
                     </div>

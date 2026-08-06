@@ -264,7 +264,7 @@ export default function CalendarView({ tasks, apiBase, slug, currentUser }) {
                     title={t.title}
                     style={{ borderLeftColor: PRIORITY_COLOR[t.priority] || '#64748b' }}
                   >
-                    {coverSrc(t) && <img src={coverSrc(t)} alt="" className="cal-task-cover" />}
+                    {coverSrc(t) && <img src={coverSrc(t)} alt="" className="cal-task-cover" loading="lazy" decoding="async" />}
                     {t.number && <span className="cal-task-num">#{t.number}</span>}
                     <span className={t.status === 'done' ? 'cal-task-done' : ''}>{t.title}</span>
                     {!coverSrc(t) && Array.isArray(t.attachments) && t.attachments.length > 0 && <span className="cal-task-attach" title={`${t.attachments.length} image(s)`}>🖼</span>}
@@ -347,7 +347,7 @@ export default function CalendarView({ tasks, apiBase, slug, currentUser }) {
                       {orderDayTasks(openDayTasks).map(({ task: t, isChild }) => (
                         <div key={t.id} onContextMenu={e => handleTaskContextMenu(e, t)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 8, borderLeft: `3px solid ${PRIORITY_COLOR[t.priority] || '#64748b'}`, marginLeft: isChild ? 18 : 0 }}>
                           {isChild && <span style={{ color: '#94a3b8', fontSize: 12 }}>↳</span>}
-                          {coverSrc(t) && <img src={coverSrc(t)} alt="" style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 5, border: '1px solid var(--border)' }} />}
+                          {coverSrc(t) && <img src={coverSrc(t)} alt="" loading="lazy" decoding="async" style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 5, border: '1px solid var(--border)' }} />}
                           {t.number && <span style={{ fontSize: 11, color: '#94a3b8' }}>#{t.number}</span>}
                           <span style={{ flex: 1, fontSize: 13, textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>{t.title}</span>
                           {!coverSrc(t) && Array.isArray(t.attachments) && t.attachments.length > 0 && <span style={{ fontSize: 11 }} title={`${t.attachments.length} image(s)`}>🖼 {t.attachments.length}</span>}
