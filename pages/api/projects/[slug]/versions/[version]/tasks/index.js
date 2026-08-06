@@ -26,6 +26,8 @@ export default async function handler(req, res) {
       task = await createTask(slug, version, { id, title, description, status, priority, assignee, assignees, assignedBy, startDate, dueDate, parentId, numberOverride, attachments, cover, labelIds });
     } catch (e) {
       if (e instanceof AttachmentError) return res.status(413).json({ error: e.message });
+      if (e && e.code === 'TASK_LIST_SIZE') return res.status(507).json({ error: e.message });
+      if (e && e.code === 'TASK_LOCK') return res.status(503).json({ error: e.message });
       throw e;
     }
     // A replay of a create we already committed — the audit and history entries exist.

@@ -2,6 +2,37 @@
 
 Status: **Root cause found and fixed. Nothing deleted.**
 Date: 2026-07-28
+
+---
+
+## Follow-up, 2026-08-06 — the size problem this audit called "not a size problem"
+
+Item 3 below was wrong about the consequence. One list per (slug, version) plus
+inline base64 is not only a latency cost: `tasks:sanatan-sansaar:1.0.2` reached
+**10,485,737 bytes against Upstash's 10,485,760-byte max request size** — 23 bytes
+of headroom. Every write to that list failed, so **every task create in that
+version returned a 500**, with the redis error swallowed into a generic handler
+throw. 38 inline attachments were 9.54 MB of the 10.00 MB; the 858 task records
+were 0.46 MB.
+
+Fixed by storing attachment bytes in their own key,
+`taskatt:{slug}:{version}:{taskId}:{attId}`, one per image:
+
+- `offloadTasksMedia()` runs inside `saveTasks()`, the single choke point every
+  write path goes through, so create/update/import/restore all shed bytes before
+  the SET.
+- `stripTaskMedia()` emits a media-route `url` whether the bytes are inline or
+  offloaded; `loadAttachment()` reads from either.
+- Item 2's double-stored covers are also collapsed on write — a cover with an
+  `attId` now stores the reference alone.
+- `deleteTask`/`deleteVersion`/attachment-removal delete the byte keys.
+- `MAX_LIST_BYTES` (8 MB) turns a would-be opaque 500 into a 507 with a real message.
+
+Migration: `node scripts/migrate-task-media.js [--apply]`. Moved 51 attachments,
+12.18 MB, out of two lists — 10.00 MB → 0.46 MB and 2.77 MB → 0.13 MB. All 50
+verified byte-for-byte against a pre-migration dump.
+
+Lists now grow with task count, not image count.
 Repo: `gitlab.com/bajaj-corp/workshop/task-manager` · Vercel project `workshop-task-manager` (`prj_rBjqusNAhnZlBjS7qjJ1fFrRUmkg`)
 
 ---

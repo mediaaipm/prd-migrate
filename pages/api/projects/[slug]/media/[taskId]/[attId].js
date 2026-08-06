@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const { getTask } = require('../../../../../../lib/task-store');
 const { requirePermission, requireProjectAccess } = require('../../../../../../lib/require-permission');
-const { resolveAttachment } = require('../../../../../../lib/task-media');
+const { loadAttachment } = require('../../../../../../lib/task-media');
 
 // Serves the bytes for one attachment. Task lists now carry a `url` pointing here
 // instead of an inline data URL, which is the whole point: this response is
@@ -25,7 +25,7 @@ export default async function handler(req, res) {
   const task = await getTask(slug, version || null, taskId);
   if (!task) return res.status(404).json({ error: 'Not found' });
 
-  const resolved = resolveAttachment(task, attId);
+  const resolved = await loadAttachment(slug, version || null, task, attId);
   if (!resolved) return res.status(404).json({ error: 'Not found' });
 
   // Attachment bytes never change once uploaded — a new upload gets a new id — so

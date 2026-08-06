@@ -1,7 +1,7 @@
 import { getProject, listVersions, getVersion } from '../../../../lib/prd-store'
 import { listTasks } from '../../../../lib/task-store'
 import { requirePermission, requireProjectAccess } from '../../../../lib/require-permission'
-import { stripTasksMedia } from '../../../../lib/task-media'
+import { stripTasksMedia, hydrateTasksMedia } from '../../../../lib/task-media'
 
 function csvEscape(val) {
   if (val === null || val === undefined) return ''
@@ -53,14 +53,16 @@ export default async function handler(req, res) {
   // Attachment bytes are excluded unless ?media=1. A project export otherwise drags
   // the entire image library through a function every time someone clicks Export;
   // without media the tasks carry `url`s that resolve against the media route.
+  // With ?media=1 the bytes have to be read back out of their own keys — the task
+  // records no longer carry them.
   const withMedia = media === '1'
-  const prep = (tasks, v) => (withMedia ? tasks : stripTasksMedia(tasks, slug, v))
+  const prep = (tasks, v) => (withMedia ? hydrateTasksMedia(slug, v, tasks) : stripTasksMedia(tasks, slug, v))
 
-  const rootTasks = prep(await listTasks(slug, null), null)
+  const rootTasks = await prep(await listTasks(slug, null), null)
   const versionTasksMap = {}
   for (const v of versions) {
     const vt = await listTasks(slug, v.version)
-    if (vt.length > 0) versionTasksMap[v.version] = prep(vt, v.version)
+    if (vt.length > 0) versionTasksMap[v.version] = await prep(vt, v.version)
   }
 
   const payload = {

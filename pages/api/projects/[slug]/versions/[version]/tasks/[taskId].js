@@ -10,6 +10,19 @@ const { getEffectiveRolePolicy, isStatusRestricted } = require('../../../../../.
 const { stripTaskMedia, stripTasksMedia, mergeTaskMedia, validateAttachments, AttachmentError } = require('../../../../../../../lib/task-media');
 
 export default async function handler(req, res) {
+  try {
+    return await route(req, res);
+  } catch (e) {
+    // Contended task-list lock. 503 is transient for the client write queue, so the
+    // mutation is replayed instead of being dropped.
+    if (e && e.code === 'TASK_LOCK') return res.status(503).json({ error: e.message });
+    // The stored list would exceed what redis accepts in one write.
+    if (e && e.code === 'TASK_LIST_SIZE') return res.status(507).json({ error: e.message });
+    throw e;
+  }
+}
+
+async function route(req, res) {
   const { slug, version, taskId } = req.query;
   if (!await requireProjectAccess(slug, req, res)) return;
 

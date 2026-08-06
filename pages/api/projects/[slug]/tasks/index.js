@@ -28,6 +28,9 @@ export default async function handler(req, res) {
       task = await createTask(slug, v, { id, title, description, status, priority, assignee, assignees, assignedBy, startDate, dueDate, parentId, numberOverride, attachments, cover, labelIds });
     } catch (e) {
       if (e instanceof AttachmentError) return res.status(413).json({ error: e.message });
+      // The stored list would exceed what redis accepts in one write. Report it as
+      // the storage problem it is instead of an unexplained 500.
+      if (e && e.code === 'TASK_LIST_SIZE') return res.status(507).json({ error: e.message });
       // Someone else is mid-write on this list. 503 keeps the item in the client's
       // write queue, which replays it — never a silent loss.
       if (e && e.code === 'TASK_LOCK') return res.status(503).json({ error: e.message });
