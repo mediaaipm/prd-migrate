@@ -6,6 +6,7 @@ import SubmitButton from '../../../components/SubmitButton'
 import { apiFetch } from '../../../lib/api-fetch'
 import { enqueue, newId, onSync } from '../../../lib/submit-queue'
 import { useOptimistic } from '../../../lib/optimistic'
+import { reshapesTree } from '../../../lib/task-reconcile'
 import TaskTree from '../../../components/TaskTree'
 import KanbanBoard from '../../../components/KanbanBoard'
 import CalendarView from '../../../components/CalendarView'
@@ -597,6 +598,12 @@ export default function TasksPage({ currentUser }) {
   // newer list — that is how a just-created task disappears again after saving.
   const loadSeq = useRef(0)
 
+  // Latest server data, readable synchronously. The sync listener has to decide whether
+  // a write reshaped the tree BEFORE it picks reconcile-or-refetch, which it cannot do
+  // from inside a setState updater.
+  const serverTasksRef = useRef([])
+  useEffect(() => { serverTasksRef.current = serverTasks }, [serverTasks])
+
   // Returns the in-flight promise: onSync awaits it, so a synced write stays on the
   // optimistic overlay until the refreshed server data is actually in state.
   const loadTasks = useCallback((opts = {}) => {
@@ -623,13 +630,56 @@ export default function TasksPage({ currentUser }) {
   // Moves (drag, ↑/↓) carry no optimistic descriptor — the server reindexes siblings and
   // renumbers, which is not replayable client-side — so match on the url too, otherwise a
   // move would only appear after a reload.
-  useEffect(() => onSync(item => {
+  //
+  // Reconciling from the write's OWN response wherever it is sufficient, rather than
+  // re-GETting the list. The list is ~500 KB at this project's size and it was coming
+  // back down the wire on every status flip, drag and comment — the payload volume that
+  // blew Fast Origin Transfer once already. The response already carries the answer:
+  //
+  //   PATCH  -> the full renumbered array (computeNumbers server-side) — a drop-in list
+  //   POST   -> the created task, numbered; appending renumbers nothing
+  //   PUT    -> the updated task, as long as the edit cannot reshape the tree
+  //
+  // Deletes cascade to children and renumber the siblings left behind, and a structural
+  // PUT reparents or renumbers — neither is reconstructable from the response, so those
+  // still refetch.
+  useEffect(() => onSync((item, response) => {
     if (!apiBase) return
     const scoped = item.optimistic
       ? item.optimistic.entity === 'task' && item.optimistic.scope === apiBase
       : typeof item.url === 'string' && item.url.startsWith(apiBase)
+    if (!scoped) return
+
+    const method = String(item.method || '').toUpperCase()
+
+    // Any GET issued before this write must not land on top of what we just applied.
+    // loadTasks() already discards responses older than loadSeq; bump it so a reconcile
+    // invalidates in-flight fetches the same way a refetch would.
+    const settle = next => {
+      loadSeq.current++
+      setServerTasks(next)
+      setSprintRefreshTrigger(n => n + 1)
+      setLoading(false)
+    }
+
+    if (method === 'PATCH' && Array.isArray(response)) {
+      settle(response)
+      return
+    }
+    if (method === 'POST' && response && response.id) {
+      settle(prev => (prev.some(t => t.id === response.id) ? prev : [...prev, response]))
+      return
+    }
+    if (method === 'PUT' && response && response.id) {
+      const before = serverTasksRef.current.find(t => t.id === response.id)
+      if (!reshapesTree(item.body, before)) {
+        settle(prev => prev.map(t => (t.id === response.id ? { ...t, ...response } : t)))
+        return
+      }
+    }
+
     // Returned so the queue holds the item until this refetch has landed.
-    if (scoped) return refreshTasks()
+    return refreshTasks()
   }), [apiBase, refreshTasks])
 
   function openIdSettings() {

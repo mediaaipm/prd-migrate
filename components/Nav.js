@@ -38,9 +38,17 @@ export default function Nav() {
   }, [])
 
   // Poll notifications (no websockets — matches the app's stateless model).
+  //
+  // Only while the tab is actually being looked at. A backgrounded tab left open
+  // overnight used to keep firing once a minute — 60 function invocations an hour,
+  // per tab, per user, to update a badge nobody could see. That, not real usage,
+  // is what a serverless invocation quota gets spent on.
   useEffect(() => {
     let alive = true
+    let lastLoad = 0
+
     function load() {
+      lastLoad = Date.now()
       apiFetch('/api/notifications')
         .then(r => r.ok ? r.json() : [])
         .then(d => {
@@ -56,9 +64,27 @@ export default function Nav() {
         })
         .catch(() => {})
     }
+
+    function tick() {
+      if (typeof document !== 'undefined' && document.hidden) return
+      load()
+    }
+
+    // Coming back to a tab should feel current, but a quick tab-flick must not
+    // fire a request each time.
+    function onVisible() {
+      if (document.hidden) return
+      if (Date.now() - lastLoad >= 60000) load()
+    }
+
     load()
-    const t = setInterval(load, 60000)
-    return () => { alive = false; clearInterval(t) }
+    const t = setInterval(tick, 60000)
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      alive = false
+      clearInterval(t)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [])
 
   const unread = notifs.filter(n => !n.read).length

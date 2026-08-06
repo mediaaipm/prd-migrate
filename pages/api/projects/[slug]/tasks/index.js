@@ -3,6 +3,7 @@ const { logAudit, getAuditUser } = require('../../../../../lib/audit-log');
 const { recordTaskCreate } = require('../../../../../lib/task-history-store');
 const { requirePermission, requireProjectAccess } = require('../../../../../lib/require-permission');
 const { stripTasksMedia, stripTaskMedia, validateAttachments, AttachmentError } = require('../../../../../lib/task-media');
+const { sendJsonCached } = require('../../../../../lib/etag');
 
 export default async function handler(req, res) {
   const { slug, version } = req.query;
@@ -13,7 +14,10 @@ export default async function handler(req, res) {
     if (!await requirePermission('task:view', slug)(req, res)) return;
     // Attachment bytes are served by /api/projects/{slug}/media/... — shipping them
     // inline here re-sent every image on every board load.
-    return res.status(200).json(stripTasksMedia(await listTasks(slug, v), slug, v));
+    //
+    // ETag'd: this is the biggest payload the app returns, and reloads/tab switches
+    // mostly ask for a list that has not changed. See lib/etag.js.
+    return sendJsonCached(req, res, stripTasksMedia(await listTasks(slug, v), slug, v));
   }
   if (req.method === 'POST') {
     if (!await requirePermission('task:create', slug)(req, res)) return;

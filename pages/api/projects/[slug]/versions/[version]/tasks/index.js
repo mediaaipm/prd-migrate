@@ -3,6 +3,7 @@ const { logAudit, getAuditUser } = require('../../../../../../../lib/audit-log')
 const { recordTaskCreate } = require('../../../../../../../lib/task-history-store');
 const { requirePermission, requireProjectAccess } = require('../../../../../../../lib/require-permission');
 const { stripTasksMedia, stripTaskMedia, validateAttachments, AttachmentError } = require('../../../../../../../lib/task-media');
+const { sendJsonCached } = require('../../../../../../../lib/etag');
 
 export default async function handler(req, res) {
   const { slug, version } = req.query;
@@ -11,7 +12,8 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     if (!await requirePermission('task:view', slug)(req, res)) return;
     // Attachment bytes are served by /api/projects/{slug}/media/... — see lib/task-media.js.
-    return res.status(200).json(stripTasksMedia(await listTasks(slug, version), slug, version));
+    // ETag'd for the same reason as the root list — see lib/etag.js.
+    return sendJsonCached(req, res, stripTasksMedia(await listTasks(slug, version), slug, version));
   }
   if (req.method === 'POST') {
     if (!await requirePermission('task:create', slug)(req, res)) return;
