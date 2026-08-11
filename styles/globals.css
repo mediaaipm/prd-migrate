@@ -2362,7 +2362,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   font-weight: 700;
   padding: 1px 5px;
   border-radius: 4px;
-  line-height: 1.5;
+  line-height: 1.35;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2509,7 +2509,10 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .swim-board {
   --swim-rail-w: 152px;
   --swim-col-w: 236px;
-  --swim-cell-h: 84px;
+  /* Tall enough for the whole compact card — number row, one line of title, one
+     row of labels — *and* the "+N more" chip under it. Anything tighter and the
+     title, the only shrinkable child, is what gets squeezed out. */
+  --swim-cell-h: 106px;
   min-width: max-content;
   border: 1px solid var(--border);
   border-radius: var(--radius, 8px);
@@ -2828,13 +2831,14 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   display: inline-flex;
   align-items: baseline;
   gap: 4px;
-  padding: 2px 8px;
+  padding: 1px 7px;
   border: 1px dashed var(--border);
   border-radius: 999px;
   background: none;
   color: var(--muted);
   font-family: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
-  font-size: 10.5px;
+  font-size: 10px;
+  line-height: 1.4;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
   transition: background .12s, color .12s, border-color .12s;
@@ -3032,8 +3036,8 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .kanban-card--swim {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 7px 8px;
+  gap: 3px;
+  padding: 6px 8px;
 }
 .kanban-card-swim-top {
   display: flex;
@@ -3068,6 +3072,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   font-size: 12.5px;
   line-height: 1.35;
   margin: 0;
+  /* Never a shrink target. The card is clipped from the bottom when a cell runs
+     short, so what gives way is a label row — not the one thing you scan for. */
+  flex: none;
 }
 
 .cat-mgr-orphans {
