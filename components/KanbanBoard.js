@@ -9,6 +9,9 @@ import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
 import FilterMultiSelect, { DatePicker } from './FilterMultiSelect'
 import { DEFAULT_COLUMNS, COL_COLORS, useColumns, saveColumns, labelForStatus } from '../lib/kanban-columns'
+import { useCategories, categoriesWithTaskValues, categoryMap, effectiveCategory, taskIndex, railRollups, RAIL_STATE_LABEL } from '../lib/categories'
+import CategoryManager from './CategoryManager'
+import CellPeekModal from './CellPeekModal'
 import { isSuperAdmin } from '../lib/client-permissions'
 import { taskShareLink, copyText } from '../lib/task-link'
 import { attSrc, coverSrc } from '../lib/attachment-src'
@@ -78,6 +81,7 @@ function toEditForm(task) {
     assignees: task.assignees || [],
     startDate: task.startDate ? task.startDate.slice(0, 10) : '',
     dueDate: task.dueDate ? task.dueDate.slice(0, 10) : '',
+    category: task.category || '',
     labelIds: Array.isArray(task.labelIds) ? task.labelIds : [],
     attachments: Array.isArray(task.attachments) ? task.attachments : [],
     cover: task.cover || null,
@@ -126,6 +130,18 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   // else sees it read-only. `columns` mirrors the server copy so an edit paints
   // immediately, then reverts if the PUT is rejected.
   const canEditColumns = isSuperAdmin(currentUser)
+  // Categories are the board's second axis (rails, once the swimlane view lands);
+  // here they are read for the card chip, the edit form and the filter.
+  const savedCategories = useCategories(slug)
+  const [showCatMgr, setShowCatMgr] = useState(false)
+  // Rescue any category id a task still carries after its definition was deleted,
+  // exactly as the column reconciliation below does for a stray status.
+  const categories = categoriesWithTaskValues(savedCategories, tasks)
+  const catById = categoryMap(categories)
+  // Resolved against the *whole* task list, not the filtered one, so a sub-task
+  // still inherits from an ancestor the current filter hides.
+  const catTaskIndex = taskIndex(tasks)
+  const catOf = task => effectiveCategory(task, catTaskIndex)
   const serverColumns = useColumns(slug)
   const [columns, setColumns] = useState(serverColumns)
   const [colError, setColError] = useState('')
@@ -170,10 +186,16 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   const [draggingId, setDraggingId] = useState(null)
   const [dragOverStatus, setDragOverStatus] = useState(null)
   const [dragOverCard, setDragOverCard] = useState(null) // { id, pos: 'before' | 'after' }
+  const [swimOver, setSwimOver] = useState(null)         // "rootId|railId|status" of the hovered cell
+  // The overflow popup. Holds the *coordinates* of a cell, never a task list, so
+  // moving a task out of the cell from inside the popup drops it from the popup
+  // too instead of leaving a stale row behind.
+  const [cellPeek, setCellPeek] = useState(null)         // { rootId, railId, status, laneTitle, railName }
   const [addingFor, setAddingFor] = useState(null)
   const [addForm, setAddForm] = useState(null)
   const [quickAddFor, setQuickAddFor] = useState(null)
   const [quickAddTitle, setQuickAddTitle] = useState('')
+  const [quickAddLabels, setQuickAddLabels] = useState([])
   const [subAddFor, setSubAddFor] = useState(null) // parent task id for inline sub-task add
   const [subAddForm, setSubAddForm] = useState(blankSubForm())
   const [subAddAnother, setSubAddAnother] = useState(false)    // keep the modal open after Add
@@ -195,6 +217,117 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   const [kbDueDates, setKbDueDates] = useState([])       // specific YYYY-MM-DD picks
   const [kbPerson, setKbPerson] = useState('')
   const [kbLabel, setKbLabel] = useState('')
+  const [kbCategories, setKbCategories] = useState([])    // multi-select
+
+  function toggleKbCategory(c) {
+    setKbCategories(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])
+  }
+
+  // Board layout: plain columns, or swimlanes (story lane › category rail › status
+  // column). A per-project preference, not a shared setting — unlike the column
+  // layout itself, how you like to read the board is nobody else's business.
+  const layoutKey = slug ? `kanban-layout:${slug}` : null
+  const lanesKey = slug ? `kanban-lanes-collapsed:${slug}` : null
+  // Two different axes, two different keys. `lanesKey` is which lane bodies are
+  // hidden; `expandKey` is which lanes show every card instead of one card plus
+  // a "+N more" chip.
+  const expandKey = slug ? `kanban-lanes-expanded:${slug}` : null
+  const subLaneKey = slug ? `kanban-sublane:${slug}` : null
+  const [layout, setLayout] = useState('columns')
+  // Sub-lane axis inside an open lane: category rails, or none — one row of
+  // status cells per lane, which is the plain "story › status" board.
+  const [subLane, setSubLane] = useState('category')
+  const [collapsedLanes, setCollapsedLanes] = useState(() => new Set())
+  // Lanes showing every card in every cell. Absent from this set is the default:
+  // one card per cell with the rest behind "+N more".
+  const [expandedLanes, setExpandedLanes] = useState(() => new Set())
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const l = layoutKey && localStorage.getItem(layoutKey)
+      setLayout(l === 'swimlanes' ? 'swimlanes' : 'columns')
+      const s = subLaneKey && localStorage.getItem(subLaneKey)
+      setSubLane(s === 'none' ? 'none' : 'category')
+      const c = lanesKey && localStorage.getItem(lanesKey)
+      const parsed = c && JSON.parse(c)
+      setCollapsedLanes(new Set(Array.isArray(parsed) ? parsed : []))
+      const x = expandKey && localStorage.getItem(expandKey)
+      const parsedX = x && JSON.parse(x)
+      setExpandedLanes(new Set(Array.isArray(parsedX) ? parsedX : []))
+    } catch { /* first run, or storage disabled */ }
+  }, [layoutKey, lanesKey, expandKey, subLaneKey])
+
+  function chooseLayout(next) {
+    setLayout(next)
+    try { if (layoutKey) localStorage.setItem(layoutKey, next) } catch {}
+  }
+
+  function chooseSubLane(next) {
+    setSubLane(next)
+    try { if (subLaneKey) localStorage.setItem(subLaneKey, next) } catch {}
+  }
+
+  function persistLanes(set) {
+    try { if (lanesKey) localStorage.setItem(lanesKey, JSON.stringify([...set])) } catch {}
+  }
+
+  function toggleLane(id) {
+    setCollapsedLanes(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      persistLanes(next)
+      return next
+    })
+  }
+
+  function persistExpanded(set) {
+    try { if (expandKey) localStorage.setItem(expandKey, JSON.stringify([...set])) } catch {}
+  }
+
+  // Expanding a lane implies opening it: "show every card" says nothing while the
+  // lane body is hidden behind the caret. Collapsing only re-caps the cells — the
+  // body stays open, because the "+N more" chips are the point of the collapsed
+  // state and a hidden body has none.
+  function toggleLaneExpanded(id) {
+    const expand = !expandedLanes.has(id)
+    setExpandedLanes(prev => {
+      const next = new Set(prev)
+      if (expand) next.add(id); else next.delete(id)
+      persistExpanded(next)
+      return next
+    })
+    if (expand && collapsedLanes.has(id)) {
+      setCollapsedLanes(prev => {
+        const next = new Set(prev)
+        next.delete(id)
+        persistLanes(next)
+        return next
+      })
+    }
+  }
+
+  // The caret axis, in bulk: hide every lane's tasks down to its bar, or show
+  // them all again. Writes the same set the carets write, so a lane's own caret
+  // reflects it immediately.
+  function setAllLanesCollapsed(collapse, ids) {
+    const next = new Set(collapse ? ids : [])
+    setCollapsedLanes(next)
+    persistLanes(next)
+  }
+
+  // The global control drives the same per-lane state the carets write, so the
+  // two never disagree: after "Expand all" every lane's own chip reads Collapse.
+  function setAllLanesExpanded(expand, ids) {
+    const next = new Set(expand ? ids : [])
+    setExpandedLanes(next)
+    persistExpanded(next)
+    // Either direction opens every body — expanded lanes have to show their
+    // cards, and a collapsed-all board still has to show its "+N more" chips.
+    const open = new Set()
+    setCollapsedLanes(open)
+    persistLanes(open)
+  }
 
   function toggleKbStatus(s) {
     setKbStatuses(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])
@@ -208,7 +341,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   function clearKbFilters() {
     setKbSearch(''); setKbPriorities([]); setKbStatuses([]); setKbDate('')
     setKbStartFrom(''); setKbStartTo(''); setKbDueFrom(''); setKbDueTo(''); setKbDueDates([])
-    setKbPerson(''); setKbLabel('')
+    setKbPerson(''); setKbLabel(''); setKbCategories([])
   }
 
   // Comments
@@ -290,6 +423,13 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
 
   const labelsApi = slug ? `/api/projects/${slug}/labels` : null
   const labelById = Object.fromEntries(labels.map(l => [l.id, l]))
+  // Every new task must carry at least one label — but only once the project has
+  // labels to pick from, otherwise the first task in a new project is impossible
+  // to create. Mirrors lib/require-label.js, which is what actually enforces it;
+  // this is here so the form says no before the server has to.
+  const labelsRequired = labels.length > 0
+  const hasLabels = ids => Array.isArray(ids) && ids.length > 0
+  const labelsOk = ids => !labelsRequired || hasLabels(ids)
 
   // Archived cards never show on the board.
   const boardTasks = tasks.filter(t => !t.archived)
@@ -330,6 +470,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     if (kbPriorities.length && !kbPriorities.includes(t.priority || 'medium')) return false
     if (kbStatuses.length && !kbStatuses.includes(t.status || 'todo')) return false
     if (kbLabel && !(Array.isArray(t.labelIds) && t.labelIds.includes(kbLabel))) return false
+    if (kbCategories.length && !kbCategories.includes(catOf(t) || '')) return false
     const sd = (t.startDate || '').slice(0, 10)
     if (kbStartFrom && !(sd && sd >= kbStartFrom)) return false
     if (kbStartTo && !(sd && sd <= kbStartTo)) return false
@@ -365,7 +506,8 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   )].sort()
 
   const hasKbFilters = !!(kbSearch || kbPriorities.length || kbStatuses.length || kbDate ||
-    kbStartFrom || kbStartTo || kbDueFrom || kbDueTo || kbDueDates.length || kbPerson || kbLabel)
+    kbStartFrom || kbStartTo || kbDueFrom || kbDueTo || kbDueDates.length || kbPerson || kbLabel ||
+    kbCategories.length)
   // Strict match: show ONLY the cards that themselves match. A matched sub-task whose
   // parent did not match renders as an orphan card with a parent breadcrumb (via
   // getOrphanSubsInCol) — the non-matching parent is not drawn as its own card. So
@@ -379,10 +521,14 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   const visibleTasks = boardTasks.filter(isVisible)
   const visibleIds = new Set(visibleTasks.map(t => t.id))
 
+  // Grab-to-pan, on both boards. Anything that is itself draggable or clickable is
+  // excluded — the preventDefault below would otherwise swallow the card's own
+  // dragstart, and a lane title that pans instead of opening is a broken link.
   function onBoardMouseDown(e) {
     if (e.target.closest('.kanban-card') || e.target.closest('.kanban-subtask-row') ||
         e.target.closest('button') || e.target.closest('input') || e.target.closest('select') ||
-        e.target.closest('.kanban-column-header')) return
+        e.target.closest('.kanban-column-header') ||
+        e.target.closest('.swim-lane-title') || e.target.closest('.swim-head')) return
     const wrapper = boardWrapperRef.current
     if (!wrapper) return
     panState.current = {
@@ -517,17 +663,21 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
 
   function saveNew() {
     if (!addForm?.title.trim()) return
+    if (!labelsOk(addForm.labelIds)) return
     const status = addForm.status
 
     // Children used to wait on their parent's POST to learn its id. Now the id is
     // generated up front, so the whole subtree is queued in one synchronous pass and
     // the FIFO drain guarantees a parent is committed before its children reference it.
+    // Sub-tasks inherit the root's labels: labels are mandatory, and asking for them
+    // again on every nested row of a composer would make the composer unusable.
     function queueTree(node, parentId) {
       const draft = enqueueCreate({
         title: node.title,
         priority: node.priority,
         status,
-        ...(parentId ? { parentId } : { labelIds: node.labelIds || [] }),
+        labelIds: node.labelIds || addForm.labelIds || [],
+        ...(parentId ? { parentId } : {}),
       })
       for (const child of (node.children || [])) {
         if (child.title.trim()) queueTree(child, draft.id)
@@ -539,15 +689,29 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     setAddForm(null)
   }
 
-  // Quick-add (Trello-style inline card composer)
+  // Quick-add (Trello-style inline card composer). Labels are mandatory, so this is
+  // no longer strictly title-then-Enter — but the chips stay picked between cards,
+  // so adding ten "backend" cards in a row is still one pick and ten titles.
   function quickAdd(status) {
     if (!quickAddTitle.trim()) return
-    enqueueCreate({ title: quickAddTitle, status, priority: 'medium' })
+    if (!labelsOk(quickAddLabels)) return
+    enqueueCreate({ title: quickAddTitle, status, priority: 'medium', labelIds: quickAddLabels })
     setQuickAddTitle('')
   }
 
-  // A sub-task starts life looking like its parent — same column, priority, owners and
-  // deadline — so the common case is title-then-Enter.
+  function toggleQuickLabel(id) {
+    setQuickAddLabels(ids => ids.includes(id) ? ids.filter(l => l !== id) : [...ids, id])
+  }
+
+  // Says why the Add button is dead, next to the thing that would revive it. A
+  // disabled button with no explanation is the worst version of this rule.
+  function renderLabelHint(ids) {
+    if (labelsOk(ids)) return null
+    return <div className="kanban-label-required">Pick at least one label</div>
+  }
+
+  // A sub-task starts life looking like its parent — same column, priority, owners,
+  // deadline and labels — so the common case is title-then-Enter.
   function openSubAdd(parent) {
     setSubAddFor(parent.id)
     setSubAddForm({
@@ -556,6 +720,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
       priority: parent.priority || 'medium',
       assignees: Array.isArray(parent.assignees) ? [...parent.assignees] : [],
       dueDate: parent.dueDate || '',
+      labelIds: Array.isArray(parent.labelIds) ? [...parent.labelIds] : [],
     })
   }
 
@@ -574,6 +739,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   // Add a sub-task to an existing card on the board.
   function addSubtask(parent) {
     if (!parent || !subAddForm.title.trim()) return
+    if (!labelsOk(subAddForm.labelIds)) return
     enqueueCreate({
       ...subAddForm,
       startDate: subAddForm.startDate || null,
@@ -678,7 +844,10 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
 
   function saveEdit() {
     if (!editForm?.title.trim() || !editingTask) return
-    enqueueUpdate(editingTask.id, editForm, `Save card “${editForm.title.trim()}”`)
+    // The select's empty option means "inherit", which is stored as null — an empty
+    // string would work by accident (falsy) but reads as a real value in redis.
+    const body = { ...editForm, category: editForm.category || null }
+    enqueueUpdate(editingTask.id, body, `Save card “${editForm.title.trim()}”`)
     closeEdit()
   }
 
@@ -1018,6 +1187,445 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
       .sort((a, b) => a.order - b.order)
   }
 
+  // --- Swimlanes ---
+  // A lane is a *root* task, never a mid-level parent: nesting lanes inside lanes
+  // is unreadable, and this data nests arbitrarily deep. Everything below a root
+  // is a flat card in the lane, placed by its own category and status.
+  const LOOSE_LANE = '__none'
+
+  // Every rail row is the same height whatever it holds, so the grid stays a grid
+  // and a lane with one busy cell does not tower over its neighbours. Cards past
+  // this point live behind the "+N more" chip.
+  const SWIM_CELL_VISIBLE = 1
+
+  function swimLanes() {
+    const byRoot = new Map()
+    const stray = []
+    for (const t of visibleTasks) {
+      if (!t.parentId) continue
+      const top = topAncestorId(t.id)
+      // A task whose parent chain is broken resolves to itself — it has nowhere to
+      // nest, so it belongs with the unparented cards rather than nowhere at all.
+      if (top === t.id) { stray.push(t); continue }
+      if (!byRoot.has(top)) byRoot.set(top, [])
+      byRoot.get(top).push(t)
+    }
+    const roots = boardTasks.filter(t => !t.parentId)
+    const lanes = sortBoard(roots.filter(r => byRoot.has(r.id)))
+      .map(r => ({ root: r, cards: byRoot.get(r.id) }))
+    const laneIds = new Set(lanes.map(l => l.root.id))
+    // Roots with no visible descendants are cards, not lanes — otherwise a flat
+    // project renders as one empty seven-column lane per task.
+    const loose = sortBoard([
+      ...visibleTasks.filter(t => !t.parentId && !laneIds.has(t.id)),
+      ...stray,
+    ])
+    return { lanes, loose }
+  }
+
+  // Rails shown inside an open lane: every configured category (so each is a drop
+  // target even at zero), plus Uncategorised only when something is actually in it.
+  function railsFor(cards) {
+    // No sub-lane axis: the lane body is a single row of status cells, and
+    // `null` is the rail id that means "every card in this lane, uncategorised
+    // or not". Distinct from '', which is the Uncategorised rail.
+    if (subLane === 'none') return [{ id: null, name: null, color: null }]
+    const rails = categories.map(c => ({ id: c.id, name: c.name, color: c.color, orphan: c.orphan }))
+    if (cards.some(t => !catOf(t))) rails.push({ id: '', name: 'Uncategorised', color: null })
+    return railRollups(rails.length ? rails : [{ id: '', name: 'Uncategorised', color: null }], cards, catOf)
+  }
+
+  function swimCell(cards, railId, status) {
+    return sortBoard(cards.filter(t =>
+      (railId === null || (catOf(t) || '') === railId) && (t.status || 'todo') === status
+    ))
+  }
+
+  const swimKey = (rootId, railId, status) => `${rootId}|${railId === null ? '*' : railId}|${status}`
+
+  function onSwimDrop(e, rootId, railId, status) {
+    if (dragTypeRef.current !== 'task') return
+    e.preventDefault()
+    e.stopPropagation()
+    const id = draggingId
+    const dragged = taskById[id]
+    setDraggingId(null)
+    setSwimOver(null)
+    setDragOverStatus(null)
+    dragTypeRef.current = null
+    if (!dragged) return
+
+    // One gesture, up to three fields — but only the ones that actually changed.
+    const patch = {}
+    if ((dragged.status || 'todo') !== status) patch.status = status
+    // railId null => rails are switched off, so this gesture says nothing about
+    // the card's category and must leave it alone.
+    if (railId !== null && (catOf(dragged) || '') !== railId) patch.category = railId || null
+    const curLane = dragged.parentId ? topAncestorId(dragged.id) : null
+    const nextLane = rootId === LOOSE_LANE ? null : rootId
+    if (curLane !== nextLane) {
+      if (nextLane === dragged.id) return   // a task cannot be its own parent
+      patch.parentId = nextLane
+    }
+    if (!Object.keys(patch).length) return
+
+    if ('status' in patch && !statusAllowedForUser(patch.status)) {
+      alert('You are not allowed to set this status.')
+      return
+    }
+    // Assignees may move their own card between columns; changing its category or
+    // its story is an edit, which is admin-only.
+    if (!canEditAll && Object.keys(patch).some(k => k !== 'status')) {
+      alert('Only an admin can change a task’s category or story.')
+      return
+    }
+    // Landing in a new lane *and* a new rail rewrites both axes at once. That is
+    // the one move worth stopping for.
+    if ('parentId' in patch && 'category' in patch) {
+      const laneName = nextLane ? (taskById[nextLane]?.title || 'another story') : 'No story'
+      const railName = railId ? (catById[railId]?.name || railId) : 'Uncategorised'
+      if (!confirm(`Move “${dragged.title}” to ${laneName} › ${railName}?`)) return
+    }
+    enqueueUpdate(id, patch, `Move “${dragged.title}”`)
+  }
+
+  // Dropping *onto a card* inside a swim cell. Two different gestures land here:
+  // reordering among the cards already in this cell, and a card arriving from
+  // somewhere else that happened to land on a card rather than on empty space.
+  // Only the first is a reorder; the second is the cell's move, so it delegates
+  // rather than quietly rewriting boardOrder on a task that never joined the cell.
+  function onSwimCardDrop(e, targetTask, status, swim) {
+    if (dragTypeRef.current !== 'task') return
+    e.preventDefault()
+    e.stopPropagation()
+    const id = draggingId
+    const pos = dragOverCard?.pos
+    setDragOverCard(null)
+    if (!id || id === targetTask.id) {
+      setDraggingId(null)
+      setSwimOver(null)
+      dragTypeRef.current = null
+      return
+    }
+    // From another cell → let the cell's own rules decide what gets written
+    // (status, category, story). onSwimDrop clears the drag state itself.
+    if (!swim.ids.includes(id)) {
+      onSwimDrop(e, swim.rootId, swim.railId, status)
+      return
+    }
+    const ids = swim.ids.filter(x => x !== id)
+    let idx = ids.indexOf(targetTask.id)
+    if (idx === -1) idx = ids.length
+    if (pos === 'after') idx += 1
+    ids.splice(idx, 0, id)
+    setDraggingId(null)
+    setSwimOver(null)
+    dragTypeRef.current = null
+    reorderColumn(status, ids)
+  }
+
+  function onSwimDragOver(e, rootId, railId, status) {
+    if (dragTypeRef.current !== 'task') return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    const key = swimKey(rootId, railId, status)
+    setSwimOver(prev => (prev === key ? prev : key))
+  }
+
+  // One grid template for the header row and every rail, so the columns line up
+  // across every lane without repeating the column labels on each one. With rails
+  // off there is no gutter to reserve, so the statuses take the full width.
+  // Fixed column tracks, never `1fr`. The board is `min-width: max-content` so it
+  // can be wider than its scroller — and under max-content sizing a `1fr` track
+  // resolves to its content, so one long task title stretched its whole column to
+  // fit on a single line and pushed every other status off-screen.
+  const swimGrid = {
+    gridTemplateColumns: subLane === 'none'
+      ? `repeat(${columns.length}, var(--swim-col-w))`
+      : `var(--swim-rail-w) repeat(${columns.length}, var(--swim-col-w))`,
+  }
+
+  function railTitle(rail) {
+    if (rail.orphan) return 'This category is no longer configured'
+    const lines = [`${rail.name} — ${RAIL_STATE_LABEL[rail.state]}`]
+    if (rail.total) lines.push(`${rail.done} of ${rail.total} done`)
+    if (rail.waitingOn.length) lines.push(`Waiting on ${rail.waitingOn.join(', ')}`)
+    return lines.join('\n')
+  }
+
+  // How many cards a lane keeps behind its "+N more" chips at the default cap.
+  // Drives the lane's own expand chip, so it can say what expanding will reveal.
+  function laneHiddenCount(cards) {
+    let hidden = 0
+    for (const rail of railsFor(cards)) {
+      for (const col of columns) {
+        const len = swimCell(cards, rail.id, col.status).length
+        if (len > SWIM_CELL_VISIBLE) hidden += len - SWIM_CELL_VISIBLE
+      }
+    }
+    return hidden
+  }
+
+  function renderSwimRail(rootId, rail, cards, expanded) {
+    return (
+      <div
+        className={`swim-rail${expanded ? ' swim-rail--expanded' : ''}`}
+        style={swimGrid}
+        key={`${rootId}|${rail.id === null ? '*' : rail.id}`}
+      >
+        {rail.id !== null && (
+          <div
+            className={[
+              'swim-rail-label',
+              rail.id ? '' : 'swim-rail-label--none',
+              `swim-rail-label--${rail.state}`,
+            ].filter(Boolean).join(' ')}
+            style={rail.color ? { borderLeftColor: rail.color } : undefined}
+            title={railTitle(rail)}
+          >
+            <div className="swim-rail-top">
+              <span className="swim-rail-name">{rail.name}</span>
+              <span className="swim-rail-count">{rail.done}/{rail.total}</span>
+            </div>
+            <span className="swim-rail-meter" aria-hidden="true">
+              <span className="swim-rail-meter-fill" style={{ width: `${rail.pct}%` }} />
+            </span>
+            <span className={`swim-rail-state swim-rail-state--${rail.state}`}>
+              {RAIL_STATE_LABEL[rail.state]}
+            </span>
+          </div>
+        )}
+        {columns.map(col => {
+          const cell = swimCell(cards, rail.id, col.status)
+          const hot = swimOver === swimKey(rootId, rail.id, col.status)
+          const swim = { rootId, railId: rail.id, ids: cell.map(t => t.id) }
+          return (
+            <div
+              key={col.status}
+              className={`swim-cell${hot ? ' swim-cell--over' : ''}${cell.length ? '' : ' swim-cell--empty'}`}
+              onDragOver={e => onSwimDragOver(e, rootId, rail.id, col.status)}
+              onDrop={e => onSwimDrop(e, rootId, rail.id, col.status)}
+              onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setSwimOver(null) }}
+            >
+              {(expanded ? cell : cell.slice(0, SWIM_CELL_VISIBLE))
+                .map(t => renderTaskCard(t, col, { orphan: true, flat: true, swim }))}
+              {!expanded && cell.length > SWIM_CELL_VISIBLE && (
+                <button
+                  className="swim-more"
+                  title={`${cell.length} tasks here — click to manage them`}
+                  onClick={() => setCellPeek({
+                    rootId,
+                    railId: rail.id,
+                    status: col.status,
+                    laneTitle: rootId === LOOSE_LANE ? 'No story' : (taskById[rootId]?.title || 'Story'),
+                    railName: rail.id === null ? null : (rail.name || 'Uncategorised'),
+                  })}
+                >
+                  +{cell.length - SWIM_CELL_VISIBLE}
+                  <span className="swim-more-word">more</span>
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  // Recomputed from the cell's coordinates on every render rather than captured
+  // when the popup opened, so a status change made inside the popup takes the
+  // task out of the list exactly as it takes it out of the cell behind.
+  function cellPeekTasks(peek) {
+    const { lanes, loose } = swimLanes()
+    const cards = peek.rootId === LOOSE_LANE
+      ? loose
+      : (lanes.find(l => l.root.id === peek.rootId)?.cards || [])
+    return swimCell(cards, peek.railId, peek.status)
+  }
+
+  function renderCellPeek() {
+    const col = columns.find(c => c.status === cellPeek.status)
+    return (
+      <CellPeekModal
+        tasks={cellPeekTasks(cellPeek)}
+        columns={columns}
+        statusLabel={col?.label || cellPeek.status}
+        statusColor={col?.color}
+        laneTitle={cellPeek.laneTitle}
+        railName={cellPeek.railName}
+        taskPrefix={taskPrefix}
+        formatDate={formatDate}
+        isOverdue={isOverdue}
+        labelById={labelById}
+        subCount={t => {
+          const kids = getDescendantsOf(t.id)
+          return { done: kids.filter(k => k.status === 'done').length, total: kids.length }
+        }}
+        canSetStatus={canChangeStatus}
+        statusAllowed={statusAllowedForUser}
+        onSetStatus={(t, next) => {
+          if (!statusAllowedForUser(next)) { alert('You are not allowed to set this status.'); return }
+          enqueueUpdate(t.id, { status: next }, `Move “${t.title}”`)
+        }}
+        onOpen={t => { setCellPeek(null); openEdit(t) }}
+        onClose={() => setCellPeek(null)}
+      />
+    )
+  }
+
+  function renderSwimBoard(board) {
+    const { lanes, loose } = board
+    if (!lanes.length && !loose.length) {
+      return <div className="kanban-empty">No tasks match the current filters.</div>
+    }
+    return (
+      <div
+        ref={boardWrapperRef}
+        className="swim-board-wrapper"
+        onMouseDown={onBoardMouseDown}
+        onMouseMove={onBoardMouseMove}
+        onMouseUp={onBoardMouseUp}
+        onMouseLeave={onBoardMouseUp}
+      >
+        <div className="swim-board">
+          <div className="swim-head" style={swimGrid}>
+            {subLane !== 'none' && <div className="swim-head-corner">Category</div>}
+            {columns.map(col => (
+              <div key={col.status} className="swim-head-col">
+                <span className="kanban-column-dot" style={{ background: col.color }} />
+                <span>{col.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {lanes.map(({ root, cards }) => {
+            const collapsed = collapsedLanes.has(root.id)
+            const expanded = expandedLanes.has(root.id)
+            const hidden = laneHiddenCount(cards)
+            const done = cards.filter(t => t.status === 'done').length
+            const pct = cards.length ? Math.round((done / cards.length) * 100) : 0
+            const rootCol = columns.find(c => c.status === root.status)
+            return (
+              <div className="swim-lane" key={root.id}>
+                {/* The story is the lane, never a card — its status and progress
+                    live here instead of in a column. */}
+                {/* The bar spans the whole board so its tint runs the full width,
+                    but everything *in* it rides a sticky inner cluster — the board
+                    is several screens wide, and a right-aligned progress chip on a
+                    2000px bar is a progress chip nobody ever sees. */}
+                <div className="swim-lane-bar">
+                  <div className="swim-lane-bar-inner">
+                    <button
+                      className="swim-lane-caret"
+                      onClick={() => toggleLane(root.id)}
+                      aria-expanded={!collapsed}
+                      title={collapsed ? 'Expand lane' : 'Collapse lane'}
+                    >{collapsed ? '▶' : '▼'}</button>
+                    {root.number && <span className="task-number">{root.number}</span>}
+                    <span
+                      className="swim-lane-title"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openEdit(root)}
+                      onKeyDown={e => { if (e.key === 'Enter') openEdit(root) }}
+                      title="Open story"
+                    >{root.title}</span>
+                    <span className="swim-lane-kind">Story</span>
+                    {rootCol && (
+                      <span className="swim-lane-status" style={{ background: rootCol.color }}>{rootCol.label}</span>
+                    )}
+                    <span
+                      className="swim-lane-prog"
+                      title={`${pct}% of “${root.title}” complete`}
+                    >
+                      <span className="swim-lane-meter" aria-hidden="true">
+                        <span className="swim-lane-meter-fill" style={{ width: `${pct}%` }} />
+                      </span>
+                      {done} / {cards.length} done
+                    </span>
+                    {root.assignees?.map(a => (
+                      <span key={a} className="kanban-assignee-avatar swim-lane-avatar" title={a}>
+                        {a.charAt(0).toUpperCase()}
+                      </span>
+                    ))}
+                    <button
+                      className={`swim-lane-expand${expanded ? ' swim-lane-expand--on' : ''}`}
+                      onClick={() => toggleLaneExpanded(root.id)}
+                      aria-pressed={expanded}
+                      title={expanded
+                        ? 'Collapse this story — cap each cell and bring back the “+N more” chips'
+                        : hidden
+                          ? `Expand this story — show all ${cards.length} tasks (${hidden} behind “+N more”)`
+                          : 'Expand this story — show every task in each cell'}
+                    >
+                      {expanded ? '⤡ Collapse' : `⤢ Expand${hidden ? ` +${hidden}` : ''}`}
+                    </button>
+                  </div>
+                </div>
+                {!collapsed && railsFor(cards).map(rail => renderSwimRail(root.id, rail, cards, expanded))}
+              </div>
+            )
+          })}
+
+          {loose.length > 0 && (
+            <div className="swim-lane">
+              <div className="swim-lane-bar swim-lane-bar--loose">
+                <div className="swim-lane-bar-inner">
+                  <button
+                    className="swim-lane-caret"
+                    onClick={() => toggleLane(LOOSE_LANE)}
+                    aria-expanded={!collapsedLanes.has(LOOSE_LANE)}
+                    title={collapsedLanes.has(LOOSE_LANE) ? 'Expand lane' : 'Collapse lane'}
+                  >{collapsedLanes.has(LOOSE_LANE) ? '▶' : '▼'}</button>
+                  <span className="swim-lane-title swim-lane-title--loose">No story</span>
+                  <span className="swim-lane-prog">{loose.length} task{loose.length !== 1 ? 's' : ''}</span>
+                  {(() => {
+                    const expanded = expandedLanes.has(LOOSE_LANE)
+                    const hidden = laneHiddenCount(loose)
+                    return (
+                      <button
+                        className={`swim-lane-expand${expanded ? ' swim-lane-expand--on' : ''}`}
+                        onClick={() => toggleLaneExpanded(LOOSE_LANE)}
+                        aria-pressed={expanded}
+                        title={expanded
+                          ? 'Collapse — cap each cell and bring back the “+N more” chips'
+                          : hidden
+                            ? `Expand — show all ${loose.length} tasks (${hidden} behind “+N more”)`
+                            : 'Expand — show every task in each cell'}
+                      >
+                        {expanded ? '⤡ Collapse' : `⤢ Expand${hidden ? ` +${hidden}` : ''}`}
+                      </button>
+                    )
+                  })()}
+                </div>
+              </div>
+              {!collapsedLanes.has(LOOSE_LANE) && railsFor(loose).map(rail =>
+                renderSwimRail(LOOSE_LANE, rail, loose, expandedLanes.has(LOOSE_LANE)))}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // Solid when the card owns the category, outlined when it only inherits it from
+  // an ancestor — same distinction the list view draws.
+  function renderCardCategory(task) {
+    const id = catOf(task)
+    if (!id) return null
+    const def = catById[id]
+    const own = !!task.category
+    return (
+      <span
+        className={`task-cat-chip${own ? '' : ' task-cat-chip--inherited'}${def ? '' : ' task-cat-chip--orphan'}`}
+        style={def && own ? { background: def.color } : def ? { color: def.color, borderColor: def.color } : undefined}
+        title={own ? 'Category' : 'Inherited from a parent task'}
+      >
+        {def?.name || id}
+      </span>
+    )
+  }
+
   function renderCardLabels(task) {
     const ids = Array.isArray(task.labelIds) ? task.labelIds : []
     if (!ids.length) return null
@@ -1048,19 +1656,96 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
 
   // One renderer for parents and children alike: a child gets the identical card
   // body plus its child markers (indent rail, breadcrumb, sub badge, dimming).
-  function renderTaskCard(task, col, { depth = 0, orphan = false } = {}) {
+  // `flat` is the swimlane board: hierarchy is already carried by the lane, so a
+  // card must not also nest its same-column children underneath itself or every
+  // sub-task would be drawn twice.
+  function renderTaskCard(task, col, { depth = 0, orphan = false, flat = false, swim = null } = {}) {
     const isChild = depth > 0 || orphan
     const parent = task.parentId ? taskById[task.parentId] : null
     const descendants = getDescendantsOf(task.id)
     const doneDescendants = descendants.filter(c => c.status === 'done').length
     const overdue = isOverdue(task.dueDate)
-    const dropClass = !isChild && dragOverCard?.id === task.id ? ` kanban-card--drop-${dragOverCard.pos}` : ''
-    const kids = getChildrenInCol(task.id, col.status)
+    // A swimlane card is a drop target even though it renders as a child: the cell
+    // is its column, so reordering inside it is the same gesture as reordering a
+    // top-level card in the plain board.
+    const dropClass = (!isChild || swim) && dragOverCard?.id === task.id ? ` kanban-card--drop-${dragOverCard.pos}` : ''
+    const kids = flat ? [] : getChildrenInCol(task.id, col.status)
     const groupClass = [
       'kanban-card-group',
       isChild && !orphan ? 'kanban-card-group--child' : '',
       animatingOut.has(task.id) ? 'kanban-card-group--leaving' : '',
     ].filter(Boolean).join(' ')
+
+    // A swimlane cell is one of seven-plus columns inside one of many lanes, so a
+    // card there gets a fraction of the width a column-board card gets. It carries
+    // only what the grid cannot already say: which task, how urgent, and which
+    // labels it wears. Everything else — assignees, dates, attachments — is one
+    // click away in the modal, and on the hover title so nothing is actually lost.
+    if (swim) {
+      const idLabel = task.number || (task.seq != null ? (taskPrefix ? `${taskPrefix}-${task.seq}` : `#${task.seq}`) : '')
+      const swimLabels = (Array.isArray(task.labelIds) ? task.labelIds : []).map(id => labelById[id]).filter(Boolean)
+      const hover = [
+        task.title,
+        swimLabels.length ? `Labels: ${swimLabels.map(l => l.name).join(', ')}` : '',
+        task.assignees?.length ? `Assigned: ${task.assignees.join(', ')}` : '',
+        task.dueDate ? `${overdue ? 'OVERDUE ' : 'Due '}${formatDate(task.dueDate)}` : '',
+        task.priority ? `${PRIORITY_LABEL[task.priority]} priority` : '',
+        descendants.length ? `${doneDescendants}/${descendants.length} sub-tasks done` : '',
+      ].filter(Boolean).join('\n')
+      return (
+        <div key={task.id} className={groupClass}>
+          <div
+            ref={task.id === focusTaskId ? focusCardRef : undefined}
+            className={`kanban-card kanban-card--swim${swimLabels.length ? ' kanban-card--swim-labelled' : ''}${draggingId === task.id ? ' kanban-card--dragging' : ''}${dropClass}${task.id === focusTaskId ? ' kanban-card--focused' : ''}`}
+            draggable
+            role="button"
+            tabIndex={0}
+            title={hover}
+            onClick={() => openEdit(task)}
+            onKeyDown={e => { if (e.key === 'Enter') openEdit(task) }}
+            onContextMenu={e => handleCardContextMenu(e, task)}
+            onDragStart={e => onDragStart(e, task.id)}
+            onDragOver={e => onCardDragOver(e, task)}
+            onDrop={e => onSwimCardDrop(e, task, col.status, swim)}
+            onDragEnd={onDragEnd}
+          >
+            <div className="kanban-card-swim-top">
+              <span className="kanban-card-swim-num">{idLabel}</span>
+              {/* A card can be a parent itself — one lane deep is all the board
+                  nests, so its own sub-tasks are only visible as this count. */}
+              {descendants.length > 0 && (
+                <span
+                  className={`kanban-card-swim-prog${doneDescendants === descendants.length ? ' kanban-card-swim-prog--all' : ''}`}
+                  title={`${doneDescendants} of ${descendants.length} sub-tasks done`}
+                >{doneDescendants}/{descendants.length}</span>
+              )}
+              {task.priority && (
+                <span
+                  className="kanban-card-swim-dot"
+                  style={{ background: PRIORITY_COLOR[task.priority] }}
+                />
+              )}
+            </div>
+            <div className="kanban-card-title">{task.title}</div>
+            {/* Labels sit below the title, not above it: the title is what you
+                scan for, and a row of colour on top of every card would win that
+                fight every time. */}
+            {swimLabels.length > 0 && (
+              <div className="kanban-card-swim-labels">
+                {swimLabels.map(l => (
+                  <span
+                    key={l.id}
+                    className="kanban-label-chip kanban-label-chip--mini"
+                    style={{ background: l.color }}
+                    title={l.name}
+                  >{l.name}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )
+    }
 
     return (
       <div key={task.id} className={groupClass}>
@@ -1100,6 +1785,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
           )}
           {renderCardLabels(task)}
           <div className="kanban-card-header">
+            {renderCardCategory(task)}
             {isChild && <span className="kanban-sub-badge" title="Sub-task">↳ sub</span>}
             {(task.seq != null || task.number) && <span className="task-id-badge" style={{ fontSize: 10 }}>{task.seq != null ? (taskPrefix ? `${taskPrefix}-${task.seq}` : `#${task.seq}`) : `#${task.number}`}</span>}
             {task.number && <span className="task-number" style={{ fontSize: 10 }}>{task.number}</span>}
@@ -1181,6 +1867,21 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
       </div>
     )
   }
+
+  // Built once here rather than inside renderSwimBoard: the toolbar's Expand all
+  // needs the same lane list the board renders, and walking every task twice a
+  // render to get it is a waste on a large board.
+  const swimBoardData = layout === 'swimlanes' ? swimLanes() : null
+  const swimLaneIdList = swimBoardData
+    ? [
+      ...swimBoardData.lanes.map(l => l.root.id),
+      ...(swimBoardData.loose.length ? [LOOSE_LANE] : []),
+    ]
+    : []
+  const allLanesExpanded = swimLaneIdList.length > 0
+    && swimLaneIdList.every(id => expandedLanes.has(id))
+  const allLanesCollapsed = swimLaneIdList.length > 0
+    && swimLaneIdList.every(id => collapsedLanes.has(id))
 
   return (
     <div>
@@ -1271,9 +1972,94 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
         >
           {copiedAll ? `✓ Copied ${copiedAll}` : '🔗 Copy links'}
         </button>
+        {categories.length > 0 && (
+          <FilterMultiSelect
+            label="Category"
+            options={[...categories.map(c => ({ value: c.id, label: c.name })), { value: '', label: 'Uncategorised' }]}
+            selected={kbCategories}
+            onToggle={toggleKbCategory}
+            onClear={() => setKbCategories([])}
+          />
+        )}
+        {/* The board's three axes. Only the first is a real choice today —
+            "None" is the plain column board. The other two are fixed selects
+            rather than labels so the shape of the board is legible at a glance,
+            and so swapping a sub-lane for Assignee or Sprint later is a new
+            option rather than new chrome. */}
+        <div className="swim-axes" role="group" aria-label="Board axes">
+          <span className="swim-axes-label">Lanes</span>
+          <select
+            className="swim-axis-select"
+            value={layout === 'swimlanes' ? 'story' : ''}
+            onChange={e => chooseLayout(e.target.value === 'story' ? 'swimlanes' : 'columns')}
+            title="One lane per story, or no lanes at all"
+          >
+            <option value="story">Story</option>
+            <option value="">None</option>
+          </select>
+          <span className="swim-axes-label">Sub-lanes</span>
+          <select
+            className="swim-axis-select"
+            value={subLane}
+            disabled={layout !== 'swimlanes'}
+            onChange={e => chooseSubLane(e.target.value)}
+            title="Split each lane into category rails, or give it one row of statuses"
+          >
+            <option value="category">Category</option>
+            <option value="none">None</option>
+          </select>
+          <span className="swim-axes-label">Columns</span>
+          <select
+            className="swim-axis-select"
+            defaultValue="status"
+            disabled
+            title="Columns are board statuses"
+          >
+            <option value="status">Status</option>
+          </select>
+        </div>
+        {/* Two different "all"s, so they are labelled by what they act on: one
+            hides the tasks under every story, the other decides whether the
+            tasks that *are* shown sit behind a "+N more" chip. */}
+        {layout === 'swimlanes' && (
+          <div className="swim-bulk" role="group" aria-label="Expand and collapse">
+            <button
+              className="btn-ghost swim-expand-all"
+              onClick={() => setAllLanesCollapsed(!allLanesCollapsed, swimLaneIdList)}
+              disabled={!swimLaneIdList.length}
+              aria-pressed={allLanesCollapsed}
+              title={allLanesCollapsed
+                ? 'Show the tasks under every story again'
+                : 'Hide the tasks under every story — stories only'}
+            >
+              {allLanesCollapsed ? '⌄ Expand all stories' : '⌃ Collapse all stories'}
+            </button>
+            <button
+              className="btn-ghost swim-expand-all"
+              onClick={() => setAllLanesExpanded(!allLanesExpanded, swimLaneIdList)}
+              disabled={!swimLaneIdList.length}
+              aria-pressed={allLanesExpanded}
+              title={allLanesExpanded
+                ? 'Cap every cell again and bring back the “+N more” chips'
+                : 'Show every task in every story — no “+N more” chips'}
+            >
+              {allLanesExpanded ? '⤡ Collapse all tasks' : '⤢ Expand all tasks'}
+            </button>
+          </div>
+        )}
         {labelsApi && (
           <button className="btn-ghost" style={{ whiteSpace: 'nowrap', fontSize: 12 }} onClick={() => setShowLabelMgr(true)}>
             🏷 Labels
+          </button>
+        )}
+        {slug && (
+          <button
+            className="btn-ghost"
+            style={{ whiteSpace: 'nowrap', fontSize: 12 }}
+            onClick={() => setShowCatMgr(true)}
+            title="Categories group work within a story (Frontend, Backend, UI/UX…)"
+          >
+            🗂 Categories{categories.length ? ` (${categories.length})` : ''}
           </button>
         )}
         {canEditAll && slug && (
@@ -1288,6 +2074,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
         )}
       </div>
       {colError && <div className="kanban-col-error">{colError}</div>}
+      {layout === 'swimlanes' ? renderSwimBoard(swimBoardData) : (
       <div
         ref={boardWrapperRef}
         className="kanban-board-wrapper"
@@ -1433,7 +2220,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                         style={{ fontSize: 12, padding: '4px 10px' }}
                         busyLabel="Adding…"
                         onClick={saveNew}
-                        disabled={!addForm.title.trim()}
+                        disabled={!addForm.title.trim() || !labelsOk(addForm.labelIds)}
                       >Add</SubmitButton>
                     </div>
                     {labels.length > 0 && (
@@ -1452,6 +2239,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                         })}
                       </div>
                     )}
+                    {renderLabelHint(addForm.labelIds)}
                     {renderSubFormChildren(addForm.children || [], [])}
                     <button
                       className="kanban-add-subtask-btn"
@@ -1484,8 +2272,27 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                           if (e.key === 'Escape') { setQuickAddFor(null); setQuickAddTitle('') }
                         }}
                       />
+                      {/* Selection survives each Add, so a run of cards in the same
+                          discipline is one pick and N titles. */}
+                      {labels.length > 0 && (
+                        <div className="kanban-add-labels">
+                          {labels.map(l => {
+                            const on = quickAddLabels.includes(l.id)
+                            return (
+                              <button
+                                key={l.id}
+                                type="button"
+                                className="kanban-label-chip kanban-label-chip--toggle"
+                                style={{ background: on ? l.color : 'transparent', color: on ? '#fff' : l.color, borderColor: l.color }}
+                                onClick={() => toggleQuickLabel(l.id)}
+                              >{on ? '✓ ' : ''}{l.name}</button>
+                            )
+                          })}
+                        </div>
+                      )}
+                      {renderLabelHint(quickAddLabels)}
                       <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-                        <button className="btn-primary" style={{ fontSize: 12, padding: '4px 12px' }} onClick={() => quickAdd(col.status)} disabled={!quickAddTitle.trim()}>Add card</button>
+                        <button className="btn-primary" style={{ fontSize: 12, padding: '4px 12px' }} onClick={() => quickAdd(col.status)} disabled={!quickAddTitle.trim() || !labelsOk(quickAddLabels)}>Add card</button>
                         <button className="btn-ghost" style={{ fontSize: 12, padding: '4px 10px' }} onClick={() => { setQuickAddFor(null); setQuickAddTitle('') }}>✕</button>
                       </div>
                     </div>
@@ -1541,6 +2348,19 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
           ) : null}
         </div>
       </div>
+      )}
+
+      {showCatMgr && (
+        <CategoryManager
+          slug={slug}
+          categories={savedCategories}
+          tasks={tasks.filter(t => !t.archived)}
+          currentUser={currentUser}
+          onClose={() => setShowCatMgr(false)}
+        />
+      )}
+
+      {cellPeek && renderCellPeek()}
 
       {/* Label manager modal */}
       {showLabelMgr && (
@@ -1714,6 +2534,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                     </div>
                   </div>
                 )}
+                {renderLabelHint(subAddForm.labelIds)}
 
                 <div className="task-form-row">
                   <select className="form-input" value={subAddForm.status} onChange={e => setSubAddForm(p => ({ ...p, status: e.target.value }))}>
@@ -1746,7 +2567,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                     <SubmitButton
                       className="btn-primary"
                       onClick={() => addSubtask(parent)}
-                      disabled={!subAddForm.title.trim()}
+                      disabled={!subAddForm.title.trim() || !labelsOk(subAddForm.labelIds)}
                       busyLabel="Adding…"
                     >Add Sub-task</SubmitButton>
                   </div>
@@ -1912,6 +2733,39 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                   <option value="high">High priority</option>
                   <option value="critical">Critical priority</option>
                 </select>
+                {categories.length > 0 && (() => {
+                  // Blank means "inherit from the nearest ancestor", not "none" —
+                  // say which one, or the empty option reads as clearing the value.
+                  const parent = editingTask.parentId ? catTaskIndex[editingTask.parentId] : null
+                  const inherited = parent ? catOf(parent) : ''
+                  // A story lane spans every rail beneath it, so a category on the
+                  // story contradicts its own children — and because categories
+                  // inherit, it would sweep every uncategorised descendant into one
+                  // rail in a single edit. Don't offer the field on a lane. A lane
+                  // that already carries one from an earlier edit keeps the select,
+                  // so the value can still be cleared.
+                  const isLane = !editingTask.parentId && getDescendantsOf(editingTask.id).length > 0
+                  if (isLane && !editForm.category) {
+                    return (
+                      <span className="task-form-hint">
+                        Stories have no category — set it on the tasks beneath.
+                      </span>
+                    )
+                  }
+                  return (
+                    <select
+                      className="form-input"
+                      value={editForm.category || ''}
+                      onChange={e => setEditForm(p => ({ ...p, category: e.target.value }))}
+                      title="Category"
+                    >
+                      <option value="">
+                        {inherited ? `Inherit — ${catById[inherited]?.name || inherited}` : 'No category'}
+                      </option>
+                      {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  )
+                })()}
               </div>
               <AssigneeInput
                 value={editForm.assignees}

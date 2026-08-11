@@ -61,6 +61,8 @@ Visibility perms (`project:view`, `version:view`, `proposal:view`, `task:view`, 
 | `pages/projects/[slug]/tasks.js` | Task list + kanban toggle |
 | `components/KanbanBoard.js` | Kanban — columns are global per project, superadmin-only edit |
 | `lib/kanban-columns.js` | Column layout: server is truth (`columns:{slug}`), localStorage is a first-paint cache |
+| `lib/categories.js` | Task categories (`categories:{slug}`) — the second grouping axis; same server-is-truth pattern as columns |
+| `components/CategoryManager.js` | Categories modal — superadmin edits, everyone reads |
 | `components/TaskTree.js` | Tree list view with inline edit |
 | `components/Nav.js` | Top nav |
 | `styles/globals.css` | All styles — no CSS modules |
@@ -73,7 +75,8 @@ Visibility perms (`project:view`, `version:view`, `proposal:view`, `task:view`, 
 - Never read identity from a request header. `getSessionUser(req)` from `lib/session.js` is the only entry point
 - Never store a password without `hashPassword()`
 - Client fetches: always use `apiFetch`, not raw `fetch`
-- Redis keys: `project:{slug}`, `task:{slug}:{id}`, `version:{slug}:{ver}`, `sprint:{slug}:{id}`, `group:{id}`, `user-groups:{name}`
+- Redis keys: `project:{slug}`, `task:{slug}:{id}`, `version:{slug}:{ver}`, `sprint:{slug}:{id}`, `group:{id}`, `user-groups:{name}`, `columns:{slug}`, `categories:{slug}`
+- `task.category` holds a category **id**, never a name. Read it through `effectiveCategory()` so ancestor inheritance applies — reading the raw field misses every sub-task that inherits
 - Never read `user:{name}.permissions` directly — go through `getUserAccess()` so groups and the legacy-permission upgrade are applied
 - New permissions must be added to `ALL_PERMISSIONS` **and** `PERMISSION_GROUPS`, and `PERMS_VERSION`/`POLICY_VERSION` bumped if omitting them from a stored list would revoke access
 - Tasks are flat in Redis; `buildTree()` in TaskTree constructs hierarchy client-side

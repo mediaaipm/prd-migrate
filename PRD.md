@@ -145,8 +145,8 @@ project so the list view doesn't need an N+1 read.
 ### 4.4 Tasks
 Fields: `id`, `seq`, `title`, `description`, `status`, `priority`, `assignees[]`,
 `assignedBy`, `startDate`, `dueDate`, `parentId`, `order`, `boardOrder`,
-`numberOverride`, `labelIds[]`, `attachments[]`, `cover`, `archived`, `updates[]`
-(comments), `createdAt`.
+`numberOverride`, `category`, `labelIds[]`, `attachments[]`, `cover`, `archived`,
+`updates[]` (comments), `createdAt`.
 
 - **Two id systems.** `seq` is a project-wide, never-reused integer from an atomic
   `INCR`, rendered as `{prefix}-{seq}`. `number` is a positional outline number
@@ -191,6 +191,32 @@ reconciliation is local-only — it does not rewrite the shared layout.
 
 ### 4.8 Labels
 Project-scoped colored tags `{ id, name, color }`, referenced by `task.labelIds`.
+
+### 4.8a Categories
+The second grouping axis, alongside status: a story lane is divided into category
+rails (Frontend, Backend, UI/UX…) whose cards then sit in status columns.
+
+A category is a **field on a task**, not a task. `task.category` holds a category
+id, so "Backend" is one thing per project rather than one throwaway parent task
+under every story — which is what makes "all backend work" a filter instead of an
+impossibility, and keeps real sub-tasks two levels deep rather than three.
+
+Storage mirrors board columns exactly: `{ id, name, color }` in `categories:{slug}`,
+exposed at `GET/PUT /api/projects/{slug}/categories`, readable by everyone and
+writable by super admins only, server-authoritative with `localStorage` as a
+first-paint cache ([lib/categories.js](lib/categories.js)). `id` is an immutable
+slug and `name` is the renameable display text — the same split as a column's
+`status`/`label` — so renaming a category never touches a task.
+
+- **Inheritance.** A task's *effective* category is its own, else the nearest
+  ancestor's, else none. Sub-tasks are deliberately left blank rather than stamped
+  with the parent's value, so re-categorising a story carries its whole subtree.
+  Chips render outlined when inherited, solid when owned.
+- **Deletion never cascades.** `categoriesWithTaskValues()` synthesizes a flagged
+  entry for any category id still on a task, the same rescue
+  `columnsWithTaskStatuses()` performs for a status whose column was removed.
+- **Unlike columns, an empty list is valid.** No categories configured means no
+  rails and no category UI — the feature stays invisible until it is set up.
 
 ### 4.9 Notifications
 In-app, per user, capped at 100. Triggered by: assignment to a task, an @mention in

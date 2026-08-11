@@ -10,6 +10,9 @@ import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
 import FilterMultiSelect from './FilterMultiSelect'
 import { useColumns, columnsWithTaskStatuses, labelForStatus } from '../lib/kanban-columns'
+import { useCategories, categoriesWithTaskValues, categoryMap, effectiveCategory, taskIndex } from '../lib/categories'
+import CategoryManager from './CategoryManager'
+import TaskMiniBoard from './TaskMiniBoard'
 import { taskShareLink, copyText } from '../lib/task-link'
 import { attSrc, coverSrc } from '../lib/attachment-src'
 
@@ -139,13 +142,13 @@ function buildFilteredTree(allTasks, matched, sortBy = 'order') {
 }
 
 function blankForm() {
-  return { title: '', description: '', status: 'todo', priority: 'medium', assignees: [], assignedBy: '', startDate: '', dueDate: '', numberOverride: '', attachments: [], cover: null }
+  return { title: '', description: '', status: 'todo', priority: 'medium', category: '', assignees: [], assignedBy: '', startDate: '', dueDate: '', numberOverride: '', attachments: [], cover: null, labelIds: [] }
 }
 
 // `quickAdd` collapses everything but the title behind a "More options" toggle — the
 // common case is a title and Enter. `allowAddAnother` keeps the form open and cleared
 // after a save so several sub-tasks can be typed in a row.
-function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreator = false, currentUser = null, quickAdd = false, allowAddAnother = false, columns = [] }) {
+function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreator = false, currentUser = null, quickAdd = false, allowAddAnother = false, columns = [], categories = [], inheritedCategory = '', labels = [], requireLabel = false }) {
   function makeInitial() {
     const base = initial || blankForm()
     // Auto-attribute the creator from the logged-in user; no manual entry.
@@ -163,8 +166,47 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreato
 
   // onSave only enqueues now, so there is no response to await. SubmitButton owns the
   // busy state and the double-click guard.
+  const formLabels = Array.isArray(form.labelIds) ? form.labelIds : []
+  // Mirrors lib/require-label.js: mandatory, but only once the project has labels
+  // to pick from — and only on create, never on an edit of an older task.
+  const labelMissing = requireLabel && labels.length > 0 && formLabels.length === 0
+
+  function toggleLabel(id) {
+    setForm(p => {
+      const ids = Array.isArray(p.labelIds) ? p.labelIds : []
+      return { ...p, labelIds: ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id] }
+    })
+  }
+
+  // In the quick form everything below the title hides behind "More options" — a
+  // mandatory field cannot live there, or the Add button is dead for a reason the
+  // user cannot see. So when it is required, it comes out of the drawer.
+  const showLabelsInline = quickAdd && requireLabel && labels.length > 0
+  const labelPicker = labels.length > 0 ? (
+    <div className="task-form-labels">
+      <span className="task-form-labels-title">
+        Labels{requireLabel ? ' *' : ''}
+      </span>
+      <div className="task-form-labels-chips">
+        {labels.map(l => {
+          const on = formLabels.includes(l.id)
+          return (
+            <button
+              key={l.id}
+              type="button"
+              className="kanban-label-chip kanban-label-chip--toggle"
+              style={{ background: on ? l.color : 'transparent', color: on ? '#fff' : l.color, borderColor: l.color }}
+              onClick={() => toggleLabel(l.id)}
+            >{on ? '✓ ' : ''}{l.name}</button>
+          )
+        })}
+      </div>
+      {labelMissing && <span className="kanban-label-required">Pick at least one label</span>}
+    </div>
+  ) : null
+
   function submit() {
-    if (!form.title.trim()) return
+    if (!form.title.trim() || labelMissing) return
     const pending = pendingAssignee.current.trim()
     const cur = Array.isArray(form.assignees) ? form.assignees : []
     const assigneesFinal = pending && !cur.includes(pending) ? [...cur, pending] : cur
@@ -228,7 +270,20 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreato
           <option value="high">High priority</option>
           <option value="critical">Critical priority</option>
         </select>
+        {categories.length > 0 && (
+          // Blank is not "no category" but "inherit from the nearest ancestor" —
+          // spelling that out here is cheaper than explaining it after the fact.
+          <select className="form-input" value={form.category || ''} onChange={f('category')} title="Category">
+            <option value="">
+              {inheritedCategory
+                ? `Inherit — ${categories.find(c => c.id === inheritedCategory)?.name || inheritedCategory}`
+                : 'No category'}
+            </option>
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        )}
       </div>
+      {!showLabelsInline && labelPicker}
       <AssigneeInput
         value={form.assignees}
         options={assignees}
@@ -274,7 +329,7 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreato
         {!quickAdd && (
           <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
             <button className="btn-ghost" type="button" onClick={onCancel} style={{ fontSize: 12 }}>Cancel</button>
-            <SubmitButton className="btn-primary" onClick={submit} style={{ fontSize: 12 }} disabled={!form.title.trim()}>
+            <SubmitButton className="btn-primary" onClick={submit} style={{ fontSize: 12 }} disabled={!form.title.trim() || labelMissing}>
               {label || 'Save'}
             </SubmitButton>
           </div>
@@ -309,11 +364,12 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreato
           autoFocus
           required
         />
-        <SubmitButton className="btn-primary task-quick-submit" onClick={submit} disabled={!form.title.trim()}>
+        <SubmitButton className="btn-primary task-quick-submit" onClick={submit} disabled={!form.title.trim() || labelMissing}>
           {label || 'Add'}
         </SubmitButton>
         <button className="btn-ghost task-quick-close" type="button" onClick={onCancel} title="Cancel (Esc)">✕</button>
       </div>
+      {showLabelsInline && labelPicker}
       {expanded && <div className="task-quick-advanced">{advanced}</div>}
       <div className="task-quick-footer">
         <button className="task-quick-toggle" type="button" onClick={() => setExpanded(v => !v)} aria-expanded={expanded}>
@@ -331,7 +387,17 @@ function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreato
   )
 }
 
-function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], currentUser, dnd, taskAcl, taskPrefix, onContextMenu, columns = [], focusId, expandSignal }) {
+function flattenForBoard(nodes, inherited) {
+  const out = []
+  for (const n of (nodes || [])) {
+    const category = n.category || inherited || ''
+    out.push({ task: n, category })
+    if (n.children?.length) out.push(...flattenForBoard(n.children, category))
+  }
+  return out
+}
+
+function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], currentUser, dnd, taskAcl, taskPrefix, onContextMenu, columns = [], categories = [], catById = {}, inheritedCategory = '', labels = [], focusId, expandSignal }) {
   const [expanded, setExpanded] = useState(true)
   const [copied, setCopied] = useState(false)
   const rowRef = useRef(null)
@@ -344,6 +410,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
   const [localStatus, setLocalStatus] = useState(node.status)
   const [showDetail, setShowDetail] = useState(false)
   const [detailEditing, setDetailEditing] = useState(false)
+  const [showBoard, setShowBoard] = useState(false)
 
   useEffect(() => { setLocalStatus(node.status) }, [node.status])
 
@@ -365,6 +432,21 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
     if (!(await copyText(taskShareLink(node.id)))) return
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
+  }
+
+  // A card in the inline board is a task that already has its own row further
+  // down the list, so opening it means jumping to that row rather than raising a
+  // second copy of the same detail panel. Expand first: a collapsed subtree has
+  // no row in the DOM to scroll to.
+  function revealTask(task) {
+    setExpanded(true)
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-task-id="${CSS.escape(task.id)}"]`)
+      if (!el) return
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el.classList.add('task-row--pinged')
+      setTimeout(() => el.classList.remove('task-row--pinged'), 1400)
+    })
   }
 
   const nodeAssignees = Array.isArray(node.assignees) ? node.assignees : (node.assignee ? [node.assignee] : [])
@@ -415,12 +497,14 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
       description: form.description,
       status: form.status,
       priority: form.priority,
+      category: form.category || null,
       assignees: form.assignees || [],
       startDate: form.startDate || null,
       dueDate: form.dueDate || null,
       numberOverride: form.numberOverride || null,
       attachments: form.attachments || [],
       cover: form.cover || null,
+      labelIds: form.labelIds || [],
     }, `Save “${form.title}”`)
     setEditing(false)
   }
@@ -507,6 +591,9 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
       priority: node.priority || 'medium',
       assignees: nodeAssignees.map(a => (typeof a === 'object' ? a.name : a)),
       dueDate: node.dueDate || '',
+      // Labels are mandatory on create, so a sub-task starts with its parent's
+      // rather than making you re-pick the same ones on every nested row.
+      labelIds: Array.isArray(node.labelIds) ? [...node.labelIds] : [],
     }
   }
 
@@ -526,6 +613,20 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
   const statusLabel = column?.label || labelForStatus(localStatus) || 'To Do'
   const statusPill = statusPillProps(localStatus, column?.color)
 
+  // Own category wins; otherwise the task shows what it inherits from the nearest
+  // ancestor that set one. Sub-tasks are deliberately left blank rather than
+  // stamped with the parent's value — that way re-categorising a story carries its
+  // whole subtree instead of stranding children on the old rail.
+  const ownCategory = node.category || ''
+  const effCategory = ownCategory || inheritedCategory
+  const catDef = effCategory ? catById[effCategory] : null
+
+  // Every descendant of this story, flattened, each carrying the category it
+  // actually lands in — its own if set, otherwise the nearest ancestor's. The
+  // board is one level deep no matter how deep the tree is, so a sub-sub-task
+  // still shows up in a rail instead of vanishing.
+  const boardCards = showBoard ? flattenForBoard(node.children, effCategory) : []
+
   const { total: descTotal, done: descDone } = hasChildren ? getDescendantStats(node) : { total: 0, done: 0 }
 
   const dropZone = dnd?.dropTarget?.id === node.id ? dnd.dropTarget.zone : null
@@ -534,6 +635,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
     <div className={`task-node${node.__context ? ' task-node--context' : ''}`} style={{ '--depth': depth }} data-depth={depth} data-group={hasChildren ? 'true' : undefined}>
       <div
         ref={rowRef}
+        data-task-id={node.id}
         className={`task-row task-row--${localStatus}${localStatus === 'done' ? ' task-row-done' : ''}${dropZone ? ` task-row--drop-${dropZone}` : ''}${isFocused ? ' task-row--focused' : ''}`}
         onContextMenu={onContextMenu ? e => onContextMenu(e, node) : undefined}
         draggable={!!dnd}
@@ -564,6 +666,15 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
             {node.title}
           </span>
           {node.__context && <span className="task-context-tag" title="Shown as parent context">parent</span>}
+          {effCategory && (
+            <span
+              className={`task-cat-chip${ownCategory ? '' : ' task-cat-chip--inherited'}${catDef ? '' : ' task-cat-chip--orphan'}`}
+              style={catDef ? (ownCategory ? { background: catDef.color } : { color: catDef.color, borderColor: catDef.color }) : undefined}
+              title={ownCategory ? 'Category' : `Inherited from a parent task`}
+            >
+              {catDef?.name || effCategory}
+            </span>
+          )}
           {coverSrc(node) && (
             <img src={coverSrc(node)} alt="cover" className="task-row-cover" title="Cover image" loading="lazy" decoding="async" />
           )}
@@ -608,6 +719,15 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
           <button className="task-action-btn" onClick={copyLink} title="Copy link to this task">
             {copied ? '✓' : '🔗'}
           </button>
+          {/* Only a story has a board worth drawing — a leaf task would render as
+              one empty grid of every department. */}
+          {hasChildren && (
+            <button
+              className={`task-action-btn ${showBoard ? 'active' : ''}`}
+              onClick={() => setShowBoard(v => !v)}
+              title={showBoard ? 'Hide board' : 'Show this story’s board'}
+            >{showBoard ? 'Board ▾' : 'Board ▸'}</button>
+          )}
           {canEdit && dnd && <>
             <button className="task-action-btn task-action-btn--move" onClick={() => handleMove('up')} title="Move up">↑</button>
             <button className="task-action-btn task-action-btn--move" onClick={() => handleMove('down')} title="Move down">↓</button>
@@ -628,6 +748,19 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
         </div>
       </div>
 
+      {showBoard && (
+        <div className="mini-board-wrap">
+          <TaskMiniBoard
+            cards={boardCards}
+            columns={columns}
+            categories={categories}
+            taskPrefix={taskPrefix}
+            storyTitle={node.title}
+            onOpen={revealTask}
+          />
+        </div>
+      )}
+
       {editing && (
         <div className="task-inline-form">
           <TaskForm
@@ -636,18 +769,23 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
               description: node.description || '',
               status: localStatus,
               priority: node.priority || 'medium',
+              category: ownCategory,
               assignees: nodeAssignees,
               startDate: node.startDate || '',
               dueDate: node.dueDate || '',
               numberOverride: node.numberOverride || '',
               attachments: Array.isArray(node.attachments) ? node.attachments : [],
               cover: node.cover || null,
+              labelIds: Array.isArray(node.labelIds) ? node.labelIds : [],
             }}
             onSave={handleSaveEdit}
             onCancel={() => setEditing(false)}
             label="Update"
             assignees={assignees}
             columns={columns}
+            categories={categories}
+            inheritedCategory={inheritedCategory}
+            labels={labels}
           />
         </div>
       )}
@@ -711,6 +849,10 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
             quickAdd
             allowAddAnother
             columns={columns}
+            categories={categories}
+            inheritedCategory={effCategory}
+            labels={labels}
+            requireLabel
           />
         </div>
       )}
@@ -735,12 +877,16 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
                   numberOverride: node.numberOverride || '',
                   attachments: Array.isArray(node.attachments) ? node.attachments : [],
                   cover: node.cover || null,
+                  labelIds: Array.isArray(node.labelIds) ? node.labelIds : [],
                 }}
                 onSave={async form => { await handleSaveEdit(form); setDetailEditing(false) }}
                 onCancel={() => setDetailEditing(false)}
                 label="Update"
                 assignees={assignees}
                 columns={columns}
+                categories={categories}
+                inheritedCategory={inheritedCategory}
+                labels={labels}
               />
             ) : (
               <div className="task-detail">
@@ -757,6 +903,12 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
                     )}
                   </div>
                   <div className="task-detail-field"><span className="task-detail-label">Priority</span><span>{PRIORITY_LABEL[node.priority] || node.priority || '—'}</span></div>
+                  {categories.length > 0 && (
+                    <div className="task-detail-field">
+                      <span className="task-detail-label">Category</span>
+                      <span>{catDef?.name || effCategory || '—'}{effCategory && !ownCategory ? ' (inherited)' : ''}</span>
+                    </div>
+                  )}
                   <div className="task-detail-field"><span className="task-detail-label">Start</span><span>{formatDate(node.startDate) || '—'}</span></div>
                   <div className="task-detail-field"><span className="task-detail-label">Due</span><span>{formatDate(node.dueDate) || '—'}</span></div>
                 </div>
@@ -798,7 +950,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
       {expanded && hasChildren && (
         <div className="task-children">
           {node.children.map(child => (
-            <TaskNode key={child.id} node={child} apiBase={apiBase} onRefresh={onRefresh} depth={depth + 1} assignees={assignees} currentUser={currentUser} dnd={dnd} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={onContextMenu} columns={columns} focusId={focusId} expandSignal={expandSignal} />
+            <TaskNode key={child.id} node={child} apiBase={apiBase} onRefresh={onRefresh} depth={depth + 1} assignees={assignees} currentUser={currentUser} dnd={dnd} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={onContextMenu} columns={columns} categories={categories} catById={catById} inheritedCategory={effCategory} labels={labels} focusId={focusId} expandSignal={expandSignal} />
           ))}
         </div>
       )}
@@ -828,7 +980,22 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
     return taskPrefix && t.seq != null ? `${taskPrefix}-${t.seq}` : (t.number ? `#${t.number}` : '')
   }
   const savedColumns = useColumns(slug)
+  const savedCategories = useCategories(slug)
+  const [showCatMgr, setShowCatMgr] = useState(false)
   const [assignees, setAssignees] = useState([])
+  // Labels are mandatory on every create, so the list view needs them too — it was
+  // the one surface that could still make an unlabelled task. Read-only here; the
+  // board owns creating and editing them.
+  const [labels, setLabels] = useState([])
+  useEffect(() => {
+    if (!slug) return
+    let live = true
+    apiFetch(`/api/projects/${slug}/labels`)
+      .then(r => r.ok ? r.json() : [])
+      .then(l => { if (live) setLabels(Array.isArray(l) ? l : []) })
+      .catch(() => {})
+    return () => { live = false }
+  }, [slug])
   // Manual order is the default: it is the only sort where the rendered position matches
   // the `order` field that numbers (1.2.3, 1.2.4 …) are derived from, so a drag both
   // moves the row and renumbers it. Under newest/oldest the numbers look shuffled.
@@ -837,6 +1004,7 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
   const [filterPerson, setFilterPerson] = useState('')
   const [filterStatuses, setFilterStatuses] = useState([])
   const [filterPriorities, setFilterPriorities] = useState([])
+  const [filterCategories, setFilterCategories] = useState([])
   const [startFrom, setStartFrom] = useState('')
   const [startTo, setStartTo] = useState('')
   const [dueFrom, setDueFrom] = useState('')
@@ -932,9 +1100,15 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
     liveTasks.map(t => (t.dueDate || '').slice(0, 10)).filter(Boolean)
   )].sort()
 
+  // Filtering by category must use the *effective* value, so filtering on "Backend"
+  // also surfaces the sub-tasks that inherit it rather than only the one row that
+  // happens to store the id.
+  const byId = taskIndex(liveTasks)
+  const effCat = t => effectiveCategory(t, byId)
+
   const q = search.toLowerCase()
   const pq = filterPerson.toLowerCase().trim()
-  const isFiltering = q || pq || filterStatuses.length > 0 || filterPriorities.length > 0 || startFrom || startTo || dueFrom || dueTo || dueDates.length > 0
+  const isFiltering = q || pq || filterStatuses.length > 0 || filterPriorities.length > 0 || filterCategories.length > 0 || startFrom || startTo || dueFrom || dueTo || dueDates.length > 0
   const filtered = isFiltering
     ? liveTasks.filter(t => {
         const taskAssignees = Array.isArray(t.assignees) ? t.assignees : (t.assignee ? [t.assignee] : [])
@@ -953,12 +1127,13 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
         const matchesPerson = !pq || taskAssignees.some(a => a.toLowerCase().includes(pq))
         const matchesStatus = filterStatuses.length === 0 || filterStatuses.includes(t.status || 'todo')
         const matchesPriority = filterPriorities.length === 0 || filterPriorities.includes(t.priority || 'medium')
+        const matchesCategory = filterCategories.length === 0 || filterCategories.includes(effCat(t) || '')
         const sd = t.startDate || ''
         const matchesStart = (!startFrom || (sd && sd >= startFrom)) && (!startTo || (sd && sd <= startTo))
         const dd = t.dueDate || ''
         const matchesDue = (!dueFrom || (dd && dd >= dueFrom)) && (!dueTo || (dd && dd <= dueTo))
         const matchesDueSet = dueDates.length === 0 || dueDates.includes(dd.slice(0, 10))
-        return matchesSearch && matchesPerson && matchesStatus && matchesPriority && matchesStart && matchesDue && matchesDueSet
+        return matchesSearch && matchesPerson && matchesStatus && matchesPriority && matchesCategory && matchesStart && matchesDue && matchesDueSet
       }).sort(TASK_COMPARATORS[sortBy] || TASK_COMPARATORS.order)
     : null
   // Matched tasks plus their ancestors, nested so parents give context to matched children.
@@ -967,9 +1142,13 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
   // Board columns first (including empty ones the user just added), then any status
   // a task carries that no column covers.
   const columns = columnsWithTaskStatuses(savedColumns, liveTasks)
+  // Same rescue for categories: a task keeping the id of a deleted category still
+  // gets a chip and a filter entry instead of silently reading as uncategorised.
+  const categories = categoriesWithTaskValues(savedCategories, liveTasks)
+  const catById = categoryMap(categories)
 
   function clearFilters() {
-    setSearch(''); setFilterPerson(''); setFilterStatuses([]); setFilterPriorities([])
+    setSearch(''); setFilterPerson(''); setFilterStatuses([]); setFilterPriorities([]); setFilterCategories([])
     setStartFrom(''); setStartTo(''); setDueFrom(''); setDueTo(''); setDueDates([])
   }
 
@@ -983,6 +1162,10 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
 
   function togglePriority(p) {
     setFilterPriorities(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p])
+  }
+
+  function toggleCategory(c) {
+    setFilterCategories(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])
   }
 
   function openDuePicker() {
@@ -1162,6 +1345,15 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
             onClear={() => setFilterPriorities([])}
           />
         )}
+        {liveTasks.length > 0 && categories.length > 0 && (
+          <FilterMultiSelect
+            label="Category"
+            options={[...categories.map(c => ({ value: c.id, label: c.name })), { value: '', label: 'Uncategorised' }]}
+            selected={filterCategories}
+            onToggle={toggleCategory}
+            onClear={() => setFilterCategories([])}
+          />
+        )}
         {liveTasks.length > 0 && (
           <div className="tt-date-filter" title="Filter by start date">
             <span className="tt-date-filter-label">Start</span>
@@ -1208,6 +1400,16 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
             )}
           </div>
         )}
+        {slug && (
+          <button
+            className="btn-ghost"
+            onClick={() => setShowCatMgr(true)}
+            style={{ fontSize: 12, padding: '5px 10px', whiteSpace: 'nowrap' }}
+            title="Categories group work within a story (Frontend, Backend, UI/UX…)"
+          >
+            🗂 Categories{categories.length ? ` (${categories.length})` : ''}
+          </button>
+        )}
         {isFiltering && (
           <button className="btn-ghost" onClick={clearFilters} style={{ fontSize: 12, padding: '5px 10px' }} title="Clear all filters">Clear</button>
         )}
@@ -1228,7 +1430,7 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
 
       {addingRoot && (
         <div className="task-inline-form" style={{ marginTop: 8 }}>
-          <TaskForm onSave={handleAddRoot} onCancel={() => setAddingRoot(false)} label="Add Task" assignees={assignees} showCreator currentUser={currentUser} columns={columns} />
+          <TaskForm onSave={handleAddRoot} onCancel={() => setAddingRoot(false)} label="Add Task" assignees={assignees} showCreator currentUser={currentUser} columns={columns} categories={categories} labels={labels} requireLabel />
         </div>
       )}
 
@@ -1238,7 +1440,7 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
         ) : (
           <div className="task-list">
             {filteredTree.map(node => (
-              <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={canDrag ? dnd : null} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} columns={columns} focusId={focusTaskId} expandSignal={expandSignal} />
+              <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={canDrag ? dnd : null} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} columns={columns} categories={categories} catById={catById} labels={labels} focusId={focusTaskId} expandSignal={expandSignal} />
             ))}
           </div>
         )
@@ -1247,7 +1449,7 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
       ) : (
         <div className="task-list">
           {tree.map(node => (
-            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={canDrag ? dnd : null} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} columns={columns} focusId={focusTaskId} expandSignal={expandSignal} />
+            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={canDrag ? dnd : null} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} columns={columns} categories={categories} catById={catById} labels={labels} focusId={focusTaskId} expandSignal={expandSignal} />
           ))}
         </div>
       )}
@@ -1258,6 +1460,15 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
           y={ctxMenu.y}
           onClose={() => setCtxMenu(null)}
           items={[{ label: 'View activity / history', icon: '🕑', onClick: () => setHistoryTask(ctxMenu.task) }]}
+        />
+      )}
+      {showCatMgr && (
+        <CategoryManager
+          slug={slug}
+          categories={savedCategories}
+          tasks={liveTasks}
+          currentUser={currentUser}
+          onClose={() => setShowCatMgr(false)}
         />
       )}
       {historyTask && (
