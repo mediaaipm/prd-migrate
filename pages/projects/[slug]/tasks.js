@@ -15,10 +15,10 @@ import CalendarView from '../../../components/CalendarView'
 
 function SprintProgressBar({ done, total }) {
   const pct = total > 0 ? Math.round((done / total) * 100) : 0
-  const color = pct === 100 ? '#15803d' : pct >= 60 ? '#1d4ed8' : pct >= 30 ? '#d97706' : '#7c3aed'
+  const color = pct === 100 ? 'var(--tint-green-fg)' : pct >= 60 ? 'var(--tint-blue-fg)' : pct >= 30 ? 'var(--tint-amber-fg)' : 'var(--accent)'
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
-      <div style={{ flex: 1, height: 8, background: '#e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+      <div style={{ flex: 1, height: 8, background: 'var(--border)', borderRadius: 8, overflow: 'hidden' }}>
         <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 8, transition: 'width .4s ease', minWidth: pct > 0 ? 6 : 0 }} />
       </div>
       <span style={{ fontSize: 12, fontWeight: 700, color, whiteSpace: 'nowrap' }}>{done}/{total}</span>
@@ -29,7 +29,7 @@ function SprintProgressBar({ done, total }) {
 function SprintTaskChip({ task, sub }) {
   const isDone = task.status === 'done'
   const isInProgress = task.status === 'in-progress'
-  const dotColor = isDone ? '#15803d' : isInProgress ? '#1d4ed8' : '#94a3b8'
+  const dotColor = isDone ? 'var(--tint-green-fg)' : isInProgress ? 'var(--tint-blue-fg)' : 'var(--muted)'
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -37,15 +37,15 @@ function SprintTaskChip({ task, sub }) {
       borderRadius: 20,
       fontSize: sub ? 11 : 12,
       fontWeight: 500,
-      background: isDone ? '#f0fdf4' : isInProgress ? '#eff6ff' : '#f8fafc',
-      color: isDone ? '#15803d' : isInProgress ? '#1d4ed8' : '#475569',
-      border: `1px solid ${isDone ? '#bbf7d0' : isInProgress ? '#bfdbfe' : '#e2e8f0'}`,
+      background: isDone ? 'var(--tint-green-bg)' : isInProgress ? 'var(--tint-blue-bg)' : 'var(--surface-2)',
+      color: isDone ? 'var(--tint-green-fg)' : isInProgress ? 'var(--tint-blue-fg)' : 'var(--muted)',
+      border: `1px solid ${isDone ? 'color-mix(in srgb, var(--tint-green-fg) 45%, transparent)' : isInProgress ? 'color-mix(in srgb, var(--tint-blue-fg) 45%, transparent)' : 'var(--border)'}`,
       textDecoration: isDone ? 'line-through' : 'none',
       whiteSpace: 'nowrap',
       opacity: sub ? 0.9 : 1,
     }}>
       <span style={{ width: sub ? 5 : 7, height: sub ? 5 : 7, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
-      {task.number && <span style={{ fontSize: sub ? 9 : 10, color: '#94a3b8' }}>#{task.number}</span>}
+      {task.number && <span style={{ fontSize: sub ? 9 : 10, color: 'var(--muted)' }}>#{task.number}</span>}
       {task.title}
     </span>
   )
@@ -62,7 +62,7 @@ function SprintChips({ tasks, sprintIdSet }) {
       {groups.map(group =>
         <div key={group[0].id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 4 }}>
           {group.flatMap((t, i) => [
-            i > 0 ? <span key={`sep-${t.id}`} style={{ color: '#cbd5e1', fontSize: 12, userSelect: 'none' }}>›</span> : null,
+            i > 0 ? <span key={`sep-${t.id}`} style={{ color: 'var(--border)', fontSize: 12, userSelect: 'none' }}>›</span> : null,
             <SprintTaskChip key={t.id} task={t} sub={i > 0} />,
           ]).filter(Boolean)}
         </div>
@@ -214,8 +214,18 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
     const children = subtasksByParent[t.id] || []
     const totalDesc = countDescendants(t.id)
     const selDesc = countSelectedDescendants(t.id)
-    const bgColors = ['#fff', '#fafafa', '#f7f7fb', '#f4f4f9']
-    const bgSelected = ['#eef2ff', '#f5f3ff', '#f0eeff', '#ece9ff']
+    const bgColors = [
+      'var(--surface)',
+      'color-mix(in srgb, var(--surface) 97%, var(--text))',
+      'color-mix(in srgb, var(--surface) 94%, var(--text))',
+      'color-mix(in srgb, var(--surface) 91%, var(--text))',
+    ]
+    const bgSelected = [
+      'color-mix(in srgb, var(--surface) 90%, var(--accent))',
+      'color-mix(in srgb, var(--surface) 87%, var(--accent))',
+      'color-mix(in srgb, var(--surface) 84%, var(--accent))',
+      'color-mix(in srgb, var(--surface) 81%, var(--accent))',
+    ]
     const indentPx = 14 + d * 18
     return (
       <div key={t.id}>
@@ -227,15 +237,15 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
           background: formTaskIds.includes(t.id) ? (bgSelected[Math.min(d, bgSelected.length - 1)]) : (bgColors[Math.min(d, bgColors.length - 1)]),
           transition: 'background .1s',
         }}>
-          {d > 0 && <span style={{ fontSize: 9, color: '#94a3b8', flexShrink: 0 }}>↳</span>}
+          {d > 0 && <span style={{ fontSize: 9, color: 'var(--muted)', flexShrink: 0 }}>↳</span>}
           <input type="checkbox" checked={formTaskIds.includes(t.id)} onChange={() => toggleTask(t.id)} style={{ flexShrink: 0 }} />
-          {t.number && <span style={{ fontSize: d === 0 ? 11 : 10, color: '#94a3b8', flexShrink: 0 }}>#{t.number}</span>}
+          {t.number && <span style={{ fontSize: d === 0 ? 11 : 10, color: 'var(--muted)', flexShrink: 0 }}>#{t.number}</span>}
           <span style={{ flex: 1, fontWeight: d === 0 ? 600 : 400, color: 'var(--text)', textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>{t.title}</span>
-          {totalDesc > 0 && <span style={{ fontSize: 10, color: '#94a3b8', flexShrink: 0 }}>{selDesc}/{totalDesc}</span>}
+          {totalDesc > 0 && <span style={{ fontSize: 10, color: 'var(--muted)', flexShrink: 0 }}>{selDesc}/{totalDesc}</span>}
           <span style={{
             fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 10, flexShrink: 0,
-            background: t.status === 'done' ? '#f0fdf4' : t.status === 'in-progress' ? '#eff6ff' : '#f1f5f9',
-            color: t.status === 'done' ? '#15803d' : t.status === 'in-progress' ? '#1d4ed8' : '#475569',
+            background: t.status === 'done' ? 'var(--tint-green-bg)' : t.status === 'in-progress' ? 'var(--tint-blue-bg)' : 'var(--tint-slate-bg)',
+            color: t.status === 'done' ? 'var(--tint-green-fg)' : t.status === 'in-progress' ? 'var(--tint-blue-fg)' : 'var(--muted)',
           }}>{t.status}</span>
         </label>
         {children.map(c => renderTaskRow(c, d + 1))}
@@ -260,41 +270,41 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
         const isOverdue = remaining !== null && remaining < 0
         return (
           <div key={sprint.id} style={{
-            border: '1px solid #c7d2fe', borderRadius: 12,
-            background: 'linear-gradient(135deg, #eef2ff 0%, #f0fdf4 100%)',
+            border: '1px solid color-mix(in srgb, var(--tint-indigo-fg) 45%, transparent)', borderRadius: 12,
+            background: 'linear-gradient(135deg, var(--tint-indigo-bg) 0%, var(--tint-green-bg) 100%)',
             padding: '16px 20px', marginBottom: 10,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: allItems.length > 0 ? 12 : 0 }}>
               <span style={{ fontSize: 16 }}>⚡</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#312e81' }}>Active Sprint:</span>
-              <span style={{ fontSize: 14, fontWeight: 800, color: '#4338ca' }}>{sprint.name}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--tint-indigo-fg)' }}>Active Sprint:</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--tint-indigo-fg)' }}>{sprint.name}</span>
               {(sprint.startDate || sprint.endDate) && (
-                <span style={{ fontSize: 12, color: '#6b7280' }}>
+                <span style={{ fontSize: 12, color: 'var(--tint-gray-fg)' }}>
                   {formatSprintDate(sprint.startDate)}{sprint.startDate && sprint.endDate ? ' – ' : ''}{formatSprintDate(sprint.endDate)}
                 </span>
               )}
               {remaining !== null && (
                 <span style={{
                   fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
-                  background: isOverdue ? '#fef2f2' : remaining <= 2 ? '#fffbeb' : '#f0fdf4',
-                  color: isOverdue ? '#dc2626' : remaining <= 2 ? '#d97706' : '#15803d',
-                  border: `1px solid ${isOverdue ? '#fecaca' : remaining <= 2 ? '#fde68a' : '#bbf7d0'}`,
+                  background: isOverdue ? 'var(--tint-red-bg)' : remaining <= 2 ? 'var(--tint-amber-bg)' : 'var(--tint-green-bg)',
+                  color: isOverdue ? 'var(--tint-red-fg)' : remaining <= 2 ? 'var(--tint-amber-fg)' : 'var(--tint-green-fg)',
+                  border: `1px solid ${isOverdue ? 'var(--tint-red-border)' : remaining <= 2 ? 'color-mix(in srgb, var(--tint-amber-fg) 45%, transparent)' : 'color-mix(in srgb, var(--tint-green-fg) 45%, transparent)'}`,
                 }}>
                   {isOverdue ? `${Math.abs(remaining)}d overdue` : remaining === 0 ? 'Ends today' : `${remaining}d left`}
                 </span>
               )}
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
                 <button onClick={() => openEdit(sprint)} style={{
-                  padding: '5px 12px', borderRadius: 7, border: '1px solid #c7d2fe',
-                  background: '#fff', color: '#4338ca', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  padding: '5px 12px', borderRadius: 7, border: '1px solid color-mix(in srgb, var(--tint-indigo-fg) 45%, transparent)',
+                  background: 'var(--surface)', color: 'var(--tint-indigo-fg)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
                 }}>Manage</button>
                 <button onClick={() => completeSprint(sprint)} style={{
-                  padding: '5px 12px', borderRadius: 7, border: '1px solid #bbf7d0',
-                  background: '#fff', color: '#15803d', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  padding: '5px 12px', borderRadius: 7, border: '1px solid color-mix(in srgb, var(--tint-green-fg) 45%, transparent)',
+                  background: 'var(--surface)', color: 'var(--tint-green-fg)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
                 }}>Complete</button>
                 <button onClick={() => handleDelete(sprint)} style={{
-                  padding: '5px 12px', borderRadius: 7, border: '1px solid #fecaca',
-                  background: '#fff', color: '#dc2626', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  padding: '5px 12px', borderRadius: 7, border: '1px solid var(--tint-red-border)',
+                  background: 'var(--surface)', color: 'var(--tint-red-fg)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
                 }}>Delete</button>
               </div>
             </div>
@@ -307,7 +317,7 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
               <SprintChips tasks={allItems} sprintIdSet={sprintIdSet} />
             )}
             {allItems.length === 0 && (
-              <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>
+              <p style={{ fontSize: 12, color: 'var(--muted)', margin: 0 }}>
                 No tasks in this sprint yet — click <strong>Manage</strong> to add some.
               </p>
             )}
@@ -317,36 +327,36 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
 
       {/* Planned sprints */}
       {plannedSprints.length > 0 && (
-        <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, background: '#f8fafc', padding: '12px 16px', marginBottom: 10 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.05em', marginBottom: 8 }}>PLANNED</div>
+        <div style={{ border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface-2)', padding: '12px 16px', marginBottom: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '0.05em', marginBottom: 8 }}>PLANNED</div>
           {plannedSprints.map((sprint, i) => {
             const sprintIdSet = new Set(sprint.taskIds || [])
             const allItems    = sprint.tasks || []
             return (
               <div key={sprint.id} style={{
-                padding: '8px 0', borderBottom: i < plannedSprints.length - 1 ? '1px solid #e2e8f0' : 'none',
+                padding: '8px 0', borderBottom: i < plannedSprints.length - 1 ? '1px solid var(--border)' : 'none',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 14 }}>📋</span>
-                  <span style={{ fontWeight: 700, fontSize: 13, color: '#1e293b' }}>{sprint.name}</span>
+                  <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>{sprint.name}</span>
                   {(sprint.startDate || sprint.endDate) && (
-                    <span style={{ fontSize: 12, color: '#64748b' }}>
+                    <span style={{ fontSize: 12, color: 'var(--muted)' }}>
                       {formatSprintDate(sprint.startDate)}{sprint.startDate && sprint.endDate ? ' – ' : ''}{formatSprintDate(sprint.endDate)}
                     </span>
                   )}
-                  <span style={{ fontSize: 12, color: '#94a3b8' }}>{allItems.length} tasks</span>
+                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>{allItems.length} tasks</span>
                   <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
                     <button onClick={() => startSprint(sprint)} style={{
-                      padding: '4px 10px', borderRadius: 6, border: '1px solid #6366f1',
-                      background: '#6366f1', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                      padding: '4px 10px', borderRadius: 6, border: '1px solid var(--tint-indigo-fg)',
+                      background: 'var(--tint-indigo-fg)', color: 'var(--surface)', fontSize: 11, fontWeight: 700, cursor: 'pointer',
                     }}>▶ Start</button>
                     <button onClick={() => openEdit(sprint)} style={{
-                      padding: '4px 10px', borderRadius: 6, border: '1px solid #e2e8f0',
-                      background: '#fff', color: '#475569', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                      padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)',
+                      background: 'var(--surface)', color: 'var(--muted)', fontSize: 11, fontWeight: 600, cursor: 'pointer',
                     }}>Edit</button>
                     <button onClick={() => handleDelete(sprint)} style={{
-                      padding: '4px 10px', borderRadius: 6, border: '1px solid #fecaca',
-                      background: '#fff', color: '#dc2626', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                      padding: '4px 10px', borderRadius: 6, border: '1px solid var(--tint-red-border)',
+                      background: 'var(--surface)', color: 'var(--tint-red-fg)', fontSize: 11, fontWeight: 600, cursor: 'pointer',
                     }}>Delete</button>
                   </div>
                 </div>
@@ -366,33 +376,33 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
         <div style={{ marginBottom: 10 }}>
           <button onClick={() => setShowCompleted(v => !v)} style={{
             background: 'none', border: 'none', cursor: 'pointer', fontSize: 12,
-            color: '#64748b', fontWeight: 600, padding: '4px 0', display: 'flex', alignItems: 'center', gap: 6,
+            color: 'var(--muted)', fontWeight: 600, padding: '4px 0', display: 'flex', alignItems: 'center', gap: 6,
           }}>
             {showCompleted ? '▾' : '▸'} Completed sprints ({completedSprints.length})
           </button>
           {showCompleted && (
-            <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, background: '#f8fafc', padding: '10px 14px', marginTop: 6 }}>
+            <div style={{ border: '1px solid var(--border)', borderRadius: 10, background: 'var(--surface-2)', padding: '10px 14px', marginTop: 6 }}>
               {completedSprints.map((sprint, i) => {
                 const sprintIdSet = new Set(sprint.taskIds || [])
                 const allItems    = sprint.tasks || []
                 const doneTasks   = allItems.filter(t => t.status === 'done').length
                 return (
                   <div key={sprint.id} style={{
-                    padding: '7px 0', borderBottom: i < completedSprints.length - 1 ? '1px solid #e2e8f0' : 'none',
+                    padding: '7px 0', borderBottom: i < completedSprints.length - 1 ? '1px solid var(--border)' : 'none',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 13 }}>✓</span>
-                      <span style={{ fontWeight: 700, fontSize: 13, color: '#1e293b' }}>{sprint.name}</span>
+                      <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>{sprint.name}</span>
                       {(sprint.startDate || sprint.endDate) && (
-                        <span style={{ fontSize: 12, color: '#64748b' }}>
+                        <span style={{ fontSize: 12, color: 'var(--muted)' }}>
                           {formatSprintDate(sprint.startDate)}{sprint.startDate && sprint.endDate ? ' – ' : ''}{formatSprintDate(sprint.endDate)}
                         </span>
                       )}
-                      <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>{doneTasks}/{allItems.length} done</span>
+                      <span style={{ fontSize: 12, color: 'var(--tint-green-fg)', fontWeight: 600 }}>{doneTasks}/{allItems.length} done</span>
                       <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
                         <button onClick={() => handleDelete(sprint)} style={{
-                          padding: '3px 8px', borderRadius: 6, border: '1px solid #fecaca',
-                          background: '#fff', color: '#dc2626', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                          padding: '3px 8px', borderRadius: 6, border: '1px solid var(--tint-red-border)',
+                          background: 'var(--surface)', color: 'var(--tint-red-fg)', fontSize: 11, fontWeight: 600, cursor: 'pointer',
                         }}>Delete</button>
                       </div>
                     </div>
@@ -412,19 +422,19 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
       {/* Empty state */}
       {sprints.length === 0 && (
         <div style={{
-          border: '1px solid #c7d2fe', borderRadius: 12,
-          background: 'linear-gradient(135deg, #eef2ff 0%, #f0fdf4 100%)',
+          border: '1px solid color-mix(in srgb, var(--tint-indigo-fg) 45%, transparent)', borderRadius: 12,
+          background: 'linear-gradient(135deg, var(--tint-indigo-bg) 0%, var(--tint-green-bg) 100%)',
           padding: '16px 20px', marginBottom: 10,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 18 }}>⚡</span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#475569' }}>No sprints yet</span>
-            <span style={{ fontSize: 12, color: '#94a3b8' }}>— Create a sprint to track focused work</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--muted)' }}>No sprints yet</span>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>— Create a sprint to track focused work</span>
           </div>
           <button onClick={openNew} style={{
-            padding: '6px 14px', borderRadius: 8, border: '1px solid #6366f1',
-            background: '#6366f1', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+            padding: '6px 14px', borderRadius: 8, border: '1px solid var(--tint-indigo-fg)',
+            background: 'var(--tint-indigo-fg)', color: 'var(--surface)', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
           }}>+ New Sprint</button>
         </div>
       )}
@@ -433,8 +443,8 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
       {sprints.length > 0 && (
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
           <button onClick={openNew} style={{
-            padding: '5px 14px', borderRadius: 8, border: '1px solid #6366f1',
-            background: '#fff', color: '#6366f1', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+            padding: '5px 14px', borderRadius: 8, border: '1px solid var(--tint-indigo-fg)',
+            background: 'var(--surface)', color: 'var(--tint-indigo-fg)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
           }}>+ New Sprint</button>
         </div>
       )}
@@ -446,12 +456,12 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16,
         }} onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}>
           <div style={{
-            background: '#fff', borderRadius: 14, width: '100%', maxWidth: 520,
+            background: 'var(--surface)', borderRadius: 14, width: '100%', maxWidth: 520,
             boxShadow: '0 20px 60px rgba(0,0,0,.18)', maxHeight: '90vh', display: 'flex', flexDirection: 'column',
           }}>
             <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <h2 style={{ fontSize: 16, fontWeight: 800, margin: 0 }}>{editingSprint ? 'Edit Sprint' : 'New Sprint'}</h2>
-              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#94a3b8', lineHeight: 1 }}>×</button>
+              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--muted)', lineHeight: 1 }}>×</button>
             </div>
             <form onSubmit={handleSave} style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
               <div>
@@ -495,7 +505,7 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
                 <button type="button" onClick={() => setShowModal(false)} className="btn-ghost" style={{ fontSize: 13, padding: '7px 16px' }}>Cancel</button>
                 <SubmitButton type="submit" onClick={handleSave} className="" style={{
                   padding: '7px 20px', borderRadius: 8, border: 'none',
-                  background: '#6366f1', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                  background: 'var(--tint-indigo-fg)', color: 'var(--surface)', fontSize: 13, fontWeight: 700, cursor: 'pointer',
                   display: 'inline-flex', alignItems: 'center', gap: 6,
                 }}>{editingSprint ? 'Save Changes' : 'Create Sprint'}</SubmitButton>
               </div>
@@ -525,14 +535,11 @@ function StatusCounts({ tasks }) {
   }, {})
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+      {/* The hue is data; the wash, border and dark-mode ink lift live in CSS,
+          which is the only place that can tell which theme is on. */}
       {STATUS_COUNT_COLUMNS.map(c => (
-        <span key={c.status} style={{
-          display: 'inline-flex', alignItems: 'center', gap: 5,
-          padding: '2px 9px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-          background: `${c.color}18`, color: c.color, border: `1px solid ${c.color}40`,
-          whiteSpace: 'nowrap',
-        }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: c.color, flexShrink: 0 }} />
+        <span key={c.status} className="status-count-chip" style={{ '--status-color': c.color }}>
+          <span className="status-count-dot" />
           {c.label}
           <span style={{ fontWeight: 800 }}>{counts[c.status] || 0}</span>
         </span>
@@ -877,7 +884,7 @@ export default function TasksPage({ currentUser }) {
                 <div
                   style={{
                     position: 'absolute', top: '100%', right: 0, marginTop: 4,
-                    background: '#fff', border: '1px solid var(--border)', borderRadius: 8,
+                    background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8,
                     boxShadow: '0 4px 16px rgba(0,0,0,.1)', zIndex: 200, minWidth: 160, overflow: 'hidden',
                   }}
                   onMouseLeave={() => setShowExportMenu(false)}
@@ -994,7 +1001,7 @@ export default function TasksPage({ currentUser }) {
                     <span className="archived-title">{t.title}</span>
                     <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => restoreTask(t.id)}>Restore</button>
                     {currentUser?.isAdmin && (
-                      <button className="btn-ghost" style={{ fontSize: 12, color: '#dc2626' }} onClick={() => permaDeleteTask(t.id)}>Delete</button>
+                      <button className="btn-ghost" style={{ fontSize: 12, color: 'var(--tint-red-fg)' }} onClick={() => permaDeleteTask(t.id)}>Delete</button>
                     )}
                   </div>
                 ))}
@@ -1046,10 +1053,10 @@ export default function TasksPage({ currentUser }) {
             style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
             onClick={e => { if (e.target === e.currentTarget) setShowImport(false) }}
           >
-            <div style={{ background: '#fff', borderRadius: 14, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(0,0,0,.18)' }}>
+            <div style={{ background: 'var(--surface)', borderRadius: 14, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(0,0,0,.18)' }}>
               <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <h2 style={{ fontSize: 16, fontWeight: 800, margin: 0 }}>Import Tasks</h2>
-                <button onClick={() => setShowImport(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#94a3b8', lineHeight: 1 }}>×</button>
+                <button onClick={() => setShowImport(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--muted)', lineHeight: 1 }}>×</button>
               </div>
               <form onSubmit={handleImport} style={{ padding: '20px 22px' }}>
                 <div style={{ marginBottom: 16 }}>
@@ -1084,14 +1091,14 @@ export default function TasksPage({ currentUser }) {
                     Accepts the JSON export format or a plain array of task objects.
                   </p>
                 )}
-                {importError && <p style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{importError}</p>}
-                {importSuccess && <p style={{ color: '#15803d', fontSize: 13, marginBottom: 12 }}>{importSuccess}</p>}
+                {importError && <p style={{ color: 'var(--tint-red-fg)', fontSize: 13, marginBottom: 12 }}>{importError}</p>}
+                {importSuccess && <p style={{ color: 'var(--tint-green-fg)', fontSize: 13, marginBottom: 12 }}>{importSuccess}</p>}
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                   <button type="button" onClick={() => setShowImport(false)} className="btn-ghost" style={{ fontSize: 13, padding: '7px 16px' }}>Cancel</button>
                   <button
                     type="submit"
                     disabled={!importFile || importing}
-                    style={{ fontSize: 13, padding: '7px 16px', borderRadius: 8, border: 'none', background: '#6366f1', color: '#fff', fontWeight: 600, cursor: importFile && !importing ? 'pointer' : 'not-allowed', opacity: importFile && !importing ? 1 : 0.6 }}
+                    style={{ fontSize: 13, padding: '7px 16px', borderRadius: 8, border: 'none', background: 'var(--tint-indigo-fg)', color: 'var(--surface)', fontWeight: 600, cursor: importFile && !importing ? 'pointer' : 'not-allowed', opacity: importFile && !importing ? 1 : 0.6 }}
                   >
                     {importing ? 'Importing…' : 'Import'}
                   </button>

@@ -1,13 +1,25 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Light theme = the default. Every surface/ink pair the app uses lives here, so
+   dark mode is a token swap rather than a second stylesheet. Anything that hard-codes
+   a hex has to be listed in the dark-mode exceptions block at the bottom of this file. */
 :root {
+  color-scheme: light;
   --bg: #f4f5f7;
   --surface: #ffffff;
+  --card: #ffffff;
+  --surface-2: #f8fafc;
+  --bg-subtle: rgba(0,0,0,.03);
+  --hover: rgba(0,0,0,.04);
+  --overlay: rgba(0,0,0,.4);
   --sidebar-bg: #1e1e2e;
   --sidebar-text: #cdd6f4;
   --sidebar-muted: #6c7086;
   --accent: #7c3aed;
   --accent-hover: #6d28d9;
+  /* Ink that sits *on top of* an --accent fill. Flips to near-black in dark mode,
+     where the accent itself becomes a light violet. */
+  --on-accent: #ffffff;
   --danger: #dc2626;
   --success: #16a34a;
   --warning: #d97706;
@@ -16,6 +28,57 @@
   --muted: #64748b;
   --radius: 8px;
   --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+
+  /* Status/badge tints. Always used as a -bg/-fg *pair*: the dashboards build
+     their chips inline, and a pale hex paired with dark ink is exactly the
+     combination that inverts into unreadable in dark mode. */
+  --tint-slate-bg:  #f1f5f9;  --tint-slate-fg:  #475569;
+  --tint-blue-bg:   #eff6ff;  --tint-blue-fg:   #1d4ed8;
+  --tint-violet-bg: #f5f3ff;  --tint-violet-fg: #6d28d9;
+  --tint-amber-bg:  #fffbeb;  --tint-amber-fg:  #d97706;
+  --tint-yellow-bg: #fefce8;  --tint-yellow-fg: #a16207;
+  --tint-red-bg:    #fef2f2;  --tint-red-fg:    #dc2626;  --tint-red-border: #fecaca;
+  --tint-green-bg:  #f0fdf4;  --tint-green-fg:  #15803d;
+  --tint-indigo-bg: #eef2ff;  --tint-indigo-fg: #4f46e5;
+  --tint-gray-fg:   #6b7280;
+}
+
+/* Dark theme. `data-theme` is stamped on <html> by the blocking script in
+   pages/_document.js, so the first paint is already the right colour. */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e1117;
+  --surface: #161a22;
+  --card: #161a22;
+  --surface-2: #1d222c;
+  --bg-subtle: rgba(255,255,255,.04);
+  --hover: rgba(255,255,255,.06);
+  --overlay: rgba(0,0,0,.62);
+  --sidebar-bg: #12141c;
+  --sidebar-text: #cdd6f4;
+  --sidebar-muted: #8b93a7;
+  --accent: #a78bfa;
+  --accent-hover: #c4b5fd;
+  --on-accent: #1a1330;
+  --danger: #f87171;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --border: #2b313d;
+  --text: #e5e9f0;
+  --muted: #9aa4b6;
+  --shadow: 0 1px 3px rgba(0,0,0,.5), 0 1px 2px rgba(0,0,0,.35);
+
+  /* Tints become translucent washes of the same hue, and the ink flips to the
+     light end of that hue — same meaning, opposite ground. */
+  --tint-slate-bg:  rgba(148,163,184,.16); --tint-slate-fg:  #cbd5e1;
+  --tint-blue-bg:   rgba(59,130,246,.18);  --tint-blue-fg:   #93c5fd;
+  --tint-violet-bg: rgba(139,92,246,.20);  --tint-violet-fg: #c4b5fd;
+  --tint-amber-bg:  rgba(245,158,11,.18);  --tint-amber-fg:  #fcd34d;
+  --tint-yellow-bg: rgba(234,179,8,.16);   --tint-yellow-fg: #fde047;
+  --tint-red-bg:    rgba(239,68,68,.16);   --tint-red-fg:    #fca5a5;  --tint-red-border: rgba(248,113,113,.45);
+  --tint-green-bg:  rgba(34,197,94,.16);   --tint-green-fg:  #86efac;
+  --tint-indigo-bg: rgba(99,102,241,.20);  --tint-indigo-fg: #a5b4fc;
+  --tint-gray-fg:   #9aa4b6;
 }
 
 html, body { height: 100%; }
@@ -45,13 +108,13 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 
 .btn-primary {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
 
 .btn-add-task {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font-weight: 600;
   box-shadow: 0 1px 2px rgba(0,0,0,.15), 0 0 0 1px rgba(255,255,255,.08) inset;
   transition: background .15s, box-shadow .15s, transform .05s;
@@ -67,7 +130,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   color: var(--text);
   border: 1px solid var(--border);
 }
-.btn-ghost:hover:not(:disabled) { background: var(--bg); }
+.btn-ghost:hover:not(:disabled) { background: var(--hover); }
 
 /* Nav */
 .nav {
@@ -134,7 +197,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   display: block;
   width: 20px;
   height: 2px;
-  background: #cdd6f4;
+  background: var(--sidebar-text);
   border-radius: 2px;
   transition: transform .22s ease, opacity .15s ease;
   position: relative;
@@ -689,7 +752,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   border-radius: 6px;
   cursor: pointer;
 }
-.tt-due-picker-item:hover { background: var(--hover, rgba(0, 0, 0, .04)); }
+.tt-due-picker-item:hover { background: var(--hover); }
 .tt-due-picker-item input { cursor: pointer; }
 
 .task-list { margin-top: 8px; display: flex; flex-direction: column; gap: 0; }
@@ -1181,7 +1244,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 /* Drag and drop */
 .task-drag-handle {
   cursor: grab;
-  color: #c1c9d4;
+  color: var(--muted);
   font-size: 14px;
   padding: 0 3px;
   flex-shrink: 0;
@@ -1203,7 +1266,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .task-node[data-group="true"][data-depth="0"] > .task-row { background: rgba(124, 58, 237, 0.253); }
 .task-node[data-group="true"][data-depth="0"] > .task-row:hover { background: rgba(246,36,89,.09); }
 .task-node[data-group="true"][data-depth="0"] > .task-row .task-number { font-size: 12px; font-weight: 700; }
-.task-node:not([data-group]) > .task-row { background: rgb(255, 255, 255); }
+.task-node:not([data-group]) > .task-row { background: var(--surface); }
 .task-node:not([data-group]) > .task-row:hover { background: rgba(99,102,241,.07); }
 
 /* Parent shown only as context for a matched child (search/filter) */
@@ -1291,7 +1354,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .diff-vs { font-size: 11px; color: var(--muted); font-weight: 500; }
 .diff-mode-toggle { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-left: auto; }
 .diff-mode-btn { background: transparent; border: none; border-radius: 0; padding: 5px 14px; font-size: 12px; color: var(--muted); cursor: pointer; }
-.diff-mode-btn.active { background: var(--accent); color: #fff; }
+.diff-mode-btn.active { background: var(--accent); color: var(--on-accent); }
 
 /* Kanban filter bar */
 .kanban-filter-bar {
@@ -1480,6 +1543,15 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   border-radius: 4px;
   padding: 1px 5px;
 }
+/* The dialog owns the padding now: the story picker sits above the shared
+   TaskForm, so the form itself can no longer be the padded box. */
+.kanban-sub-modal-body {
+  padding: 16px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kanban-modal .kanban-sub-modal-body .task-form { padding: 0; }
 .kanban-sub-modal-actions {
   display: flex;
   align-items: center;
@@ -1794,13 +1866,13 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   transition: background .12s, color .12s;
 }
 .kanban-view-btn:hover { background: var(--bg); color: var(--text); }
-.kanban-view-btn.active { background: var(--accent); color: #fff; }
+.kanban-view-btn.active { background: var(--accent); color: var(--on-accent); }
 
 /* Kanban edit modal */
 .kanban-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.4);
+  background: var(--overlay);
   z-index: 200;
   display: flex;
   align-items: center;
@@ -2171,10 +2243,10 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .kanban-col-error {
   margin: 0 0 8px;
   padding: 6px 10px;
-  border: 1px solid #dc2626;
+  border: 1px solid var(--danger);
   border-radius: 6px;
   background: rgba(220, 38, 38, 0.08);
-  color: #dc2626;
+  color: var(--danger);
   font-size: 12px;
 }
 
@@ -2662,7 +2734,60 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   min-width: 0;
   overflow: hidden;
   border-right: 1px solid var(--border);
+  position: relative;
 }
+
+/* Floats over the cell rather than taking a row in it: the cell height is fixed
+   and already spoken for, and this is a hover affordance, not content. */
+.swim-cell-add {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface, #fff);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  /* Visible at rest, not hover-only: an affordance nobody can find is not an
+     affordance. Quiet enough that forty of them do not read as content. */
+  opacity: .45;
+  transition: opacity .12s, background .12s, color .12s, border-color .12s;
+}
+.swim-cell:hover .swim-cell-add,
+.swim-cell-add:focus-visible { opacity: 1; }
+.swim-cell-add:hover {
+  background: var(--accent, #2563eb);
+  border-color: var(--accent, #2563eb);
+  color: var(--on-accent);
+}
+
+/* The story's own add. Unlike the cell +, this one is always on screen and
+   always reads as a word — it is the button people go looking for. */
+.swim-lane-add {
+  flex: none;
+  padding: 2px 10px;
+  border: 1px solid var(--accent, #2563eb);
+  border-radius: 999px;
+  background: none;
+  color: var(--accent, #2563eb);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.swim-lane-add:hover { background: var(--accent, #2563eb); color: var(--on-accent); }
+.swim-add-task { white-space: nowrap; font-size: 12px; padding: 4px 12px; }
+.swim-add-story { flex: 1; min-width: 0; max-width: 340px; font-size: 12px; padding: 3px 6px; }
 /* The card keeps its natural height and the chip is pinned to the bottom of the
    cell. Stretching the card to fill instead left a one-line title floating above
    40px of nothing. */
@@ -2719,7 +2844,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   background: var(--accent, #2563eb);
   border-color: var(--accent, #2563eb);
   border-style: solid;
-  color: #fff;
+  color: var(--on-accent);
 }
 .swim-cell:last-child { border-right: none; }
 /* Hatched, not merely tinted: an empty cell is a legal drop target, and the
@@ -2773,9 +2898,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .swim-lane-expand--on {
   background: var(--accent, #2563eb);
   border-color: var(--accent, #2563eb);
-  color: #fff;
+  color: var(--on-accent);
 }
-.swim-lane-expand--on:hover { color: #fff; }
+.swim-lane-expand--on:hover { color: var(--on-accent); }
 .swim-bulk { display: flex; align-items: center; gap: 4px; }
 .swim-expand-all { white-space: nowrap; font-size: 12px; }
 .swim-expand-all[disabled] { opacity: .45; cursor: default; }
@@ -3057,14 +3182,14 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   cursor: pointer;
 }
 .ctx-menu-item:hover { background: var(--bg); }
-.ctx-menu-item--danger { color: #dc2626; }
+.ctx-menu-item--danger { color: var(--danger); }
 .ctx-menu-icon { font-size: 13px; line-height: 1; }
 
 /* ─── Task activity / history modal ────────────────────────────────────── */
 .thist-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.45);
+  background: var(--overlay);
   z-index: 3000;
   display: flex;
   align-items: center;
@@ -3085,8 +3210,8 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .thist-task-title { padding: 12px 18px 0; font-size: 15px; font-weight: 700; color: var(--text); }
 .thist-content { padding: 12px 18px 18px; overflow-y: auto; }
 .thist-empty { padding: 26px 8px; text-align: center; font-size: 13px; color: var(--muted); }
-.thist-error { color: #dc2626; }
-.thist-note { margin: 0 0 10px; padding: 8px 10px; font-size: 12px; color: var(--muted); background: var(--bg-subtle, rgba(0,0,0,0.03)); border-radius: 6px; }
+.thist-error { color: var(--danger); }
+.thist-note { margin: 0 0 10px; padding: 8px 10px; font-size: 12px; color: var(--muted); background: var(--bg-subtle); border-radius: 6px; }
 .thist-list { list-style: none; margin: 0; padding: 0; }
 .thist-item {
   display: flex;
@@ -3204,3 +3329,126 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) {
   .pending-dot { animation: none; }
 }
+
+/* ─── Theme toggle (nav) ───────────────────────────────────────────────── */
+.nav-theme-toggle {
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 6px;
+  color: var(--sidebar-text);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 6px 9px;
+  transition: background .15s, border-color .15s;
+}
+.nav-theme-toggle:hover { background: rgba(255,255,255,.14); }
+.nav-mobile-drawer .nav-theme-toggle {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  padding: 10px 14px;
+}
+
+/* ─── Dark-mode exceptions ─────────────────────────────────────────────────
+   Everything above that hard-codes a light surface or an ink mixed for a light
+   surface. Grouped here so the light theme keeps reading as one file, and so a
+   new hard-coded hex has one obvious place to be answered.
+   Rule of thumb for each pair: a tinted background stays a tint (it darkens with
+   the page), so only the ink has to be re-picked for the dark ground. */
+
+/* Badges: dark ink on a colour wash → light ink on the same wash. */
+html[data-theme="dark"] .meta-badge.pending,
+html[data-theme="dark"] .badge.pending,
+html[data-theme="dark"] .status-tag.pending { background: rgba(234,179,8,.16); color: #fcd34d; }
+html[data-theme="dark"] .project-status--on-hold { background: rgba(234,179,8,.16); color: #fcd34d; }
+html[data-theme="dark"] .project-status--archived { background: rgba(148,163,184,.16); color: #cbd5e1; }
+html[data-theme="dark"] .project-priority--high { background: rgba(248,113,113,.14); color: #fca5a5; }
+html[data-theme="dark"] .project-priority--low { background: rgba(148,163,184,.14); color: #cbd5e1; }
+
+/* Task row meta chips. */
+html[data-theme="dark"] .task-due { color: #fcd34d; border-color: rgba(252,211,77,.28); background: rgba(245,158,11,.10); }
+html[data-theme="dark"] .task-start { color: #6ee7b7; border-color: rgba(110,231,183,.28); background: rgba(16,185,129,.10); }
+html[data-theme="dark"] .task-desc { color: #b6bfcd; border-color: rgba(148,163,184,.25); background: rgba(148,163,184,.08); }
+html[data-theme="dark"] .task-assignee-badge { color: #c4b5fd; border-color: rgba(196,181,253,.28); background: rgba(167,139,250,.12); }
+html[data-theme="dark"] .task-updates-badge { color: #7dd3fc; border-color: rgba(125,211,252,.28); background: rgba(56,189,248,.12); }
+html[data-theme="dark"] .task-progress-chip--complete {
+  color: #6ee7b7;
+  background: rgba(16,185,129,.12);
+  border-color: rgba(110,231,183,.3);
+}
+
+/* Deep-link highlight: #fffbeb would be a white flash on a dark page. */
+html[data-theme="dark"] .task-row--focused { background: rgba(245,158,11,.14); }
+
+/* Kanban columns share --bg with the page, which is invisible once both are dark. */
+html[data-theme="dark"] .kanban-column { background: var(--surface-2); }
+html[data-theme="dark"] .kanban-col-delete-btn:hover { background: rgba(248,113,113,.14); color: #f87171; border-color: #f87171; }
+
+/* Column colour comes from the board data, mixed for a white card. Lift it toward
+   white so a mid-tone column name is still readable on the dark cell. */
+html[data-theme="dark"] .kanban-subtask-status-select {
+  color: color-mix(in srgb, var(--status-color, #64748b) 62%, #ffffff);
+  border-color: color-mix(in srgb, var(--status-color, #64748b) 62%, #ffffff);
+  background: color-mix(in srgb, var(--status-color, #64748b) 20%, transparent);
+}
+
+/* Skeleton shimmer: the sweep has to be lighter than the track, not white. */
+html[data-theme="dark"] .skeleton {
+  background: linear-gradient(90deg, var(--border) 25%, #333b49 50%, var(--border) 75%);
+  background-size: 600px 100%;
+}
+
+/* Diff gutters. */
+html[data-theme="dark"] .diff-line-added { background: rgba(22,163,74,.18); color: #86efac; }
+html[data-theme="dark"] .diff-line-removed { background: rgba(220,38,38,.16); color: #fca5a5; }
+
+/* Code block already ships dark; align it with the theme's own surfaces. */
+html[data-theme="dark"] .md-preview pre { background: var(--surface-2); color: var(--text); }
+
+/* Failed-write toast: light red card → dark red card. */
+html[data-theme="dark"] .sync-status-error {
+  border-color: rgba(248,113,113,.45);
+  background: #2a1618;
+}
+html[data-theme="dark"] .sync-status-error-body strong { color: #fca5a5; }
+html[data-theme="dark"] .sync-status-error-body span { color: #fecaca; }
+
+/* Hover lifts read as nothing on a dark page unless the shadow is opaque. */
+html[data-theme="dark"] .card:hover,
+html[data-theme="dark"] .project-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.55); }
+html[data-theme="dark"] .kanban-card:hover { box-shadow: 0 6px 16px rgba(0,0,0,.5); }
+
+/* Status-count chips (project task page). The hue arrives inline as
+   --status-color; everything derived from it is here so dark mode can lift the
+   ink off the dark ground. */
+.status-count-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--status-color, var(--muted));
+  background: color-mix(in srgb, var(--status-color, #64748b) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-color, #64748b) 30%, transparent);
+}
+.status-count-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--status-color, var(--muted));
+  flex-shrink: 0;
+}
+html[data-theme="dark"] .status-count-chip {
+  color: color-mix(in srgb, var(--status-color, #64748b) 62%, #ffffff);
+  background: color-mix(in srgb, var(--status-color, #64748b) 18%, transparent);
+}
+
+/* Initials avatars carry an inline hue mixed for a white row; inline styles win
+   over any rule here, so the whole chip is lifted instead of recoloured. */
+html[data-theme="dark"] .task-assignee-avatar { filter: brightness(1.55) saturate(.95); }

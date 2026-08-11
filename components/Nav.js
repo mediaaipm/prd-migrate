@@ -4,6 +4,7 @@ import { useRouter } from 'next/router'
 import Image from 'next/image'
 import { apiFetch } from '../lib/api-fetch'
 import { isSuperAdmin, canView } from '../lib/client-permissions'
+import { useTheme } from '../lib/theme'
 import { enqueue } from '../lib/submit-queue'
 import { useQueueState, LEAVE_WARNING } from '../lib/use-submit-queue'
 
@@ -13,6 +14,7 @@ export default function Nav() {
   const router = useRouter()
   const { pathname, query } = router
   const { pending } = useQueueState()
+  const { theme, toggle: toggleTheme } = useTheme()
   const projectSlug = query.slug || (pathname.match(/^\/projects\/([^/]+)/) || [])[1]
   const [currentUser, setCurrentUser] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -140,6 +142,15 @@ export default function Nav() {
       {isSuperAdmin(currentUser) && (
         <Link href="/settings/roles" className={`nav-link${pathname === '/settings/roles' ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>Access Control</Link>
       )}
+      <button
+        className="nav-theme-toggle"
+        onClick={toggleTheme}
+        title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        aria-label="Toggle dark mode"
+        aria-pressed={theme === 'dark'}
+      >
+        {theme === 'dark' ? '☀️' : '🌙'}
+      </button>
       <div className="nav-notif">
         <button className="nav-notif-bell" onClick={() => setShowNotifs(v => !v)} title="Notifications" aria-label="Notifications">
           🔔

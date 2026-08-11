@@ -64,7 +64,9 @@ Visibility perms (`project:view`, `version:view`, `proposal:view`, `task:view`, 
 | `lib/categories.js` | Task categories (`categories:{slug}`) — the second grouping axis; same server-is-truth pattern as columns |
 | `components/CategoryManager.js` | Categories modal — superadmin edits, everyone reads |
 | `components/TaskTree.js` | Tree list view with inline edit |
-| `components/Nav.js` | Top nav |
+| `components/Nav.js` | Top nav (also owns the light/dark toggle) |
+| `lib/theme.js` | Light/dark theme — `localStorage['ss_theme']`, falls back to OS preference |
+| `pages/_document.js` | Inline pre-paint script that stamps `<html data-theme>` (no white flash) |
 | `styles/globals.css` | All styles — no CSS modules |
 
 ---
@@ -85,6 +87,8 @@ Visibility perms (`project:view`, `version:view`, `proposal:view`, `task:view`, 
 - Priority values: `low | medium | high`
 - Project status: `active | on-hold | archived`
 - CSS: add new classes to `globals.css`; no inline styles for layout (use existing utility classes)
+- Colours: never hard-code a hex for a surface or for text. Use the tokens in `:root` (`--bg`, `--surface`, `--card`, `--surface-2`, `--border`, `--text`, `--muted`, `--hover`, `--overlay`), `--on-accent` for ink sitting on an `--accent` fill, and the `--tint-{hue}-bg` / `--tint-{hue}-fg` **pairs** for status chips — every one has a dark counterpart under `html[data-theme="dark"]`. A pale hex paired with dark ink is the exact combination that turns invisible in dark mode. Saturated fills (priority dots, user-chosen label/column colours) can stay literal
+- Anything that genuinely must stay a literal goes in the "Dark-mode exceptions" block at the bottom of `globals.css`. If a colour arrives from data, pass it in as `--status-color` and derive the wash/ink in CSS — inline styles can't tell which theme is on
 - No TypeScript — plain JS throughout
 
 ---

@@ -5,6 +5,7 @@ import AssigneeInput from './AssigneeInput'
 import AutoTextarea from './AutoTextarea'
 import SubmitButton from './SubmitButton'
 import MentionInput from './MentionInput'
+import TaskForm, { blankForm } from './TaskForm'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
 import FilterMultiSelect, { DatePicker } from './FilterMultiSelect'
@@ -21,10 +22,6 @@ const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', cri
 const PRIORITY_LABEL = { low: 'Low', medium: 'Med', high: 'High', critical: 'Crit' }
 
 const MAX_ATTACH_BYTES = 1024 * 1024 // 1MB cap per file (stored inline as data URL in Redis)
-
-function blankSubForm() {
-  return { title: '', description: '', priority: 'medium', status: 'todo', assignees: [], startDate: '', dueDate: '', labelIds: [] }
-}
 
 function isOverdue(dueDate) {
   if (!dueDate) return false
@@ -196,10 +193,10 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   const [quickAddFor, setQuickAddFor] = useState(null)
   const [quickAddTitle, setQuickAddTitle] = useState('')
   const [quickAddLabels, setQuickAddLabels] = useState([])
-  const [subAddFor, setSubAddFor] = useState(null) // parent task id for inline sub-task add
-  const [subAddForm, setSubAddForm] = useState(blankSubForm())
-  const [subAddAnother, setSubAddAnother] = useState(false)    // keep the modal open after Add
-  const subTitleRef = useRef(null)
+  const [subAddFor, setSubAddFor] = useState(null) // parent task id, or LOOSE_LANE for a story-less add
+  const [subAddCell, setSubAddCell] = useState(false)  // opened from a swimlane cell or the toolbar, not from a card
+  // Seed values only — TaskForm owns the live fields once the dialog is open.
+  const [subAddForm, setSubAddForm] = useState(blankForm())
   const [editingTask, setEditingTask] = useState(null)
   const [editStack, setEditStack] = useState([])   // task ids visited before the current one
   const [editForm, setEditForm] = useState(null)
@@ -635,16 +632,12 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     setShowAclMgr(false)
   }
 
+  // The column composer is the list's Add Task with the column pre-picked: same
+  // TaskForm, same fields. Only `children` (the nested sub-task rows, which the
+  // list has no equivalent of) lives outside the form.
   function startAdding(status) {
     setAddingFor(status)
-    setAddForm({ title: '', status, priority: 'medium', labelIds: [], children: [] })
-  }
-
-  function toggleAddLabel(id) {
-    setAddForm(p => {
-      const ids = Array.isArray(p.labelIds) ? p.labelIds : []
-      return { ...p, labelIds: ids.includes(id) ? ids.filter(l => l !== id) : [...ids, id] }
-    })
+    setAddForm({ initial: { ...blankForm(), status }, children: [] })
   }
 
   // Queue a task create and return the draft, so callers can reference the new id
@@ -661,30 +654,43 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     return draft
   }
 
-  function saveNew() {
-    if (!addForm?.title.trim()) return
-    if (!labelsOk(addForm.labelIds)) return
-    const status = addForm.status
+  function saveNew(form, opts = {}) {
+    if (!form?.title.trim()) return
+    if (!labelsOk(form.labelIds)) return
+    const status = form.status
+
+    const root = enqueueCreate({
+      ...form,
+      category: form.category || null,
+      startDate: form.startDate || null,
+      dueDate: form.dueDate || null,
+      numberOverride: form.numberOverride || null,
+      parentId: null,
+    })
 
     // Children used to wait on their parent's POST to learn its id. Now the id is
     // generated up front, so the whole subtree is queued in one synchronous pass and
     // the FIFO drain guarantees a parent is committed before its children reference it.
     // Sub-tasks inherit the root's labels: labels are mandatory, and asking for them
     // again on every nested row of a composer would make the composer unusable.
-    function queueTree(node, parentId) {
-      const draft = enqueueCreate({
-        title: node.title,
-        priority: node.priority,
-        status,
-        labelIds: node.labelIds || addForm.labelIds || [],
-        ...(parentId ? { parentId } : {}),
-      })
-      for (const child of (node.children || [])) {
-        if (child.title.trim()) queueTree(child, draft.id)
+    function queueChildren(children, parentId) {
+      for (const child of (children || [])) {
+        if (!child.title.trim()) continue
+        const draft = enqueueCreate({
+          title: child.title,
+          priority: child.priority,
+          status,
+          labelIds: form.labelIds || [],
+          parentId,
+        })
+        queueChildren(child.children, draft.id)
       }
     }
-    queueTree(addForm, null)
+    queueChildren(addForm?.children, root.id)
 
+    // "Add another" keeps the composer up; the nested rows belonged to the card
+    // just queued, so they go with it.
+    if (opts.keepOpen) { setAddForm(p => ({ ...p, children: [] })); return }
     setAddingFor(null)
     setAddForm(null)
   }
@@ -714,8 +720,9 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   // deadline and labels — so the common case is title-then-Enter.
   function openSubAdd(parent) {
     setSubAddFor(parent.id)
+    setSubAddCell(false)
     setSubAddForm({
-      ...blankSubForm(),
+      ...blankForm(),
       status: parent.status,
       priority: parent.priority || 'medium',
       assignees: Array.isArray(parent.assignees) ? [...parent.assignees] : [],
@@ -724,32 +731,54 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     })
   }
 
-  function closeSubAdd() {
-    setSubAddFor(null)
-    setSubAddForm(blankSubForm())
-  }
-
-  function toggleSubLabel(id) {
-    setSubAddForm(p => {
-      const ids = Array.isArray(p.labelIds) ? p.labelIds : []
-      return { ...p, labelIds: ids.includes(id) ? ids.filter(l => l !== id) : [...ids, id] }
+  // Adding from a swimlane cell. The cell's own coordinates are the answer to
+  // three of the form's questions — which story, which category rail, which
+  // column — so it opens with those filled in and only the title left to type.
+  function openCellAdd(rootId, railId, status) {
+    const parent = rootId === LOOSE_LANE ? null : taskById[rootId]
+    setSubAddFor(rootId)
+    setSubAddCell(true)
+    setSubAddForm({
+      ...blankForm(),
+      status,
+      // railId null means the rails are switched off — the cell says nothing
+      // about category, so neither does the draft.
+      category: railId || '',
+      priority: parent?.priority || 'medium',
+      assignees: Array.isArray(parent?.assignees) ? [...parent.assignees] : [],
+      dueDate: parent?.dueDate || '',
+      labelIds: Array.isArray(parent?.labelIds) ? [...parent.labelIds] : [],
     })
   }
 
-  // Add a sub-task to an existing card on the board.
-  function addSubtask(parent) {
-    if (!parent || !subAddForm.title.trim()) return
-    if (!labelsOk(subAddForm.labelIds)) return
+  // Board-level Add Task, the twin of the list's toolbar button: no cell, no
+  // parent, nothing pre-answered but the first column.
+  function openBoardAdd() {
+    setSubAddFor(LOOSE_LANE)
+    setSubAddCell(true)
+    setSubAddForm({ ...blankForm(), status: columns[0]?.status || 'todo' })
+  }
+
+  function closeSubAdd() {
+    setSubAddFor(null)
+    setSubAddCell(false)
+    setSubAddForm(blankForm())
+  }
+
+  // Add a task, optionally under an existing card. TaskForm owns the fields and
+  // the "add another" reset, so this only has to queue what it hands back.
+  function addSubtask(parent, form, opts = {}) {
+    if (!form?.title.trim()) return
+    if (!labelsOk(form.labelIds)) return
     enqueueCreate({
-      ...subAddForm,
-      startDate: subAddForm.startDate || null,
-      dueDate: subAddForm.dueDate || null,
-      parentId: parent.id,
-    }, `Add sub-task “${subAddForm.title.trim()}”`)
-    if (!subAddAnother) { closeSubAdd(); return }
-    // Keep the inherited defaults; clear what was unique to the task just added.
-    setSubAddForm(p => ({ ...p, title: '', description: '' }))
-    requestAnimationFrame(() => subTitleRef.current?.focus())
+      ...form,
+      category: form.category || null,
+      startDate: form.startDate || null,
+      dueDate: form.dueDate || null,
+      numberOverride: form.numberOverride || null,
+      parentId: parent ? parent.id : null,
+    }, `Add ${parent ? 'sub-task' : 'task'} “${form.title.trim()}”`)
+    if (!opts.keepOpen) closeSubAdd()
   }
 
   function renderSubFormChildren(children, path) {
@@ -1425,6 +1454,17 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                   <span className="swim-more-word">more</span>
                 </button>
               )}
+              {/* One click, three fields already answered. Hover-revealed: at
+                  forty rails a permanent + in every cell is all anyone sees. */}
+              {canEditAll && (
+                <button
+                  className="swim-cell-add"
+                  onMouseDown={e => e.stopPropagation()}
+                  onClick={() => openCellAdd(rootId, rail.id, col.status)}
+                  title={`Add a task to ${rootId === LOOSE_LANE ? 'no story' : (taskById[rootId]?.title || 'this story')}${rail.id === null ? '' : ` › ${rail.name || 'Uncategorised'}`} › ${col.label}`}
+                  aria-label="Add task to this cell"
+                >+</button>
+              )}
             </div>
           )
         })}
@@ -1597,6 +1637,14 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                       </button>
                     )
                   })()}
+                  {canEditAll && (
+                    <button
+                      className="swim-lane-add"
+                      onMouseDown={e => e.stopPropagation()}
+                      onClick={() => openCellAdd(LOOSE_LANE, null, columns[0]?.status || 'todo')}
+                      title="Add a task that belongs to no story"
+                    >+ Add task</button>
+                  )}
                 </div>
               </div>
               {!collapsedLanes.has(LOOSE_LANE) && railsFor(loose).map(rail =>
@@ -1886,6 +1934,16 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   return (
     <div>
       <div className="kanban-filter-bar">
+        {canEditAll && (
+          <button
+            className="btn-add-task"
+            style={{ fontSize: 12, padding: '5px 12px', whiteSpace: 'nowrap' }}
+            onClick={() => subAddFor ? closeSubAdd() : openBoardAdd()}
+            title="Add a task to this board"
+          >
+            {subAddFor ? 'Cancel' : '+ Add Task'}
+          </button>
+        )}
         <div className="search-bar" style={{ flex: 1, minWidth: 160 }}>
           <input
             className="form-input search-input"
@@ -2045,6 +2103,16 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
             >
               {allLanesExpanded ? '⤡ Collapse all tasks' : '⤢ Expand all tasks'}
             </button>
+            {/* The board-level add. The lane and cell buttons are more precise,
+                but they only exist once there is a lane — this one works on an
+                empty board and on one filtered down to nothing. */}
+            {canEditAll && (
+              <button
+                className="btn-primary swim-add-task"
+                onClick={() => openCellAdd(LOOSE_LANE, null, columns[0]?.status || 'todo')}
+                title="Add a task — pick its story, category and column in the dialog"
+              >+ Add task</button>
+            )}
           </div>
         )}
         {labelsApi && (
@@ -2191,55 +2259,26 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
 
                 {addingFor === col.status && addForm && (
                   <div className="kanban-add-form">
-                    <input
-                      className="form-input"
-                      placeholder="Task title *"
-                      value={addForm.title}
-                      onChange={e => setAddForm(p => ({ ...p, title: e.target.value }))}
-                      autoFocus
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') saveNew()
-                        if (e.key === 'Escape') setAddingFor(null)
-                      }}
+                    {/* The same composer the list uses. Quick mode only decides
+                        what starts folded — a column is 280px wide, so the full
+                        field set opens behind "More options" rather than on top
+                        of the cards. */}
+                    <TaskForm
+                      initial={addForm.initial}
+                      onSave={saveNew}
+                      onCancel={() => { setAddingFor(null); setAddForm(null) }}
+                      label="Add"
+                      titlePlaceholder="Task title *"
+                      assignees={assignees}
+                      showCreator
+                      currentUser={currentUser}
+                      quickAdd
+                      allowAddAnother
+                      columns={columns}
+                      categories={categories}
+                      labels={labels}
+                      requireLabel
                     />
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                      <select
-                        className="form-input"
-                        value={addForm.priority}
-                        onChange={e => setAddForm(p => ({ ...p, priority: e.target.value }))}
-                        style={{ flex: 1 }}
-                      >
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                        <option value="critical">Critical</option>
-                      </select>
-                      <button className="btn-ghost" style={{ fontSize: 12, padding: '4px 10px' }} onClick={() => setAddingFor(null)}>Cancel</button>
-                      <SubmitButton
-                        className="btn-primary"
-                        style={{ fontSize: 12, padding: '4px 10px' }}
-                        busyLabel="Adding…"
-                        onClick={saveNew}
-                        disabled={!addForm.title.trim() || !labelsOk(addForm.labelIds)}
-                      >Add</SubmitButton>
-                    </div>
-                    {labels.length > 0 && (
-                      <div className="kanban-add-labels">
-                        {labels.map(l => {
-                          const on = (addForm.labelIds || []).includes(l.id)
-                          return (
-                            <button
-                              key={l.id}
-                              type="button"
-                              className="kanban-label-chip kanban-label-chip--toggle"
-                              style={{ background: on ? l.color : 'transparent', color: on ? '#fff' : l.color, borderColor: l.color }}
-                              onClick={() => toggleAddLabel(l.id)}
-                            >{on ? '✓ ' : ''}{l.name}</button>
-                          )
-                        })}
-                      </div>
-                    )}
-                    {renderLabelHint(addForm.labelIds)}
                     {renderSubFormChildren(addForm.children || [], [])}
                     <button
                       className="kanban-add-subtask-btn"
@@ -2478,8 +2517,10 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
         </div>
       )}
 
-      {subAddFor && taskById[subAddFor] && (() => {
-        const parent = taskById[subAddFor]
+      {subAddFor && (subAddFor === LOOSE_LANE || taskById[subAddFor]) && (() => {
+        // No parent when the add came from the "No story" lane — that cell's whole
+        // point is a task that belongs to no story.
+        const parent = subAddFor === LOOSE_LANE ? null : taskById[subAddFor]
         return (
           <div
             className="kanban-modal-overlay"
@@ -2488,90 +2529,52 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
           >
             <div className="kanban-modal">
               <div className="kanban-modal-header">
-                <span>Add Sub-task</span>
+                <span>{subAddCell ? 'Add Task' : 'Add Sub-task'}</span>
                 <button className="kanban-modal-close" onClick={closeSubAdd}>✕</button>
               </div>
-              <div className="task-form">
+              <div className="kanban-sub-modal-body">
                 <div className="kanban-sub-parent">
                   <span className="kanban-subtask-indent-arrow" aria-hidden="true">↳</span>
-                  under <strong>{parent.title}</strong>
-                  {taskLabel(parent) && <span className="kanban-sub-parent-id">{taskLabel(parent)}</span>}
+                  {/* A cell add already answered this, but the board-level add did
+                      not — and either way the lane is the one field worth being
+                      able to correct without closing the dialog. */}
+                  {subAddCell ? (
+                    <select
+                      className="form-input swim-add-story"
+                      value={subAddFor}
+                      onChange={e => setSubAddFor(e.target.value)}
+                      title="Which story this task belongs to"
+                    >
+                      <option value={LOOSE_LANE}>No story</option>
+                      {boardTasks.filter(t => !t.parentId).map(r => (
+                        <option key={r.id} value={r.id}>{r.title}</option>
+                      ))}
+                    </select>
+                  ) : parent ? (
+                    <>
+                      under <strong>{parent.title}</strong>
+                      {taskLabel(parent) && <span className="kanban-sub-parent-id">{taskLabel(parent)}</span>}
+                    </>
+                  ) : <em>no story</em>}
                 </div>
-                <input
-                  ref={subTitleRef}
-                  className="form-input"
-                  placeholder="Title *"
-                  value={subAddForm.title}
-                  autoFocus
-                  onChange={e => setSubAddForm(p => ({ ...p, title: e.target.value }))}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.nativeEvent?.isComposing) { e.preventDefault(); addSubtask(parent) }
-                  }}
+                {/* Same form as the list's Add Task, down to the field order —
+                    the only thing the board adds is the story picker above. */}
+                <TaskForm
+                  initial={subAddForm}
+                  onSave={(form, opts) => addSubtask(parent, form, opts)}
+                  onCancel={closeSubAdd}
+                  label={parent ? 'Add Sub-task' : 'Add Task'}
+                  titlePlaceholder="Task title *"
+                  assignees={assignees}
+                  showCreator
+                  currentUser={currentUser}
+                  allowAddAnother
+                  columns={columns}
+                  categories={categories}
+                  inheritedCategory={parent ? (catOf(parent) || '') : ''}
+                  labels={labels}
+                  requireLabel
                 />
-                <AutoTextarea
-                  className="form-input task-desc-input"
-                  placeholder="Description (optional)"
-                  value={subAddForm.description}
-                  onChange={e => setSubAddForm(p => ({ ...p, description: e.target.value }))}
-                />
-
-                {labels.length > 0 && (
-                  <div className="task-assignees-selector">
-                    <span className="task-assignees-label">Labels:</span>
-                    <div className="task-assignees-list">
-                      {labels.map(l => {
-                        const on = subAddForm.labelIds.includes(l.id)
-                        return (
-                          <button
-                            key={l.id}
-                            type="button"
-                            className="kanban-label-chip kanban-label-chip--toggle"
-                            style={{ background: on ? l.color : 'transparent', color: on ? '#fff' : l.color, borderColor: l.color }}
-                            onClick={() => toggleSubLabel(l.id)}
-                          >{on ? '✓ ' : ''}{l.name}</button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-                {renderLabelHint(subAddForm.labelIds)}
-
-                <div className="task-form-row">
-                  <select className="form-input" value={subAddForm.status} onChange={e => setSubAddForm(p => ({ ...p, status: e.target.value }))}>
-                    {columns.map(c => <option key={c.status} value={c.status}>{c.label}</option>)}
-                  </select>
-                  <select className="form-input" value={subAddForm.priority} onChange={e => setSubAddForm(p => ({ ...p, priority: e.target.value }))}>
-                    <option value="low">Low priority</option>
-                    <option value="medium">Medium priority</option>
-                    <option value="high">High priority</option>
-                    <option value="critical">Critical priority</option>
-                  </select>
-                </div>
-                <AssigneeInput
-                  value={subAddForm.assignees}
-                  options={assignees}
-                  onChange={next => setSubAddForm(p => ({ ...p, assignees: next }))}
-                />
-                <div className="task-form-row">
-                  <input className="form-input" type="date" title="Start date" value={subAddForm.startDate} onChange={e => setSubAddForm(p => ({ ...p, startDate: e.target.value }))} />
-                  <input className="form-input" type="date" title="Due date" value={subAddForm.dueDate} onChange={e => setSubAddForm(p => ({ ...p, dueDate: e.target.value }))} />
-                </div>
-
-                <div className="kanban-sub-modal-actions">
-                  <label className="kanban-sub-another" title="Keep this dialog open after adding">
-                    <input type="checkbox" checked={subAddAnother} onChange={e => setSubAddAnother(e.target.checked)} />
-                    Add another
-                  </label>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn-ghost" onClick={closeSubAdd}>Cancel</button>
-                    <SubmitButton
-                      className="btn-primary"
-                      onClick={() => addSubtask(parent)}
-                      disabled={!subAddForm.title.trim() || !labelsOk(subAddForm.labelIds)}
-                      busyLabel="Adding…"
-                    >Add Sub-task</SubmitButton>
-                  </div>
-                </div>
               </div>
             </div>
           </div>

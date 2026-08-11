@@ -262,7 +262,7 @@ export default function CalendarView({ tasks, apiBase, slug, currentUser }) {
                     onContextMenu={e => handleTaskContextMenu(e, t)}
                     onClick={e => { e.stopPropagation(); setOpenDay(k); setEditId(t.id) }}
                     title={t.title}
-                    style={{ borderLeftColor: PRIORITY_COLOR[t.priority] || '#64748b' }}
+                    style={{ borderLeftColor: PRIORITY_COLOR[t.priority] || 'var(--muted)' }}
                   >
                     {coverSrc(t) && <img src={coverSrc(t)} alt="" className="cal-task-cover" loading="lazy" decoding="async" />}
                     {t.number && <span className="cal-task-num">#{t.number}</span>}
@@ -285,7 +285,7 @@ export default function CalendarView({ tasks, apiBase, slug, currentUser }) {
                 key={t.id}
                 className="cal-task cal-task--chip"
                 onContextMenu={e => handleTaskContextMenu(e, t)}
-                style={{ borderLeftColor: PRIORITY_COLOR[t.priority] || '#64748b' }}
+                style={{ borderLeftColor: PRIORITY_COLOR[t.priority] || 'var(--muted)' }}
               >
                 {t.number && <span className="cal-task-num">#{t.number}</span>}
                 {t.title}
@@ -300,10 +300,10 @@ export default function CalendarView({ tasks, apiBase, slug, currentUser }) {
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
           onClick={e => { if (e.target === e.currentTarget) { setOpenDay(null); closeForm() } }}
         >
-          <div style={{ background: '#fff', borderRadius: 14, width: '100%', maxWidth: 520, boxShadow: '0 20px 60px rgba(0,0,0,.18)', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ background: 'var(--surface)', borderRadius: 14, width: '100%', maxWidth: 520, boxShadow: '0 20px 60px rgba(0,0,0,.18)', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <h2 style={{ fontSize: 16, fontWeight: 800, margin: 0 }}>{new Date(openDay + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</h2>
-              <button onClick={() => { setOpenDay(null); closeForm() }} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#94a3b8', lineHeight: 1 }}>×</button>
+              <button onClick={() => { setOpenDay(null); closeForm() }} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--muted)', lineHeight: 1 }}>×</button>
             </div>
             <div style={{ padding: '16px 22px', overflowY: 'auto' }}>
               {editId && editId !== 'new' ? (
@@ -345,16 +345,16 @@ export default function CalendarView({ tasks, apiBase, slug, currentUser }) {
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
                       {orderDayTasks(openDayTasks).map(({ task: t, isChild }) => (
-                        <div key={t.id} onContextMenu={e => handleTaskContextMenu(e, t)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 8, borderLeft: `3px solid ${PRIORITY_COLOR[t.priority] || '#64748b'}`, marginLeft: isChild ? 18 : 0 }}>
-                          {isChild && <span style={{ color: '#94a3b8', fontSize: 12 }}>↳</span>}
+                        <div key={t.id} onContextMenu={e => handleTaskContextMenu(e, t)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 8, borderLeft: `3px solid ${PRIORITY_COLOR[t.priority] || 'var(--muted)'}`, marginLeft: isChild ? 18 : 0 }}>
+                          {isChild && <span style={{ color: 'var(--muted)', fontSize: 12 }}>↳</span>}
                           {coverSrc(t) && <img src={coverSrc(t)} alt="" loading="lazy" decoding="async" style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 5, border: '1px solid var(--border)' }} />}
-                          {t.number && <span style={{ fontSize: 11, color: '#94a3b8' }}>#{t.number}</span>}
+                          {t.number && <span style={{ fontSize: 11, color: 'var(--muted)' }}>#{t.number}</span>}
                           <span style={{ flex: 1, fontSize: 13, textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>{t.title}</span>
                           {!coverSrc(t) && Array.isArray(t.attachments) && t.attachments.length > 0 && <span style={{ fontSize: 11 }} title={`${t.attachments.length} image(s)`}>🖼 {t.attachments.length}</span>}
-                          <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 10, background: '#f1f5f9', color: '#475569' }}>{t.status}</span>
+                          <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 10, background: 'var(--tint-slate-bg)', color: 'var(--muted)' }}>{t.status}</span>
                           {!isChild && canCreate && <button className="btn-ghost" style={{ fontSize: 12, padding: '3px 8px' }} title="Add sub-task" onClick={() => { setSubParent(t.id); setEditId('new') }}>+ sub</button>}
                           {canEdit && <button className="btn-ghost" style={{ fontSize: 12, padding: '3px 10px' }} onClick={() => setEditId(t.id)}>Edit</button>}
-                          {canDelete && <button className="btn-ghost" style={{ fontSize: 12, padding: '3px 8px', color: '#dc2626' }} onClick={() => deleteTask(t.id)}>✕</button>}
+                          {canDelete && <button className="btn-ghost" style={{ fontSize: 12, padding: '3px 8px', color: 'var(--tint-red-fg)' }} onClick={() => deleteTask(t.id)}>✕</button>}
                         </div>
                       ))}
                     </div>
