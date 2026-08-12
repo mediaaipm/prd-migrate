@@ -2516,7 +2516,11 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   min-width: max-content;
   border: 1px solid var(--border);
   border-radius: var(--radius, 8px);
-  overflow: hidden;
+  /* `clip`, never `hidden`. `hidden` makes this box a scroll container, and the
+     sticky header + sticky rail labels inside then anchor to *it* — a box that
+     never scrolls — instead of to the wrapper, so neither ever sticks. `clip`
+     rounds the corners without creating a scroll container. */
+  overflow: clip;
   background: var(--surface, #fff);
 }
 
