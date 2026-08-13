@@ -865,10 +865,12 @@ export default function TasksPage({ currentUser }) {
       <main className="page page--full">
         <div className="page-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 4 }}>
-              <Link href="/">Projects</Link> / <Link href={`/projects/${slug}`}>{projectName || slug}</Link> / {contextLabel}
+            <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: 10 }}>
+              <h1>{contextLabel}</h1>
+              <div style={{ fontSize: 13, color: 'var(--muted)' }}>
+                — <Link href="/">Projects</Link> / <Link href={`/projects/${slug}`}>{projectName || slug}</Link> / {contextLabel}
+              </div>
             </div>
-            <h1>{contextLabel}</h1>
             {version && <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>Tasks scoped to version {version}</p>}
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
