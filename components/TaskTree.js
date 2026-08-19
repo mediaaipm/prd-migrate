@@ -7,13 +7,14 @@ import SubmitButton from './SubmitButton'
 import TaskForm, { blankForm } from './TaskForm'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
-import FilterMultiSelect from './FilterMultiSelect'
+import FilterSidebar, { SidebarSection, SidebarCheckList } from './FilterSidebar'
 import { useColumns, columnsWithTaskStatuses, labelForStatus } from '../lib/kanban-columns'
 import { useCategories, categoriesWithTaskValues, categoryMap, effectiveCategory, taskIndex } from '../lib/categories'
 import CategoryManager from './CategoryManager'
 import TaskMiniBoard from './TaskMiniBoard'
 import { taskShareLink, copyText } from '../lib/task-link'
 import { attSrc, coverSrc } from '../lib/attachment-src'
+import { withRev } from '../lib/config-cache'
 
 // Statuses come from the kanban columns, so a column added on the board shows up here
 // too. Built-in ones keep their globals.css pill class; custom ones are coloured inline.
@@ -733,7 +734,7 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
   useEffect(() => {
     if (!slug) return
     let live = true
-    apiFetch(`/api/projects/${slug}/labels`)
+    apiFetch(withRev(`/api/projects/${slug}/labels`, 'labels', slug))
       .then(r => r.ok ? r.json() : [])
       .then(l => { if (live) setLabels(Array.isArray(l) ? l : []) })
       .catch(() => {})
@@ -753,10 +754,7 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
   const [dueFrom, setDueFrom] = useState('')
   const [dueTo, setDueTo] = useState('')
   const [dueDates, setDueDates] = useState([])   // specific YYYY-MM-DD picks
-  const [showDuePicker, setShowDuePicker] = useState(false)
-  const [duePickerPos, setDuePickerPos] = useState(null)  // {top,left} for fixed menu
-  const duePickerRef = useRef(null)
-  const dueBtnRef = useRef(null)
+  const [showFilters, setShowFilters] = useState(false)   // right-hand drawer
   const draggedId = useRef(null)
   const [dropTarget, setDropTarget] = useState(null)
   const [undoStack, setUndoStack] = useState([])   // snapshots of task positions, newest last
@@ -890,6 +888,16 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
   const categories = categoriesWithTaskValues(savedCategories, liveTasks)
   const catById = categoryMap(categories)
 
+  // Badge on the Filters button — one count per filter that is actually narrowing the list.
+  const activeFilterCount =
+    (search ? 1 : 0) +
+    (filterStatuses.length ? 1 : 0) +
+    (filterPriorities.length ? 1 : 0) +
+    (filterCategories.length ? 1 : 0) +
+    (startFrom || startTo ? 1 : 0) +
+    (dueFrom || dueTo ? 1 : 0) +
+    (dueDates.length ? 1 : 0)
+
   function clearFilters() {
     setSearch(''); setFilterPerson(''); setFilterStatuses([]); setFilterPriorities([]); setFilterCategories([])
     setStartFrom(''); setStartTo(''); setDueFrom(''); setDueTo(''); setDueDates([])
@@ -910,33 +918,6 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
   function toggleCategory(c) {
     setFilterCategories(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])
   }
-
-  function openDuePicker() {
-    // Anchor the fixed-position menu under the button (menu is fixed so it
-    // escapes the .section-card overflow:hidden clip).
-    if (dueBtnRef.current) {
-      const r = dueBtnRef.current.getBoundingClientRect()
-      setDuePickerPos({ top: r.bottom + 4, left: r.left })
-    }
-    setShowDuePicker(true)
-  }
-
-  // Close the specific-dates popover on outside click / scroll / resize.
-  useEffect(() => {
-    if (!showDuePicker) return
-    function onDocClick(e) {
-      if (duePickerRef.current && !duePickerRef.current.contains(e.target)) setShowDuePicker(false)
-    }
-    function onDismiss() { setShowDuePicker(false) }
-    document.addEventListener('mousedown', onDocClick)
-    window.addEventListener('scroll', onDismiss, true)
-    window.addEventListener('resize', onDismiss)
-    return () => {
-      document.removeEventListener('mousedown', onDocClick)
-      window.removeEventListener('scroll', onDismiss, true)
-      window.removeEventListener('resize', onDismiss)
-    }
-  }, [showDuePicker])
 
   // Copies one indented markdown link per task, in the order the tree renders them —
   // so a filtered/searched view exports exactly what is on screen.
@@ -1015,30 +996,6 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
             </button>
           </div>
         )}
-        {liveTasks.length > 0 && (
-          <button
-            className="btn-ghost"
-            onClick={copyAllLinks}
-            style={{ fontSize: 12, padding: '5px 10px', whiteSpace: 'nowrap' }}
-            title="Copy a shareable link for every task shown"
-          >
-            {copiedAll ? `✓ Copied ${copiedAll}` : '🔗 Copy links'}
-          </button>
-        )}
-        {liveTasks.length > 0 && (
-          <div className="search-bar" style={{ marginBottom: 0, flex: 1, maxWidth: 320 }}>
-            <input
-              className="form-input search-input"
-              placeholder="Search tasks…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{ fontSize: 12, padding: '5px 28px 5px 10px' }}
-            />
-            {search && (
-              <button className="btn-ghost search-clear" onClick={() => setSearch('')} title="Clear">&#x2715;</button>
-            )}
-          </div>
-        )}
         {liveTasks.length > 0 && assignees.length > 0 && (
           <div className="search-bar" style={{ marginBottom: 0, minWidth: 150, maxWidth: 200 }}>
             <input
@@ -1070,89 +1027,14 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
             <option value="oldest">Oldest first</option>
           </select>
         )}
-        {liveTasks.length > 0 && (
-          <FilterMultiSelect
-            label="Status"
-            options={columns.map(c => ({ value: c.status, label: c.label }))}
-            selected={filterStatuses}
-            onToggle={toggleStatus}
-            onClear={() => setFilterStatuses([])}
-          />
-        )}
-        {liveTasks.length > 0 && (
-          <FilterMultiSelect
-            label="Priority"
-            options={PRIORITY_ORDER.map(p => ({ value: p, label: p.charAt(0).toUpperCase() + p.slice(1) }))}
-            selected={filterPriorities}
-            onToggle={togglePriority}
-            onClear={() => setFilterPriorities([])}
-          />
-        )}
-        {liveTasks.length > 0 && categories.length > 0 && (
-          <FilterMultiSelect
-            label="Category"
-            options={[...categories.map(c => ({ value: c.id, label: c.name })), { value: '', label: 'Uncategorised' }]}
-            selected={filterCategories}
-            onToggle={toggleCategory}
-            onClear={() => setFilterCategories([])}
-          />
-        )}
-        {liveTasks.length > 0 && (
-          <div className="tt-date-filter" title="Filter by start date">
-            <span className="tt-date-filter-label">Start</span>
-            <input type="date" className="form-input tt-date-input" value={startFrom} onChange={e => setStartFrom(e.target.value)} title="Start date from" />
-            <span className="tt-date-filter-sep">–</span>
-            <input type="date" className="form-input tt-date-input" value={startTo} onChange={e => setStartTo(e.target.value)} title="Start date to" />
-          </div>
-        )}
-        {liveTasks.length > 0 && (
-          <div className="tt-date-filter" title="Filter by due date">
-            <span className="tt-date-filter-label">Due</span>
-            <input type="date" className="form-input tt-date-input" value={dueFrom} onChange={e => setDueFrom(e.target.value)} title="Due date from" />
-            <span className="tt-date-filter-sep">–</span>
-            <input type="date" className="form-input tt-date-input" value={dueTo} onChange={e => setDueTo(e.target.value)} title="Due date to" />
-          </div>
-        )}
-        {liveTasks.length > 0 && availableDueDates.length > 0 && (
-          <div className="tt-due-picker" ref={duePickerRef}>
-            <button
-              type="button"
-              ref={dueBtnRef}
-              className={`form-input filter-select tt-due-picker-btn${dueDates.length ? ' active' : ''}`}
-              onClick={() => showDuePicker ? setShowDuePicker(false) : openDuePicker()}
-              style={{ fontSize: 12, padding: '5px 8px' }}
-              title="Pick specific due dates"
-            >
-              {dueDates.length ? `${dueDates.length} date${dueDates.length !== 1 ? 's' : ''}` : 'Pick dates'} ▾
-            </button>
-            {showDuePicker && (
-              <div className="tt-due-picker-menu" style={duePickerPos ? { top: duePickerPos.top, left: duePickerPos.left } : undefined}>
-                <div className="tt-due-picker-head">
-                  <span>Due dates</span>
-                  {dueDates.length > 0 && (
-                    <button className="btn-ghost" style={{ fontSize: 11, padding: '2px 6px' }} onClick={() => setDueDates([])}>Clear</button>
-                  )}
-                </div>
-                {availableDueDates.map(d => (
-                  <label key={d} className="tt-due-picker-item">
-                    <input type="checkbox" checked={dueDates.includes(d)} onChange={() => toggleDueDate(d)} />
-                    <span>{formatDate(d)}</span>
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-        {slug && (
-          <button
-            className="btn-ghost"
-            onClick={() => setShowCatMgr(true)}
-            style={{ fontSize: 12, padding: '5px 10px', whiteSpace: 'nowrap' }}
-            title="Categories group work within a story (Frontend, Backend, UI/UX…)"
-          >
-            🗂 Categories{categories.length ? ` (${categories.length})` : ''}
-          </button>
-        )}
+        <button
+          className={`btn-ghost tt-filters-btn${activeFilterCount ? ' active' : ''}`}
+          onClick={() => setShowFilters(true)}
+          style={{ fontSize: 12, padding: '5px 10px', whiteSpace: 'nowrap' }}
+          title="Search, filters, dates, categories and link export"
+        >
+          ☰ Filters{activeFilterCount ? <span className="tt-filters-count">{activeFilterCount}</span> : null}
+        </button>
         {isFiltering && (
           <button className="btn-ghost" onClick={clearFilters} style={{ fontSize: 12, padding: '5px 10px' }} title="Clear all filters">Clear</button>
         )}
@@ -1161,15 +1043,124 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
             {filtered ? `${filtered.length} of ${liveTasks.length}` : `${liveTasks.length} task${liveTasks.length !== 1 ? 's' : ''}`}
           </span>
         )}
-        <div className="status-legend" title="Status color key">
-          {columns.map(c => (
-            <span key={c.status} className="status-legend-item">
-              <span className="status-legend-dot" style={{ background: c.color }} />
-              {c.label}
-            </span>
-          ))}
-        </div>
       </div>
+
+      <FilterSidebar
+        open={showFilters}
+        onClose={() => setShowFilters(false)}
+        activeCount={activeFilterCount}
+        onClear={clearFilters}
+        footer={
+          <>
+            <span className="task-count-label">
+              {filtered ? `${filtered.length} of ${liveTasks.length} shown` : `${liveTasks.length} task${liveTasks.length !== 1 ? 's' : ''}`}
+            </span>
+            <button className="btn-add-task" style={{ fontSize: 12, padding: '5px 12px' }} onClick={() => setShowFilters(false)}>Done</button>
+          </>
+        }
+      >
+        <SidebarSection label="Search" count={search ? 1 : 0} onClear={() => setSearch('')}>
+          <div className="search-bar" style={{ marginBottom: 0 }}>
+            <input
+              className="form-input search-input"
+              placeholder="Search tasks…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{ fontSize: 12, padding: '6px 28px 6px 10px' }}
+            />
+            {search && (
+              <button className="btn-ghost search-clear" onClick={() => setSearch('')} title="Clear">&#x2715;</button>
+            )}
+          </div>
+        </SidebarSection>
+
+        {liveTasks.length > 0 && (
+          <SidebarSection label="Status" count={filterStatuses.length} onClear={() => setFilterStatuses([])}>
+            <SidebarCheckList
+              options={columns.map(c => ({ value: c.status, label: c.label }))}
+              selected={filterStatuses}
+              onToggle={toggleStatus}
+            />
+          </SidebarSection>
+        )}
+
+        {liveTasks.length > 0 && (
+          <SidebarSection label="Priority" count={filterPriorities.length} onClear={() => setFilterPriorities([])}>
+            <SidebarCheckList
+              options={PRIORITY_ORDER.map(p => ({ value: p, label: p.charAt(0).toUpperCase() + p.slice(1) }))}
+              selected={filterPriorities}
+              onToggle={togglePriority}
+            />
+          </SidebarSection>
+        )}
+
+        {liveTasks.length > 0 && categories.length > 0 && (
+          <SidebarSection label="Category" count={filterCategories.length} onClear={() => setFilterCategories([])}>
+            <SidebarCheckList
+              options={[...categories.map(c => ({ value: c.id, label: c.name })), { value: '', label: 'Uncategorised' }]}
+              selected={filterCategories}
+              onToggle={toggleCategory}
+              scroll
+            />
+          </SidebarSection>
+        )}
+
+        {liveTasks.length > 0 && (
+          <SidebarSection label="Start date" count={startFrom || startTo ? 1 : 0} onClear={() => { setStartFrom(''); setStartTo('') }}>
+            <div className="filter-sidebar-range">
+              <input type="date" className="form-input tt-date-input" value={startFrom} onChange={e => setStartFrom(e.target.value)} title="Start date from" />
+              <span className="tt-date-filter-sep">–</span>
+              <input type="date" className="form-input tt-date-input" value={startTo} onChange={e => setStartTo(e.target.value)} title="Start date to" />
+            </div>
+          </SidebarSection>
+        )}
+
+        {liveTasks.length > 0 && (
+          <SidebarSection label="Due date" count={dueFrom || dueTo ? 1 : 0} onClear={() => { setDueFrom(''); setDueTo('') }}>
+            <div className="filter-sidebar-range">
+              <input type="date" className="form-input tt-date-input" value={dueFrom} onChange={e => setDueFrom(e.target.value)} title="Due date from" />
+              <span className="tt-date-filter-sep">–</span>
+              <input type="date" className="form-input tt-date-input" value={dueTo} onChange={e => setDueTo(e.target.value)} title="Due date to" />
+            </div>
+          </SidebarSection>
+        )}
+
+        {liveTasks.length > 0 && availableDueDates.length > 0 && (
+          <SidebarSection label="Specific due dates" count={dueDates.length} onClear={() => setDueDates([])}>
+            <SidebarCheckList
+              options={availableDueDates.map(d => ({ value: d, label: formatDate(d) }))}
+              selected={dueDates}
+              onToggle={toggleDueDate}
+              scroll
+            />
+          </SidebarSection>
+        )}
+
+        <SidebarSection label="Tools">
+          <div className="filter-sidebar-actions">
+            {liveTasks.length > 0 && (
+              <button
+                className="btn-ghost"
+                onClick={copyAllLinks}
+                style={{ fontSize: 12, padding: '6px 10px' }}
+                title="Copy a shareable link for every task shown"
+              >
+                {copiedAll ? `✓ Copied ${copiedAll}` : '🔗 Copy links'}
+              </button>
+            )}
+            {slug && (
+              <button
+                className="btn-ghost"
+                onClick={() => { setShowFilters(false); setShowCatMgr(true) }}
+                style={{ fontSize: 12, padding: '6px 10px' }}
+                title="Categories group work within a story (Frontend, Backend, UI/UX…)"
+              >
+                🗂 Categories{categories.length ? ` (${categories.length})` : ''}
+              </button>
+            )}
+          </div>
+        </SidebarSection>
+      </FilterSidebar>
 
       {addingRoot && (
         <div className="task-inline-form" style={{ marginTop: 8 }}>

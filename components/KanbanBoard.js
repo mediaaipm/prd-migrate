@@ -14,8 +14,10 @@ import { useCategories, categoriesWithTaskValues, categoryMap, effectiveCategory
 import CategoryManager from './CategoryManager'
 import CellPeekModal from './CellPeekModal'
 import { isSuperAdmin } from '../lib/client-permissions'
+import { withRev, bumpRev } from '../lib/config-cache'
 import { taskShareLink, copyText } from '../lib/task-link'
 import { attSrc, coverSrc } from '../lib/attachment-src'
+import { makeChecklistItem, checklistProgress, MAX_CHECKLIST_TEXT } from '../lib/task-checklist'
 
 const PRIORITY_ORDER = ['critical', 'high', 'medium', 'low']
 const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
@@ -83,6 +85,7 @@ function toEditForm(task) {
     attachments: Array.isArray(task.attachments) ? task.attachments : [],
     cover: task.cover || null,
     updates: Array.isArray(task.updates) ? task.updates : [],
+    checklist: Array.isArray(task.checklist) ? task.checklist : [],
   }
 }
 
@@ -344,6 +347,15 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   // Comments
   const [commentText, setCommentText] = useState('')
 
+  // Drop-zone highlight for the attachment area in the edit modal.
+  const [attachDragOver, setAttachDragOver] = useState(false)
+
+  // Checklist composer in the edit modal: the pending new item, and which
+  // existing item is open for inline rename.
+  const [newCheckText, setNewCheckText] = useState('')
+  const [editingCheckId, setEditingCheckId] = useState(null)
+  const [checkDraft, setCheckDraft] = useState('')
+
   // Updates panel — reachable straight from a card, no edit rights needed.
   const [updatesFor, setUpdatesFor] = useState(null)   // task id
   const [updateText, setUpdateText] = useState('')
@@ -567,14 +579,17 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
 
   function loadLabels() {
     if (!labelsApi) return
-    fetch(labelsApi).then(r => r.ok ? r.json() : []).then(setLabels).catch(() => {})
+    fetch(withRev(labelsApi, 'labels', slug), { credentials: 'same-origin' })
+      .then(r => r.ok ? r.json() : []).then(setLabels).catch(() => {})
   }
   useEffect(() => { loadLabels() }, [labelsApi]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Labels are few and rarely edited, so rather than maintain an optimistic overlay
   // for them, just refetch when a queued label write reaches the server.
   useEffect(() => onSync(item => {
-    if (labelsApi && item.url.startsWith(labelsApi)) loadLabels()
+    // The write landed, so this tab's cached GET is now the stale one. New token first,
+    // otherwise the refetch is answered from the browser cache with the pre-write list.
+    if (labelsApi && item.url.startsWith(labelsApi)) { bumpRev('labels', slug); loadLabels() }
   }), [labelsApi]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // --- Label management ---
@@ -824,6 +839,8 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     setEditingTask(task)
     setEditForm(toEditForm(task))
     setCommentText('')
+    setNewCheckText('')
+    setEditingCheckId(null)
   }
 
   function isEditDirty() {
@@ -840,6 +857,8 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     setEditingTask(task)
     setEditForm(toEditForm(task))
     setCommentText('')
+    setNewCheckText('')
+    setEditingCheckId(null)
   }
 
   function backEdit() {
@@ -851,6 +870,8 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     setEditingTask(prev)
     setEditForm(toEditForm(prev))
     setCommentText('')
+    setNewCheckText('')
+    setEditingCheckId(null)
   }
 
   function closeEdit() {
@@ -858,6 +879,8 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     setEditingTask(null)
     setEditForm(null)
     setCommentText('')
+    setNewCheckText('')
+    setEditingCheckId(null)
   }
 
   // Queue a partial update to a task on this board.
@@ -904,8 +927,63 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     if (!commentText.trim() || !editingTask) return
     const nextUpdates = [...(editForm.updates || []), makeUpdate(commentText)]
     setEditForm(p => ({ ...p, updates: nextUpdates }))
+    // The open task is a snapshot taken when the modal opened; move it forward too
+    // or the unsaved-changes check reads the comment as a pending edit.
+    setEditingTask(t => (t ? { ...t, updates: nextUpdates } : t))
     setCommentText('')
     enqueueUpdate(editingTask.id, { updates: nextUpdates }, 'Post comment')
+  }
+
+  // --- Checklist ---
+  // A checklist is a shared surface: it saves the moment it changes rather than
+  // waiting for Save, so an account with no task-edit rights can still tick an
+  // item. The patch carries only `checklist`, which the server route lets any
+  // member of the project write.
+  function commitChecklist(next, label) {
+    if (!editingTask) return
+    setEditForm(p => ({ ...p, checklist: next }))
+    setEditingTask(t => (t ? { ...t, checklist: next } : t))
+    enqueueUpdate(editingTask.id, { checklist: next }, label)
+  }
+
+  function addCheckItem() {
+    const text = newCheckText.trim()
+    if (!text || !editingTask) return
+    const next = [...(editForm.checklist || []), makeChecklistItem(text, currentUser?.name || null)]
+    setNewCheckText('')
+    commitChecklist(next, 'Add checklist item')
+  }
+
+  function toggleCheckItem(id) {
+    const now = new Date().toISOString()
+    const next = (editForm.checklist || []).map(i => (
+      i.id === id
+        ? { ...i, done: !i.done, doneBy: !i.done ? (currentUser?.name || null) : null, doneAt: !i.done ? now : null }
+        : i
+    ))
+    commitChecklist(next, 'Tick checklist item')
+  }
+
+  function beginEditCheck(item) {
+    setEditingCheckId(item.id)
+    setCheckDraft(item.text)
+  }
+
+  function commitEditCheck() {
+    const id = editingCheckId
+    const text = checkDraft.trim()
+    setEditingCheckId(null)
+    if (!id) return
+    const current = (editForm.checklist || []).find(i => i.id === id)
+    if (!current || !text || text === current.text) return
+    commitChecklist(
+      (editForm.checklist || []).map(i => (i.id === id ? { ...i, text } : i)),
+      'Edit checklist item',
+    )
+  }
+
+  function removeCheckItem(id) {
+    commitChecklist((editForm.checklist || []).filter(i => i.id !== id), 'Remove checklist item')
   }
 
   // Post from the card's Updates panel. The patch carries only `updates`, so the
@@ -1123,11 +1201,19 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     commitColumns(columns.map(c => c.status === status ? { ...c, color } : c))
   }
 
+  // A column holding work is never deleted. Counted against `tasks` rather than
+  // `boardTasks` so an archived card still protects its column — and the server
+  // re-checks across every version (this board only ever sees one), so an empty
+  // count here is a fast path, not the guarantee.
   function deleteColumn(status) {
     if (!canEditColumns) return
-    const taskCount = boardTasks.filter(t => t.status === status).length
+    const taskCount = tasks.filter(t => t.status === status).length
     if (taskCount > 0) {
-      alert(`Cannot delete: ${taskCount} task${taskCount !== 1 ? 's' : ''} in this column. Move them first.`)
+      setColError(`Cannot delete "${status}": ${taskCount} task${taskCount === 1 ? '' : 's'} still in it. Move them first.`)
+      return
+    }
+    if (columns.length <= 1) {
+      setColError('A board needs at least one column.')
       return
     }
     commitColumns(columns.filter(c => c.status !== status))
@@ -1528,14 +1614,85 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
         onMouseLeave={onBoardMouseUp}
       >
         <div className="swim-board">
+          {/* Same column CRUD the plain board offers, on the same shared layout:
+              rename, recolour, delete and drag-to-reorder, super admin only. */}
           <div className="swim-head" style={swimGrid}>
             {subLane !== 'none' && <div className="swim-head-corner">Category</div>}
-            {columns.map(col => (
-              <div key={col.status} className="swim-head-col">
-                <span className="kanban-column-dot" style={{ background: col.color }} />
-                <span>{col.label}</span>
-              </div>
-            ))}
+            {columns.map(col => {
+              const renaming = editingColStatus === col.status
+              return (
+                <div
+                  key={col.status}
+                  className={`swim-head-col${dragOverColStatus === col.status ? ' swim-head-col--drag-over' : ''}${draggingColStatus === col.status ? ' swim-head-col--dragging' : ''}`}
+                  // Dragging must be off while the rename input is live, or the
+                  // draggable ancestor swallows text selection inside it.
+                  draggable={canEditColumns && !renaming}
+                  onDragStart={e => onColDragStart(e, col.status)}
+                  onDragEnd={onDragEnd}
+                  onDragOver={e => onColDragOver(e, col.status)}
+                  onDrop={e => onColDrop(e, col.status)}
+                  onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOverColStatus(null) }}
+                  title={canEditColumns ? 'Drag to reorder — the order is shared by everyone' : undefined}
+                >
+                  {canEditColumns && <span className="kanban-col-drag-handle">⠿</span>}
+                  <span
+                    className="kanban-column-dot"
+                    style={{ background: col.color, ...(canEditColumns ? { cursor: 'pointer' } : {}) }}
+                    title={canEditColumns ? 'Change colour' : undefined}
+                    onClick={e => {
+                      if (!canEditColumns) return
+                      e.stopPropagation()
+                      setEditingColStatus(renaming ? null : col.status)
+                      setEditingColLabel(col.label)
+                    }}
+                  />
+                  {renaming ? (
+                    <input
+                      className="kanban-col-rename-input"
+                      value={editingColLabel}
+                      autoFocus
+                      onChange={e => setEditingColLabel(e.target.value)}
+                      onBlur={() => commitRenameCol(col.status)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') commitRenameCol(col.status)
+                        if (e.key === 'Escape') { setEditingColStatus(null); setEditingColLabel('') }
+                      }}
+                      onClick={e => e.stopPropagation()}
+                    />
+                  ) : (
+                    <span
+                      className={canEditColumns ? 'kanban-col-label' : undefined}
+                      title={canEditColumns ? 'Click to rename' : undefined}
+                      onClick={e => { if (canEditColumns) { e.stopPropagation(); startRenameCol(col.status, col.label) } }}
+                    >{col.label}</span>
+                  )}
+                  {canEditColumns && (
+                    <button
+                      className="kanban-col-delete-btn swim-head-del"
+                      onMouseDown={e => e.stopPropagation()}
+                      onClick={e => { e.stopPropagation(); deleteColumn(col.status) }}
+                      title="Delete column"
+                    >✕</button>
+                  )}
+                  {/* The swatches float out of the header: this grid track is shared
+                      with every rail below, so the cell itself must not grow. */}
+                  {canEditColumns && renaming && (
+                    <div className="kanban-col-color-picker swim-head-colorpop" onClick={e => e.stopPropagation()}>
+                      {COL_COLORS.map(c => (
+                        <button
+                          key={c}
+                          className={`kanban-col-color-swatch${col.color === c ? ' active' : ''}`}
+                          style={{ background: c }}
+                          onMouseDown={e => e.stopPropagation()}
+                          onClick={e => { e.stopPropagation(); changeColColor(col.status, c) }}
+                          title={c}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
 
           {lanes.map(({ root, cards }) => {
@@ -1892,6 +2049,16 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
             {task.attachments?.length > 0 && (
               <span className="task-meta-chip" title={`${task.attachments.length} attachment(s)`}>📎 {task.attachments.length}</span>
             )}
+            {(() => {
+              const { done, total } = checklistProgress(task)
+              if (!total) return null
+              return (
+                <span
+                  className={`task-meta-chip${done === total ? ' task-check-chip--complete' : ''}`}
+                  title={`Checklist: ${done} of ${total} ticked`}
+                >☑ {done}/{total}</span>
+              )
+            })()}
             {task.assignees?.map(a => (
               <span key={a} className="kanban-assignee-avatar" title={a}>
                 {a.charAt(0).toUpperCase()}
@@ -2130,6 +2297,19 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
             🗂 Categories{categories.length ? ` (${categories.length})` : ''}
           </button>
         )}
+        {/* The plain board adds columns from the trailing "+ Add column" card;
+            swimlanes have no such slot — the head is a grid track shared with
+            every rail — so the entry point moves into the toolbar. */}
+        {canEditColumns && layout === 'swimlanes' && (
+          <button
+            className="btn-ghost"
+            style={{ whiteSpace: 'nowrap', fontSize: 12 }}
+            onClick={() => setAddingCol(v => !v)}
+            title="Add a status column — the layout is shared by everyone"
+          >
+            ＋ Status
+          </button>
+        )}
         {canEditAll && slug && (
           <button className="btn-ghost" style={{ whiteSpace: 'nowrap', fontSize: 12 }} onClick={openAclMgr} title="Task id prefix & assignee permissions">
             ⚙ Task Settings
@@ -2142,6 +2322,34 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
         )}
       </div>
       {colError && <div className="kanban-col-error">{colError}</div>}
+      {canEditColumns && layout === 'swimlanes' && addingCol && (
+        <div className="swim-add-col">
+          <input
+            className="form-input swim-add-col-name"
+            placeholder="Status name *"
+            value={newColForm.label}
+            autoFocus
+            onChange={e => setNewColForm(p => ({ ...p, label: e.target.value }))}
+            onKeyDown={e => {
+              if (e.key === 'Enter') addColumn()
+              if (e.key === 'Escape') setAddingCol(false)
+            }}
+          />
+          <div className="kanban-col-color-picker swim-add-col-colors">
+            {COL_COLORS.map(c => (
+              <button
+                key={c}
+                className={`kanban-col-color-swatch${newColForm.color === c ? ' active' : ''}`}
+                style={{ background: c }}
+                onClick={() => setNewColForm(p => ({ ...p, color: c }))}
+                title={c}
+              />
+            ))}
+          </div>
+          <button className="btn-primary" style={{ fontSize: 12 }} onClick={addColumn} disabled={!newColForm.label.trim()}>Add status</button>
+          <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setAddingCol(false)}>Cancel</button>
+        </div>
+      )}
       {layout === 'swimlanes' ? renderSwimBoard(swimBoardData) : (
       <div
         ref={boardWrapperRef}
@@ -2178,7 +2386,9 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
               >
                 <div
                   className="kanban-column-header"
-                  draggable={canEditColumns}
+                  // Off while renaming — a draggable ancestor eats text selection
+                  // inside the input.
+                  draggable={canEditColumns && editingColStatus !== col.status}
                   onDragStart={e => onColDragStart(e, col.status)}
                   onDragEnd={onDragEnd}
                   title={canEditColumns ? 'Drag to reorder column (applies to everyone)' : undefined}
@@ -2645,7 +2855,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
           className="kanban-modal-overlay"
           onClick={e => { if (e.target === e.currentTarget) closeEdit() }}
         >
-          <div className="kanban-modal">
+          <div className="kanban-modal kanban-modal--wide">
             <div className="kanban-modal-header">
               <div className="kanban-modal-nav">
                 {editStack.length > 0 && (
@@ -2689,53 +2899,273 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
               </div>
               <button className="kanban-modal-close" onClick={closeEdit}>✕</button>
             </div>
-            <div className="task-form">
-              <input
-                className="form-input"
-                placeholder="Title *"
-                value={editForm.title}
-                onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))}
-                autoFocus
-              />
-              <AutoTextarea
-                className="form-input task-desc-input"
-                placeholder="Description (optional)"
-                value={editForm.description}
-                onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))}
-              />
 
-              {/* Labels */}
-              {labels.length > 0 && (
-                <div className="task-assignees-selector">
-                  <span className="task-assignees-label">Labels:</span>
-                  <div className="task-assignees-list">
-                    {labels.map(l => (
-                      <button
-                        key={l.id}
-                        type="button"
-                        className="kanban-label-chip kanban-label-chip--toggle"
-                        style={{ background: editForm.labelIds.includes(l.id) ? l.color : 'transparent', color: editForm.labelIds.includes(l.id) ? '#fff' : l.color, borderColor: l.color }}
-                        onClick={() => toggleEditLabel(l.id)}
-                      >
-                        {editForm.labelIds.includes(l.id) ? '✓ ' : ''}{l.name}
-                      </button>
-                    ))}
+            <div className="task-modal-body">
+              {/* ── Left rail: what the task is ── */}
+              <div className="task-modal-main">
+                <input
+                  className="form-input task-modal-title-input"
+                  placeholder="Title *"
+                  value={editForm.title}
+                  onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))}
+                  autoFocus
+                />
+
+                <div className="task-modal-section">
+                  <div className="task-modal-section-title">Description</div>
+                  <AutoTextarea
+                    className="form-input task-desc-input task-modal-desc"
+                    placeholder="Add more detail…"
+                    value={editForm.description}
+                    onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))}
+                  />
+                </div>
+
+                {/* Sub-tasks: click through to edit one */}
+                {(() => {
+                  const kids = directChildren(editingTask.id)
+                  if (!kids.length) return null
+                  const doneCount = kids.filter(k => k.status === 'done').length
+                  const pct = Math.round((doneCount / kids.length) * 100)
+                  return (
+                    <div className="task-modal-section">
+                      <div className="task-modal-section-title">
+                        Sub-tasks
+                        <span className="kanban-subtask-count">{doneCount}/{kids.length}</span>
+                        <span className="task-modal-progress" title={`${pct}% done`}>
+                          <span className="task-modal-progress-fill" style={{ width: `${pct}%` }} />
+                        </span>
+                      </div>
+                      <div className="kanban-subtask-list">
+                        {kids.map(child => {
+                          const done = child.status === 'done'
+                          return (
+                            <div key={child.id} className={`kanban-subtask-row${done ? ' kanban-subtask-row--done' : ''}`}>
+                              <button
+                                type="button"
+                                className="kanban-subtask-open"
+                                onClick={() => navEdit(child)}
+                                title={`Open ${child.title}`}
+                              >
+                                {taskLabel(child) && <span className="task-id-badge" style={{ fontSize: 9 }}>{taskLabel(child)}</span>}
+                                <span className="kanban-subtask-title">{child.title}</span>
+                                <span className="kanban-subtask-chevron" aria-hidden="true">›</span>
+                              </button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                {/* Checklist — notes with a tick box; anyone on the project can edit */}
+                {(() => {
+                  const items = editForm.checklist || []
+                  const done = items.filter(i => i.done).length
+                  const pct = items.length ? Math.round((done / items.length) * 100) : 0
+                  return (
+                    <div className="task-modal-section">
+                      <div className="task-modal-section-title">
+                        Checklist
+                        {items.length > 0 && (
+                          <>
+                            <span className="kanban-subtask-count">{done}/{items.length}</span>
+                            <span className="task-modal-progress" title={`${pct}% ticked`}>
+                              <span className="task-modal-progress-fill" style={{ width: `${pct}%` }} />
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      {items.length > 0 && (
+                        <div className="task-check-list">
+                          {items.map(item => (
+                            <div key={item.id} className={`task-check-row${item.done ? ' is-done' : ''}`}>
+                              <input
+                                type="checkbox"
+                                checked={!!item.done}
+                                onChange={() => toggleCheckItem(item.id)}
+                                aria-label={item.text}
+                              />
+                              {editingCheckId === item.id ? (
+                                <input
+                                  className="form-input task-check-edit"
+                                  value={checkDraft}
+                                  autoFocus
+                                  onChange={e => setCheckDraft(e.target.value)}
+                                  onBlur={commitEditCheck}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') { e.preventDefault(); commitEditCheck() }
+                                    else if (e.key === 'Escape') { e.stopPropagation(); setEditingCheckId(null) }
+                                  }}
+                                />
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="task-check-text"
+                                  onClick={() => beginEditCheck(item)}
+                                  title="Click to edit"
+                                >{item.text}</button>
+                              )}
+                              {item.done && item.doneBy && (
+                                <span className="task-check-by" title={item.doneAt ? new Date(item.doneAt).toLocaleString() : ''}>
+                                  {item.doneBy}
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                className="task-check-remove"
+                                onClick={() => removeCheckItem(item.id)}
+                                title="Remove item"
+                              >✕</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="task-check-add">
+                        <input
+                          className="form-input"
+                          placeholder="Add a note or a check item…"
+                          value={newCheckText}
+                          maxLength={MAX_CHECKLIST_TEXT}
+                          onChange={e => setNewCheckText(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') { e.preventDefault(); addCheckItem() }
+                            else if (e.key === 'Escape' && newCheckText) { e.stopPropagation(); setNewCheckText('') }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className="btn-ghost task-check-add-btn"
+                          onClick={addCheckItem}
+                          disabled={!newCheckText.trim()}
+                        >Add</button>
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                {/* Attachments + cover */}
+                <div className="task-modal-section">
+                  <div className="task-modal-section-title">
+                    Attachments
+                    {(editForm.attachments || []).length > 0 && (
+                      <span className="kanban-subtask-count">{editForm.attachments.length}</span>
+                    )}
+                  </div>
+                  {(editForm.attachments || []).length > 0 && (
+                    <div className="task-attach-grid">
+                      {editForm.attachments.map(att => {
+                        const isImg = (att.type || '').startsWith('image/')
+                        const isCover = editForm.cover?.attId === att.id
+                        return (
+                          <div key={att.id} className={`task-attach-tile${isCover ? ' is-cover' : ''}`}>
+                            <a className="task-attach-preview" href={attSrc(att)} target="_blank" rel="noopener noreferrer" title="Open">
+                              {isImg
+                                ? <img src={attSrc(att)} alt={att.name} loading="lazy" decoding="async" />
+                                : <span className="task-attach-icon">📄</span>}
+                            </a>
+                            {isCover && <span className="task-attach-flag">Cover</span>}
+                            <div className="task-attach-meta">
+                              <a href={attSrc(att)} target="_blank" rel="noopener noreferrer" className="kanban-attach-name" title={att.name}>{att.name}</a>
+                              {att.size ? <span className="task-attach-size">{Math.max(1, Math.round(att.size / 1024))} KB</span> : null}
+                            </div>
+                            <div className="task-attach-actions">
+                              <a href={attSrc(att)} download={att.name} className="task-attach-action" title="Download">⤓</a>
+                              {isImg && (
+                                <button type="button" className="task-attach-action" title={isCover ? 'Unset cover' : 'Set as cover'} onClick={() => isCover ? clearCover() : setCover(att)}>
+                                  {isCover ? '★' : '☆'}
+                                </button>
+                              )}
+                              <button type="button" className="task-attach-action task-attach-action--danger" title="Remove" onClick={() => removeAttachment(att.id)}>✕</button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                  <label
+                    className={`task-attach-drop${attachDragOver ? ' is-over' : ''}`}
+                    onDragOver={e => { e.preventDefault(); e.stopPropagation(); if (!attachDragOver) setAttachDragOver(true) }}
+                    onDragLeave={() => setAttachDragOver(false)}
+                    onDrop={e => { e.preventDefault(); e.stopPropagation(); setAttachDragOver(false); addAttachments(e.dataTransfer.files) }}
+                  >
+                    <input
+                      type="file"
+                      multiple
+                      className="task-attach-input"
+                      onChange={e => { addAttachments(e.target.files); e.target.value = '' }}
+                    />
+                    <span className="task-attach-drop-text">
+                      <span aria-hidden="true">📎</span> Drop files here or <strong>browse</strong>
+                    </span>
+                  </label>
+                </div>
+
+                {/* Comments / activity */}
+                <div className="task-modal-section">
+                  <div className="task-modal-section-title">
+                    Comments
+                    {(editForm.updates || []).length > 0 && (
+                      <span className="kanban-subtask-count">{editForm.updates.length}</span>
+                    )}
+                  </div>
+                  <div className="task-update-form task-modal-comment-form">
+                    <MentionInput
+                      className="form-input"
+                      placeholder="Write a comment… use @name to mention"
+                      value={commentText}
+                      people={assignees}
+                      onChange={setCommentText}
+                      onSubmit={postComment}
+                      style={{ flex: 1, fontSize: 13 }}
+                    />
+                    <button className="btn-primary" onClick={postComment} disabled={!commentText.trim()} style={{ fontSize: 12, padding: '6px 14px', whiteSpace: 'nowrap' }}>Post</button>
+                  </div>
+                  <div className="task-updates-list task-modal-comments">
+                    {(!editForm.updates || editForm.updates.length === 0) ? (
+                      <div className="task-updates-empty">No comments yet.</div>
+                    ) : (
+                      [...editForm.updates].reverse().map(u => (
+                        <div key={u.id} className="task-update-item task-modal-comment">
+                          <span className="task-modal-avatar" aria-hidden="true">
+                            {(u.author || '?').trim().charAt(0).toUpperCase()}
+                          </span>
+                          <div className="task-modal-comment-body">
+                            <div className="task-update-meta">
+                              {u.author && <span className="task-update-author">{u.author}</span>}
+                              <span className="task-update-time">{new Date(u.createdAt).toLocaleString()}</span>
+                            </div>
+                            <div className="task-update-text">{u.text}</div>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
-              )}
+              </div>
 
-              <div className="task-form-row">
-                <select className="form-input" value={editForm.status} onChange={e => setEditForm(p => ({ ...p, status: e.target.value }))}>
-                  {columns.map(c => (
-                    <option key={c.status} value={c.status}>{c.label}</option>
-                  ))}
-                </select>
-                <select className="form-input" value={editForm.priority} onChange={e => setEditForm(p => ({ ...p, priority: e.target.value }))}>
-                  <option value="low">Low priority</option>
-                  <option value="medium">Medium priority</option>
-                  <option value="high">High priority</option>
-                  <option value="critical">Critical priority</option>
-                </select>
+              {/* ── Right rail: how the task is filed ── */}
+              <aside className="task-modal-side">
+                <div className="task-modal-field">
+                  <span className="task-modal-field-label">Status</span>
+                  <select className="form-input" value={editForm.status} onChange={e => setEditForm(p => ({ ...p, status: e.target.value }))}>
+                    {columns.map(c => (
+                      <option key={c.status} value={c.status}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="task-modal-field">
+                  <span className="task-modal-field-label">Priority</span>
+                  <select className="form-input" value={editForm.priority} onChange={e => setEditForm(p => ({ ...p, priority: e.target.value }))}>
+                    <option value="low">Low priority</option>
+                    <option value="medium">Medium priority</option>
+                    <option value="high">High priority</option>
+                    <option value="critical">Critical priority</option>
+                  </select>
+                </div>
+
                 {categories.length > 0 && (() => {
                   // Blank means "inherit from the nearest ancestor", not "none" —
                   // say which one, or the empty option reads as clearing the value.
@@ -2748,159 +3178,97 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                   // that already carries one from an earlier edit keeps the select,
                   // so the value can still be cleared.
                   const isLane = !editingTask.parentId && getDescendantsOf(editingTask.id).length > 0
-                  if (isLane && !editForm.category) {
-                    return (
-                      <span className="task-form-hint">
-                        Stories have no category — set it on the tasks beneath.
-                      </span>
-                    )
-                  }
                   return (
-                    <select
-                      className="form-input"
-                      value={editForm.category || ''}
-                      onChange={e => setEditForm(p => ({ ...p, category: e.target.value }))}
-                      title="Category"
-                    >
-                      <option value="">
-                        {inherited ? `Inherit — ${catById[inherited]?.name || inherited}` : 'No category'}
-                      </option>
-                      {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
+                    <div className="task-modal-field">
+                      <span className="task-modal-field-label">Category</span>
+                      {isLane && !editForm.category ? (
+                        <span className="task-form-hint">
+                          Stories have no category — set it on the tasks beneath.
+                        </span>
+                      ) : (
+                        <select
+                          className="form-input"
+                          value={editForm.category || ''}
+                          onChange={e => setEditForm(p => ({ ...p, category: e.target.value }))}
+                          title="Category"
+                        >
+                          <option value="">
+                            {inherited ? `Inherit — ${catById[inherited]?.name || inherited}` : 'No category'}
+                          </option>
+                          {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                      )}
+                    </div>
                   )
                 })()}
-              </div>
-              <AssigneeInput
-                value={editForm.assignees}
-                options={assignees}
-                onChange={next => setEditForm(p => ({ ...p, assignees: next }))}
-              />
-              <div className="task-assignees-selector">
-                <span className="task-assignees-label">Assigned by:</span>
-                <span style={{ fontSize: 12 }}>{editingTask.assignedBy || '—'}</span>
-              </div>
-              <div className="task-form-row">
-                <input
-                  className="form-input"
-                  type="date"
-                  title="Start date"
-                  value={editForm.startDate}
-                  onChange={e => setEditForm(p => ({ ...p, startDate: e.target.value }))}
-                />
-                <input
-                  className="form-input"
-                  type="date"
-                  title="Due date"
-                  value={editForm.dueDate}
-                  onChange={e => setEditForm(p => ({ ...p, dueDate: e.target.value }))}
-                />
-              </div>
 
-              {/* Sub-tasks: click through to edit one */}
-              {(() => {
-                const kids = directChildren(editingTask.id)
-                if (!kids.length) return null
-                const doneCount = kids.filter(k => k.status === 'done').length
-                return (
-                  <div className="kanban-subtask-section">
-                    <div className="task-assignees-label" style={{ marginBottom: 6 }}>
-                      Sub-tasks <span className="kanban-subtask-count">{doneCount}/{kids.length}</span>
-                    </div>
-                    <div className="kanban-subtask-list">
-                      {kids.map(child => {
-                        const done = child.status === 'done'
-                        return (
-                          <div key={child.id} className={`kanban-subtask-row${done ? ' kanban-subtask-row--done' : ''}`}>
-                            <button
-                              type="button"
-                              className="kanban-subtask-open"
-                              onClick={() => navEdit(child)}
-                              title={`Open ${child.title}`}
-                            >
-                              {taskLabel(child) && <span className="task-id-badge" style={{ fontSize: 9 }}>{taskLabel(child)}</span>}
-                              <span className="kanban-subtask-title">{child.title}</span>
-                              <span className="kanban-subtask-chevron" aria-hidden="true">›</span>
-                            </button>
-                          </div>
-                        )
-                      })}
-                    </div>
+                <div className="task-modal-field">
+                  <span className="task-modal-field-label">Assignees</span>
+                  <AssigneeInput
+                    value={editForm.assignees}
+                    options={assignees}
+                    onChange={next => setEditForm(p => ({ ...p, assignees: next }))}
+                  />
+                </div>
+
+                <div className="task-modal-field">
+                  <span className="task-modal-field-label">Assigned by</span>
+                  <span className="task-modal-field-static">{editingTask.assignedBy || '—'}</span>
+                </div>
+
+                <div className="task-modal-field-pair">
+                  <div className="task-modal-field">
+                    <span className="task-modal-field-label">Start date</span>
+                    <input
+                      className="form-input"
+                      type="date"
+                      title="Start date"
+                      value={editForm.startDate}
+                      onChange={e => setEditForm(p => ({ ...p, startDate: e.target.value }))}
+                    />
                   </div>
-                )
-              })()}
+                  <div className="task-modal-field">
+                    <span className="task-modal-field-label">Due date</span>
+                    <input
+                      className="form-input"
+                      type="date"
+                      title="Due date"
+                      value={editForm.dueDate}
+                      onChange={e => setEditForm(p => ({ ...p, dueDate: e.target.value }))}
+                    />
+                  </div>
+                </div>
 
-              {/* Attachments + cover */}
-              <div className="kanban-attach-section">
-                <div className="task-assignees-label" style={{ marginBottom: 6 }}>Attachments:</div>
-                {(editForm.attachments || []).length > 0 && (
-                  <div className="kanban-attach-list">
-                    {editForm.attachments.map(att => {
-                      const isImg = (att.type || '').startsWith('image/')
-                      const isCover = editForm.cover?.attId === att.id
-                      return (
-                        <div key={att.id} className="kanban-attach-item">
-                          {isImg
-                            ? <a href={attSrc(att)} target="_blank" rel="noopener noreferrer" title="View"><img src={attSrc(att)} alt={att.name} className="kanban-attach-thumb" loading="lazy" decoding="async" /></a>
-                            : <span className="kanban-attach-file">📄</span>}
-                          <a href={attSrc(att)} target="_blank" rel="noopener noreferrer" className="kanban-attach-name" title={att.name}>{att.name}</a>
-                          <a href={attSrc(att)} target="_blank" rel="noopener noreferrer" className="btn-ghost" style={{ fontSize: 11 }} title="View">View</a>
-                          <a href={attSrc(att)} download={att.name} className="btn-ghost" style={{ fontSize: 11 }} title="Download">Download</a>
-                          {isImg && (
-                            <button type="button" className="btn-ghost" style={{ fontSize: 11 }} onClick={() => isCover ? clearCover() : setCover(att)}>
-                              {isCover ? 'Unset cover' : 'Set cover'}
-                            </button>
-                          )}
-                          <button type="button" className="btn-ghost" style={{ fontSize: 11 }} onClick={() => removeAttachment(att.id)} title="Remove">✕</button>
-                        </div>
-                      )
-                    })}
+                {labels.length > 0 && (
+                  <div className="task-modal-field">
+                    <span className="task-modal-field-label">Labels</span>
+                    <div className="task-assignees-list">
+                      {labels.map(l => (
+                        <button
+                          key={l.id}
+                          type="button"
+                          className="kanban-label-chip kanban-label-chip--toggle"
+                          style={{ background: editForm.labelIds.includes(l.id) ? l.color : 'transparent', color: editForm.labelIds.includes(l.id) ? '#fff' : l.color, borderColor: l.color }}
+                          onClick={() => toggleEditLabel(l.id)}
+                        >
+                          {editForm.labelIds.includes(l.id) ? '✓ ' : ''}{l.name}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
-                <input type="file" multiple onChange={e => { addAttachments(e.target.files); e.target.value = '' }} style={{ fontSize: 12 }} />
-              </div>
+              </aside>
+            </div>
 
-              {/* Comments / activity */}
-              <div className="kanban-comments-section">
-                <div className="task-assignees-label" style={{ marginBottom: 6 }}>Comments:</div>
-                <div className="task-updates-list">
-                  {(!editForm.updates || editForm.updates.length === 0) ? (
-                    <div className="task-updates-empty">No comments yet.</div>
-                  ) : (
-                    [...editForm.updates].reverse().map(u => (
-                      <div key={u.id} className="task-update-item">
-                        <div className="task-update-meta">
-                          {u.author && <span className="task-update-author">{u.author}</span>}
-                          <span className="task-update-time">{new Date(u.createdAt).toLocaleString()}</span>
-                        </div>
-                        <div className="task-update-text">{u.text}</div>
-                      </div>
-                    ))
-                  )}
-                </div>
-                <div className="task-update-form">
-                  <MentionInput
-                    className="form-input"
-                    placeholder="Comment… use @name to mention"
-                    value={commentText}
-                    people={assignees}
-                    onChange={setCommentText}
-                    onSubmit={postComment}
-                    style={{ flex: 1, fontSize: 12 }}
-                  />
-                  <button className="btn-primary" onClick={postComment} disabled={!commentText.trim()} style={{ fontSize: 12, padding: '5px 12px', whiteSpace: 'nowrap' }}>Post</button>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-                <SubmitButton className="btn-ghost" style={{ color: '#dc2626' }} busyLabel="Archiving…" onClick={archiveTask} title="Archive this card">Archive</SubmitButton>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn-ghost" onClick={closeEdit}>Cancel</button>
-                  <SubmitButton
-                    className="btn-primary"
-                    onClick={saveEdit}
-                    disabled={!editForm.title.trim()}
-                  >Save</SubmitButton>
-                </div>
+            <div className="task-modal-footer">
+              <SubmitButton className="btn-ghost task-modal-archive" busyLabel="Archiving…" onClick={archiveTask} title="Archive this card">Archive</SubmitButton>
+              <div className="task-modal-footer-actions">
+                <button className="btn-ghost" onClick={closeEdit}>Cancel</button>
+                <SubmitButton
+                  className="btn-primary"
+                  onClick={saveEdit}
+                  disabled={!editForm.title.trim()}
+                >Save</SubmitButton>
               </div>
             </div>
           </div>

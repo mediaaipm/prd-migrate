@@ -5,8 +5,9 @@ const { requirePermission, requireProjectAccess } = require('../../../../../lib/
 const { stripTasksMedia, stripTaskMedia, validateAttachments, AttachmentError } = require('../../../../../lib/task-media');
 const { sendJsonCached } = require('../../../../../lib/etag');
 const { requireLabels } = require('../../../../../lib/require-label');
+const { withCpuLog } = require('../../../../../lib/cpu-log');
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   const { slug, version } = req.query;
   if (!await requireProjectAccess(slug, req, res)) return;
   const v = version || null;
@@ -53,3 +54,8 @@ export default async function handler(req, res) {
   }
   res.status(405).json({ error: 'Method not allowed' });
 }
+
+// The largest payload the app returns. Watch the GET's cpu= even on a 304: the list
+// is parsed, renumbered, stripped, re-serialised and hashed before next decides the
+// client already had it, so an unchanged board costs the same as a changed one.
+export default withCpuLog(handler, '/api/projects/[slug]/tasks');

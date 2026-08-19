@@ -2,6 +2,7 @@ const { getTaskCategories, setTaskCategories } = require('../../../../lib/prd-st
 const { logAudit } = require('../../../../lib/audit-log')
 const { requireProjectAccess } = require('../../../../lib/require-permission')
 const { requireSuperAdmin } = require('../../../../lib/require-superadmin')
+const { sendJsonConfig } = require('../../../../lib/etag')
 
 // Categories are global per project, exactly like board columns: everyone reads
 // them, only a super admin writes them. The rails on the board are therefore the
@@ -12,7 +13,7 @@ export default async function handler(req, res) {
   if (!await requireProjectAccess(slug, req, res)) return
 
   if (req.method === 'GET') {
-    return res.status(200).json({ categories: await getTaskCategories(slug) || [] })
+    return sendJsonConfig(res, { categories: await getTaskCategories(slug) || [] })
   }
   if (req.method === 'PUT') {
     if (!requireSuperAdmin(req, res)) return

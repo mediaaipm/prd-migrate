@@ -1,13 +1,14 @@
 const { listLabels, createLabel, updateLabel, deleteLabel } = require('../../../../lib/prd-store')
 const { logAudit } = require('../../../../lib/audit-log')
 const { requirePermission, requireProjectAccess } = require('../../../../lib/require-permission')
+const { sendJsonConfig } = require('../../../../lib/etag')
 
 export default async function handler(req, res) {
   const { slug, id } = req.query
   if (!await requireProjectAccess(slug, req, res)) return
 
   if (req.method === 'GET') {
-    return res.status(200).json(await listLabels(slug))
+    return sendJsonConfig(res, await listLabels(slug))
   }
   if (req.method === 'POST') {
     if (!await requirePermission('task:update', slug)(req, res)) return

@@ -35,8 +35,8 @@
     "semantic_hash": ""
   },
   "components/KanbanBoard.js": {
-    "mtime": 1787040455.776705,
-    "ast_hash": "5b7e58ab0e37a1ffd5c377a240e696b9",
+    "mtime": 1787038170.8554962,
+    "ast_hash": "87b7966f194fed993fca3f0861935963",
     "semantic_hash": ""
   },
   "components/Nav.js": {
@@ -160,8 +160,8 @@
     "semantic_hash": ""
   },
   "lib/task-history-store.js": {
-    "mtime": 1787040379.4828434,
-    "ast_hash": "4b3fd3b31a1d9ef2ad39d2fc1fb66ea7",
+    "mtime": 1786351466.64445,
+    "ast_hash": "fd4618b2b383ed1eb046a3ef87edb7ed",
     "semantic_hash": ""
   },
   "lib/task-store.js": {
@@ -315,8 +315,8 @@
     "semantic_hash": ""
   },
   "pages/api/projects/[slug]/tasks/[taskId].js": {
-    "mtime": 1787040370.1367304,
-    "ast_hash": "7b47bd48d6edbc5619731a750f74355a",
+    "mtime": 1785994923.8752832,
+    "ast_hash": "2a9a97cda4512c1025970aa48c876072",
     "semantic_hash": ""
   },
   "pages/api/projects/[slug]/tasks/[taskId]/history.js": {
@@ -752,11 +752,6 @@
   "components/FilterSidebar.js": {
     "mtime": 1787037294.7010064,
     "ast_hash": "a8da605ab55d003d087b9a4b2ee958a8",
-    "semantic_hash": ""
-  },
-  "lib/task-checklist.js": {
-    "mtime": 1787040510.3018835,
-    "ast_hash": "ae0c35f38ffdb657d96416b20ca51e9d",
     "semantic_hash": ""
   }
 }

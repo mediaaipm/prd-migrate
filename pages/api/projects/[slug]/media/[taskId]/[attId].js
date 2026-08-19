@@ -1,6 +1,7 @@
 const { getTask } = require('../../../../../../lib/task-store');
 const { requirePermission, requireProjectAccess } = require('../../../../../../lib/require-permission');
 const { loadAttachment, readAttachmentKey } = require('../../../../../../lib/task-media');
+const { withCpuLog } = require('../../../../../../lib/cpu-log');
 
 // Serves the bytes for one attachment. Task lists now carry a `url` pointing here
 // instead of an inline data URL, which is the whole point: this response is
@@ -10,7 +11,7 @@ const { loadAttachment, readAttachmentKey } = require('../../../../../../lib/tas
 // Cache-Control is `private` — these sit behind a per-project ACL, so they must
 // not land in a shared edge cache. The browser cache is where the saving is: the
 // same board reload previously re-downloaded every image, every time.
-export default async function handler(req, res) {
+async function handler(req, res) {
   const { slug, taskId, attId, version } = req.query;
 
   if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -37,18 +38,26 @@ export default async function handler(req, res) {
 
   // Attachment bytes never change once uploaded — a new upload gets a new id — so a
   // year of immutable browser caching is safe, and it is what does the real work here.
+  // With `immutable` the browser does not revalidate at all, so this response has no
+  // use for an ETag — and Next's is actively expensive.
   //
-  // The ETag is Next's: it hashes the body of every pages-API response and answers 304
-  // itself. This route used to compute its own sha1 and compare `If-None-Match` against
-  // it, which could never match — Next had already replaced the value the client was
-  // given — so the hand-rolled 304 was dead code that only cost a hash of every image.
+  // `res.send(buffer)` must NOT be used here. Next's sendData() treats anything whose
+  // `typeof` is 'object' as JSON-like, and a Buffer is an object, so it runs
+  // JSON.stringify(buf) — expanding a 200 KB image into ~900 KB of
+  // `{"type":"Buffer","data":[137,80,...]}` — then walks every character of that with
+  // an FNV-1a hash in JS to build an ETag, and finally throws the whole thing away and
+  // writes the raw buffer anyway. Every image paid for it.
+  //
+  // res.end() is the raw node method (Next only wraps it to count bytes), so going
+  // straight there skips the stringify and the hash entirely.
   res.setHeader('Cache-Control', 'private, max-age=31536000, immutable');
   res.setHeader('Content-Type', resolved.contentType);
   res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Length', String(resolved.buf.length));
 
-  if (req.method === 'HEAD') {
-    res.setHeader('Content-Length', String(resolved.buf.length));
-    return res.status(200).end();
-  }
-  return res.status(200).send(resolved.buf);
+  res.statusCode = 200;
+  if (req.method === 'HEAD') return res.end();
+  return res.end(resolved.buf);
 }
+
+export default withCpuLog(handler, '/api/projects/[slug]/media/[taskId]/[attId]');

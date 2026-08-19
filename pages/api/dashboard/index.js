@@ -5,6 +5,8 @@ const { listProjects, listProposals } = require('../../../lib/prd-store')
 const { getAuditLogs } = require('../../../lib/audit-log')
 const { getSprints } = require('../../../lib/sprint-store')
 const { requirePermission, visibleProjects } = require('../../../lib/require-permission')
+const { sendJsonCached } = require('../../../lib/etag')
+const { withCpuLog } = require('../../../lib/cpu-log')
 
 async function getTasksForProject(slug) {
   // Load root tasks + all version-scoped tasks
@@ -19,7 +21,7 @@ async function getTasksForProject(slug) {
   return tasks
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end()
 
   const today = new Date()
@@ -292,10 +294,19 @@ export default async function handler(req, res) {
       return acc
     }, [])
 
-    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=60')
-    return res.status(200).json({ overdue, unassigned, lastUpdates, upcoming, workload, completion, pendingProposals, velocity, activeSprints })
+    // NEVER `s-maxage` here. This body is built from visibleProjects(user), so it is
+    // per-user — and s-maxage is an instruction to *shared* caches. Vercel's edge cache
+    // does not key on the session cookie, so the first user to load the dashboard was
+    // populating a public entry that the next user got served, projects they cannot see
+    // and all. `private` keeps it in the requesting browser only; `no-cache` still
+    // revalidates every read, which is what a dashboard wants.
+    return sendJsonCached(req, res, { overdue, unassigned, lastUpdates, upcoming, workload, completion, pendingProposals, velocity, activeSprints })
   } catch (err) {
     console.error('Dashboard API error:', err)
     return res.status(500).json({ error: 'Failed to load dashboard data' })
   }
 }
+
+// Expected to be the most CPU-hungry route in the app: it loads every task of every
+// visible project, copies each one, and runs several full passes over the result.
+export default withCpuLog(handler, '/api/dashboard')

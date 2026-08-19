@@ -7,6 +7,10 @@ const { requireSuperAdmin } = require('../../../../../lib/require-superadmin');
 const { getProject } = require('../../../../../lib/prd-store');
 const { getEffectiveRolePolicy, isStatusRestricted } = require('../../../../../lib/role-policy');
 const { stripTaskMedia, stripTasksMedia, mergeTaskMedia, validateAttachments, AttachmentError } = require('../../../../../lib/task-media');
+const { sanitizeChecklist, stampChecklist } = require('../../../../../lib/task-checklist');
+
+// Fields a viewer may write on a task they can open, without task:update.
+const SHARED_FIELDS = new Set(['checklist', 'updates']);
 
 export default async function handler(req, res) {
   try {
@@ -38,12 +42,40 @@ async function route(req, res) {
     // Regular users may change ONLY the status of tasks they're on (subject to the
     // project ACL). Full edits require task:update — held by subadmins/superadmin.
     const statusOnly = Object.keys(updates).length > 0 && Object.keys(updates).every(k => k === 'status');
-    let allowed = await hasPermission(req, 'task:update', slug);
+    // Shared surfaces: the checklist and the comment thread belong to everyone who
+    // can open the card, not just to whoever may edit the task. A patch touching
+    // only these needs project access, which requireProjectAccess already proved.
+    const sharedOnly = Object.keys(updates).length > 0
+      && Object.keys(updates).every(k => SHARED_FIELDS.has(k));
+    const canEditTask = await hasPermission(req, 'task:update', slug);
+    let allowed = canEditTask;
     if (!allowed && statusOnly && isAssignee(req, before)) {
       const project = await getProject(slug);
       allowed = assigneeStatusAllowed(project?.taskAcl, updates.status);
     }
+    if (!allowed && sharedOnly) allowed = true;
     if (!allowed) return res.status(403).json({ error: 'Permission denied: task:update' });
+    const actor = getAuditUser(req)?.name || null;
+    // Anyone may add to the thread; only task editors may rewrite or drop what is
+    // already there. Without this a shared-surface patch could silently truncate
+    // the comment history it was allowed to append to.
+    if ('updates' in updates) {
+      const prevComments = Array.isArray(before.updates) ? before.updates : [];
+      const nextComments = Array.isArray(updates.updates) ? updates.updates : [];
+      const kept = nextComments.slice(0, prevComments.length);
+      const intact = prevComments.length <= nextComments.length
+        && prevComments.every((u, i) => u?.id === kept[i]?.id);
+      if (!canEditTask && !intact) {
+        return res.status(403).json({ error: 'Existing comments cannot be edited or removed.' });
+      }
+      // Authorship comes from the session, never from the body.
+      updates.updates = nextComments.map((u, i) => (
+        i < prevComments.length && u?.id === prevComments[i]?.id ? u : { ...u, author: actor }
+      ));
+    }
+    if ('checklist' in updates) {
+      updates.checklist = stampChecklist(sanitizeChecklist(updates.checklist), before.checklist, actor);
+    }
     // Per-project, superadmin-defined blocklist: regular users cannot move a task
     // into these statuses. Admins/superadmin are exempt.
     if ('status' in updates && !isPrivileged(req)) {

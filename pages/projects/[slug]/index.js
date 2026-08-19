@@ -245,7 +245,7 @@ export default function ProjectPage({ currentUser }) {
                       {i === 0 && <span className="latest-tag">latest</span>}
                       <span className="version-date">{new Date(v.createdAt).toLocaleDateString()}</span>
                     </div>
-                    <div style={{ display: 'flex', gap: 6 }}>
+                    <div className="version-actions">
                       <Link
                         href={`/projects/${slug}/tasks?version=${v.version}`}
                         className="btn-ghost"
@@ -308,7 +308,7 @@ export default function ProjectPage({ currentUser }) {
                         {p.dueDate && <span className="version-date">Due: {p.dueDate}</span>}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: 6 }}>
+                    <div className="version-actions">
                       <Link href={`/editor?slug=${slug}&type=proposal&id=${p.id}`} className="btn-ghost" style={{ fontSize: 12, padding: '4px 10px' }}>
                         Edit
                       </Link>

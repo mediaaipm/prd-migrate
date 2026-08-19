@@ -1,12 +1,12 @@
 # Graph Report - PRD_Manager  (2026-08-18)
 
 ## Corpus Check
-- 144 files · ~113,750 words
+- 143 files · ~112,366 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1291 nodes · 2453 edges · 276 communities (90 shown, 186 thin omitted)
-- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 163 edges (avg confidence: 0.51)
+- 1283 nodes · 2437 edges · 277 communities (91 shown, 186 thin omitted)
+- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 159 edges (avg confidence: 0.51)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
@@ -253,6 +253,7 @@
 - [[_COMMUNITY_enqueue|enqueue]]
 - [[_COMMUNITY_set-superadmin.js|set-superadmin.js]]
 - [[_COMMUNITY_columns.js|columns.js]]
+- [[_COMMUNITY_TaskTree|TaskTree]]
 - [[_COMMUNITY_snapshot-store.js|snapshot-store.js]]
 - [[_COMMUNITY_Project Diff API Handler|Project Diff API Handler]]
 
@@ -262,7 +263,7 @@
 3. `requirePermission()` - 42 edges
 4. `apiFetch()` - 31 edges
 5. `requireSuperAdmin()` - 30 edges
-6. `route()` - 29 edges
+6. `route()` - 27 edges
 7. `route()` - 27 edges
 8. `getKv()` - 25 edges
 9. `enqueue()` - 24 edges
@@ -271,43 +272,43 @@
 ## Surprising Connections (you probably didn't know these)
 - `Graph Network Canvas` --semantically_similar_to--> `PRD Knowledge Graph Viewer`  [INFERRED] [semantically similar]
   graphify/graph.html → public/graphify/graph.html
+- `RolePolicyPage()` --calls--> `isSuperAdmin()`  [EXTRACTED]
+  pages/settings/roles.js → lib/client-permissions.js
+- `StatusBlocklistCard()` --calls--> `labelForStatus()`  [EXTRACTED]
+  pages/settings/roles.js → lib/kanban-columns.js
+- `AdminPasswordEditor()` --calls--> `enqueue()`  [EXTRACTED]
+  pages/admin.js → lib/submit-queue.js
 - `DayTaskForm()` --calls--> `attSrc()`  [EXTRACTED]
   components/CalendarView.js → lib/attachment-src.js
-- `CalendarView()` --calls--> `isSuperAdmin()`  [EXTRACTED]
-  components/CalendarView.js → lib/client-permissions.js
-- `CategoryManager()` --calls--> `isSuperAdmin()`  [EXTRACTED]
-  components/CategoryManager.js → lib/client-permissions.js
-- `GroupEditor()` --calls--> `apiFetch()`  [EXTRACTED]
-  components/GroupsTab.js → lib/api-fetch.js
 
 ## Import Cycles
 - 1-file cycle: `pages/_document.js -> pages/_document.js`
 
-## Communities (276 total, 186 thin omitted)
+## Communities (277 total, 186 thin omitted)
 
 ### Community 0 - "API Handlers & Audit"
-Cohesion: 0.10
-Nodes (40): getAuditUser(), notifyTaskChange(), assigneeStatusAllowed(), isAssignee(), isPrivileged(), isStatusRestricted(), mergeTaskMedia(), stripTasksMedia() (+32 more)
+Cohesion: 0.11
+Nodes (29): notifyTaskChange(), assigneeStatusAllowed(), isAssignee(), isPrivileged(), isStatusRestricted(), recordTaskUpdate(), { getEffectiveRolePolicy, isStatusRestricted }, { getProject } (+21 more)
 
 ### Community 1 - "REST API Endpoints"
 Cohesion: 0.08
-Nodes (18): Diff API Endpoint, dependencies, diff, dotenv, next, react, react-dom, remark (+10 more)
+Nodes (18): dependencies, diff, dotenv, next, react, react-dom, remark, @upstash/redis (+10 more)
 
 ### Community 2 - "Calendar View & Task Forms"
-Cohesion: 0.12
-Nodes (20): sendJsonConfig(), getBoardColumns(), getTaskCategories(), normalizeCategories(), normalizeColumns(), setBoardColumns(), setTaskCategories(), { getTaskCategories, setTaskCategories } (+12 more)
+Cohesion: 0.16
+Nodes (20): sendJsonConfig(), createLabel(), deleteLabel(), getKv(), getTaskCategories(), listLabels(), normalizeCategories(), setTaskCategories() (+12 more)
 
 ### Community 3 - "PRD Store (Redis CRUD)"
 Cohesion: 0.11
 Nodes (17): Admin Panel, Admins Tab _(superadmin only)_, Audit Log Tab, Authentication, Diff Viewer, Features, Pages Reference, PRD Manager (+9 more)
 
 ### Community 4 - "Editor, Nav & Admin UI"
-Cohesion: 0.11
-Nodes (17): GroupEditor(), Nav(), apiFetch(), apiFetchOrLogout(), canSeeProject(), canView(), isSuperAdmin(), SELF_SERVICE_PERMS (+9 more)
+Cohesion: 0.12
+Nodes (11): Nav(), canView(), applyTheme(), resolveTheme(), setTheme(), storedTheme(), systemTheme(), THEMES (+3 more)
 
 ### Community 5 - "Snapshot & Audit Store"
-Cohesion: 0.15
-Nodes (16): clearAuditLogs(), getAuditLogs(), getKv(), { getSessionUser }, { Redis }, createProposal(), requirePermission(), handler() (+8 more)
+Cohesion: 0.10
+Nodes (29): getAuditLogs(), sendJsonCached(), createProposal(), listProposals(), requirePermission(), handler(), { getAuditLogs }, getKv() (+21 more)
 
 ### Community 7 - "Auth & Graph Viz"
 Cohesion: 0.12
@@ -315,35 +316,35 @@ Nodes (20): graph.json Data Source, Graph Network Canvas, Vis Network Library, A
 
 ### Community 8 - "Dashboard Panels"
 Cohesion: 0.08
-Nodes (35): addNotification(), addNotifications(), getKv(), key(), listAdmins(), listNotifications(), makeEntry(), markAllRead() (+27 more)
+Nodes (36): clearAuditLogs(), getKv(), { getSessionUser }, { Redis }, addNotification(), addNotifications(), getKv(), key() (+28 more)
 
 ### Community 10 - "Notification Store"
 Cohesion: 0.09
 Nodes (3): ACTION_LABELS, Dashboard(), timeAgo()
 
 ### Community 11 - "Package Dependencies"
-Cohesion: 0.10
-Nodes (12): AssigneeInput(), AutoTextarea(), DatePicker(), FilterMultiSelect(), MONTH_ABBR, PRIORITY_COLOR, PRIORITY_LABEL, PRIORITY_ORDER (+4 more)
+Cohesion: 0.09
+Nodes (17): AssigneeInput(), AutoTextarea(), DayTaskForm(), DatePicker(), FilterMultiSelect(), MONTH_ABBR, PRIORITY_COLOR, PRIORITY_LABEL (+9 more)
 
 ### Community 12 - "Graph JSON Data"
-Cohesion: 0.09
-Nodes (28): FilterSidebar(), SidebarCheckList(), SidebarSection(), KanbanBoard(), AVATAR_THEMES, buildFilteredTree(), buildTree(), flattenForBoard() (+20 more)
+Cohesion: 0.11
+Nodes (20): FilterSidebar(), SidebarCheckList(), SidebarSection(), AVATAR_THEMES, flattenForBoard(), formatDate(), getDescendantStats(), MONTH_ABBR (+12 more)
 
 ### Community 13 - "Graphify Detect Config"
 Cohesion: 0.33
 Nodes (4): DATA_DIR, fs, { kv }, path
 
 ### Community 17 - "Core Entities & Views"
-Cohesion: 0.06
-Nodes (60): addMembers(), { ALL_PERMISSIONS }, createGroup(), deleteGroup(), getGroup(), getGroupsForUser(), getKv(), GroupError (+52 more)
+Cohesion: 0.20
+Nodes (22): addMembers(), { ALL_PERMISSIONS }, createGroup(), deleteGroup(), getGroup(), getKv(), GroupError, keyFor() (+14 more)
 
 ### Community 18 - "Version Content JSON"
-Cohesion: 0.18
-Nodes (15): blankForm(), CalendarView(), DayTaskForm(), dueKey(), MONTHS, PRIORITY_COLOR, WEEKDAYS, ymd() (+7 more)
+Cohesion: 0.19
+Nodes (14): blankForm(), CalendarView(), dueKey(), MONTHS, PRIORITY_COLOR, WEEKDAYS, ymd(), TaskContextMenu() (+6 more)
 
 ### Community 19 - "Graph JSON Data 2"
-Cohesion: 0.09
-Nodes (26): Editor(), renderMarkdown(), GroupsTab(), PermissionGrid(), ProjectPicker(), SubmitButton(), UserAccessEditor(), useOptimistic() (+18 more)
+Cohesion: 0.13
+Nodes (13): applyPending(), useOptimistic(), withDescendants(), newId(), onSync(), subscribe(), AdminPage(), AdminsTab() (+5 more)
 
 ### Community 21 - "Seed Tasks Script"
 Cohesion: 0.07
@@ -358,96 +359,92 @@ Cohesion: 0.70
 Nodes (4): load_legacy_prds(), load_projects(), main(), parse_frontmatter()
 
 ### Community 28 - "AST Artifact"
-Cohesion: 0.09
-Nodes (23): checkLabels(), hasLabel(), labelsRequired(), { listLabels }, requireLabels(), AttachmentError, REPLAYED, { listTasks, createTask, REPLAYED } (+15 more)
+Cohesion: 0.10
+Nodes (30): getAuditUser(), logAudit(), checkLabels(), hasLabel(), labelsRequired(), { listLabels }, requireLabels(), AttachmentError (+22 more)
 
 ### Community 29 - "Redis Migration"
 Cohesion: 0.40
 Nodes (3): NEW, OLD, { Redis }
 
 ### Community 31 - "Project Config"
-Cohesion: 0.18
-Nodes (24): bumpVersion(), createLabel(), createProject(), createVersion(), deleteLabel(), deleteProposal(), getKv(), latestFromVersionStrings() (+16 more)
+Cohesion: 0.12
+Nodes (26): bumpVersion(), createProject(), createVersion(), deleteProposal(), latestFromVersionStrings(), listVersions(), normalizeColumns(), normalizeTaskAcl() (+18 more)
 
 ### Community 32 - "App Shell & Login"
-Cohesion: 0.14
-Nodes (22): deleteSprint(), getKv(), getSprints(), { Redis }, saveSprint(), saveSprints(), sprintKey(), { getAuditLogs } (+14 more)
+Cohesion: 0.28
+Nodes (13): deleteSprint(), getKv(), getSprints(), { Redis }, saveSprint(), saveSprints(), sprintKey(), { getSprints, saveSprint, deleteSprint } (+5 more)
 
 ### Community 33 - "Vercel Deploy Config"
-Cohesion: 0.11
-Nodes (35): SyncStatus(), applyPending(), withDescendants(), acquireLock(), backoffMs(), discardAllParked(), discardParked(), drain() (+27 more)
+Cohesion: 0.17
+Nodes (28): acquireLock(), backoffMs(), discardAllParked(), discardParked(), drain(), emit(), emitSync(), getPending() (+20 more)
 
 ### Community 35 - "Vercel Cron Config"
 Cohesion: 0.22
 Nodes (8): CLAUDE.md — PRD Manager, Code Conventions, Communication, Dev Workflow, Graphify Integration, Key Files, Priority Order, Project: PRD Manager
 
 ### Community 36 - "next.config.js"
-Cohesion: 0.22
-Nodes (18): { ALL_PERMISSIONS, VIEW_PERMISSIONS, DEFAULT_ROLE_POLICY }, clearProjectRolePolicy(), getKv(), getProjectPolicyRaw(), keyFor(), normStatus(), readKey(), { Redis } (+10 more)
+Cohesion: 0.13
+Nodes (29): DEFAULT_ROLE_POLICY, { ALL_PERMISSIONS, VIEW_PERMISSIONS, DEFAULT_ROLE_POLICY }, clearProjectRolePolicy(), getEffectiveRolePolicy(), getGlobalRolePolicy(), getKv(), getProjectPolicyRaw(), keyFor() (+21 more)
 
 ### Community 43 - "next.config.js 2"
 Cohesion: 0.13
 Nodes (24): checkLoginRateLimit(), clearLoginFailures(), clientIp(), getKv(), keys(), recordLoginFailure(), { Redis }, findUsersByUsername() (+16 more)
 
 ### Community 44 - "install.ps1"
-Cohesion: 0.19
-Nodes (14): getProject(), listProposals(), { getAuditLogs }, getKv(), { getProject, listProposals }, { getSprints }, getTasksForProject(), handler() (+6 more)
+Cohesion: 0.36
+Nodes (6): getProject(), createTask(), handler(), handler(), parseCSVLine(), resolveLabelIds()
 
 ### Community 45 - "tasks.json 2"
-Cohesion: 0.18
-Nodes (18): requireAdmin(), buildChanges(), deleteTaskHistory(), FIELD_LABEL, FIELD_ORDER, getKv(), getTaskHistory(), histKey() (+10 more)
+Cohesion: 0.13
+Nodes (18): cascadeRename(), getKv(), { hashPassword }, { Redis }, RenameError, renameUser(), taskListKeys(), { withTaskLock } (+10 more)
 
 ### Community 46 - "1.0.0-tasks.json 2"
-Cohesion: 0.24
-Nodes (14): { getEffectiveRolePolicy }, { getSessionUser }, getUser(), { getUserAccess, canSeeProject }, hasPermission(), isSuper(), requireProjectAccess(), visibleProjects() (+6 more)
+Cohesion: 0.12
+Nodes (27): deleteProject(), { getEffectiveRolePolicy }, { getSessionUser }, getUser(), { getUserAccess, canSeeProject }, hasPermission(), isSuper(), requireProjectAccess() (+19 more)
 
 ### Community 47 - "TaskHistoryModal.js"
 Cohesion: 0.40
 Nodes (5): ACTION_META, actorName(), HistoryEntry(), SYNTHETIC_LABEL, TaskHistoryModal()
 
 ### Community 48 - "index.js"
-Cohesion: 0.24
-Nodes (8): deleteVersion(), getVersion(), saveVersion(), { getVersion, saveVersion, deleteVersion }, handler(), { logAudit }, { requirePermission, requireProjectAccess }, { requireSuperAdmin }
+Cohesion: 0.18
+Nodes (13): deleteVersion(), getProposal(), getVersion(), saveVersion(), { getVersion, getProposal }, handler(), { logAudit }, { requireProjectAccess } (+5 more)
 
 ### Community 49 - ".vercel Folder"
 Cohesion: 0.67
 Nodes (3): Vercel Deployment, project.json (Vercel Link), .vercel Folder
 
-### Community 58 - "Diff API Endpoint"
-Cohesion: 0.24
-Nodes (9): getGlobalRolePolicy(), { ALL_PERMISSIONS, PERMS_VERSION }, { getGlobalRolePolicy }, getKv(), handler(), { hashPassword }, { logAudit }, { Redis } (+1 more)
-
 ### Community 94 - "Claude Local Settings (Permissions)"
-Cohesion: 0.11
-Nodes (24): { getSessionUser }, { getSessionUser }, appendCookie(), b64url(), clearSessionCookie(), crypto, getSecret(), getSessionUser() (+16 more)
+Cohesion: 0.06
+Nodes (45): { getSessionUser }, requireAdmin(), appendCookie(), b64url(), clearSessionCookie(), crypto, getSecret(), getSessionUser() (+37 more)
 
 ### Community 95 - "settings.local.json"
-Cohesion: 0.15
-Nodes (12): ACTION_PERMISSIONS, ALL_PERMISSIONS, DEFAULT_ROLE_POLICY, { ALL_PERMISSIONS, PERMS_VERSION }, getKv(), handler(), { logAudit }, { Redis } (+4 more)
+Cohesion: 0.10
+Nodes (22): GroupEditor(), GroupsTab(), PermissionGrid(), ProjectPicker(), UserAccessEditor(), apiFetch(), apiFetchOrLogout(), ACTION_PERMISSIONS (+14 more)
 
 ### Community 96 - "additionalDirectories"
-Cohesion: 0.23
-Nodes (11): VIEW_PERMISSIONS, cache, canSeeProject(), { getGroupsForUser }, getKv(), getProfile(), loadUserAccess(), parseField() (+3 more)
+Cohesion: 0.21
+Nodes (13): getGroupsForUser(), removeUserFromAllGroups(), userKeyFor(), VIEW_PERMISSIONS, cache, { getGroupsForUser }, getKv(), getProfile() (+5 more)
 
 ### Community 97 - "allow"
-Cohesion: 0.23
-Nodes (16): attKey(), dataUrlBytes(), decodeDataUrl(), deleteTasksMedia(), getKv(), hydrateTaskMedia(), hydrateTasksMedia(), isDataUrl() (+8 more)
+Cohesion: 0.21
+Nodes (18): attKey(), dataUrlBytes(), decodeDataUrl(), deleteTasksMedia(), getKv(), hydrateTaskMedia(), hydrateTasksMedia(), isDataUrl() (+10 more)
 
 ### Community 118 - "Diff Comparison (version vs proposal)"
-Cohesion: 0.29
-Nodes (7): listVersions(), sortVersionsDesc(), handler(), handler(), { listVersions, createVersion }, { logAudit }, { requirePermission, requireProjectAccess }
+Cohesion: 0.36
+Nodes (9): bumpRev(), revKey(), withRev(), cacheColumns(), columnsKey(), DEFAULT_COLUMNS, fetchColumns(), readColumns() (+1 more)
 
 ### Community 169 - "Diff Page"
-Cohesion: 0.32
-Nodes (7): deleteProject(), requireSuperAdmin(), { getProject, updateProject, deleteProject }, handler(), { logAudit }, { requirePermission, requireProjectAccess, hasPermission }, { requireSuperAdmin }
+Cohesion: 0.17
+Nodes (13): listGroups(), { getSessionUser }, requireSuperAdmin(), handler(), { listGroups, createGroup, GroupError }, { logAudit }, { requireSuperAdmin }, { ALL_PERMISSIONS, PERMS_VERSION } (+5 more)
 
 ### Community 214 - "PRD.md"
 Cohesion: 0.04
 Nodes (42): 10. Roadmap, 1.1 Summary, 1.2 Why it exists, 1.3 Goals, 1.4 Non-goals, 1. Overview, 2. Users & Roles, 3.1 Redis keys (+34 more)
 
 ### Community 258 - "categories.js"
-Cohesion: 0.17
-Nodes (21): CategoryManager(), cacheCategories(), CAT_COLORS, categoriesKey(), categoriesWithTaskValues(), categorySlug(), fetchCategories(), readCategories() (+13 more)
+Cohesion: 0.23
+Nodes (13): CategoryManager(), cacheCategories(), CAT_COLORS, categoriesKey(), categoriesWithTaskValues(), categorySlug(), fetchCategories(), readCategories() (+5 more)
 
 ### Community 259 - "store-report.js"
 Cohesion: 0.17
@@ -459,67 +456,75 @@ Nodes (9): CellPeekModal(), PRIORITY_COLOR, PRIORITY_LABEL, buildRails(), PRIORI
 
 ### Community 262 - "columns.js"
 Cohesion: 0.21
-Nodes (11): { ALL_PERMISSIONS, PERMS_VERSION }, encodePerms(), encodeProjects(), { getGlobalRolePolicy }, getKv(), { getUserAccess }, handler(), { logAudit } (+3 more)
+Nodes (12): setUserGroups(), { ALL_PERMISSIONS, PERMS_VERSION }, encodePerms(), encodeProjects(), { getGlobalRolePolicy }, getKv(), { getUserAccess }, handler() (+4 more)
 
 ### Community 263 - "migrate-task-media.js"
 Cohesion: 0.22
 Nodes (7): APPLY, inlineBytes(), isDataUrl(), kv, { offloadTasksMedia, attKey, COVER_ATT_ID }, { Redis }, { withTaskLock }
 
 ### Community 264 - "SyncStatus.js"
-Cohesion: 0.29
-Nodes (7): getEffectiveRolePolicy(), { ALL_PERMISSIONS }, { getEffectiveRolePolicy }, { getSessionUser }, { getUserAccess }, handler(), { requireProjectAccess }
+Cohesion: 0.36
+Nodes (4): SyncStatus(), EMPTY, useQueueState(), useUnloadGuard()
 
 ### Community 265 - "[name].js"
-Cohesion: 0.39
-Nodes (7): applyTheme(), resolveTheme(), setTheme(), storedTheme(), systemTheme(), THEMES, useTheme()
+Cohesion: 0.22
+Nodes (10): { ALL_PERMISSIONS, PERMS_VERSION }, existingPerms(), getKv(), handler(), { hashPassword }, { logAudit }, { Redis }, { removeUserFromAllGroups } (+2 more)
 
 ### Community 266 - "getKv"
-Cohesion: 0.14
-Nodes (22): sendJsonCached(), offloadTasksMedia(), computeNumbers(), createTask(), getKv(), listTasks(), loadTasks(), nextSeq() (+14 more)
+Cohesion: 0.11
+Nodes (27): offloadTasksMedia(), deleteTask(), getKv(), getTask(), loadTasks(), moveTask(), nextSeq(), { offloadTasksMedia, deleteTasksMedia } (+19 more)
 
 ### Community 267 - "[attId].js"
-Cohesion: 0.17
-Nodes (13): ms(), withCpuLog(), getTask(), { getTask }, handler(), { loadAttachment, readAttachmentKey }, { requirePermission, requireProjectAccess }, { withCpuLog } (+5 more)
+Cohesion: 0.32
+Nodes (6): ms(), withCpuLog(), { getTask }, { loadAttachment, readAttachmentKey }, { requirePermission, requireProjectAccess }, { withCpuLog }
 
 ### Community 268 - "roles.js"
-Cohesion: 0.22
-Nodes (11): logAudit(), getProposal(), promoteProposal(), { getVersion, getProposal }, handler(), { logAudit }, { requireProjectAccess }, handler() (+3 more)
+Cohesion: 0.40
+Nodes (5): promoteProposal(), handler(), { logAudit }, { promoteProposal }, { requirePermission, requireProjectAccess }
 
 ### Community 269 - "Task share links"
 Cohesion: 0.29
 Nodes (6): Sanatan Sansaar — Project Tasks, Sanatan Sansaar — v1.0.0, Sanatan Sansaar — v1.0.1, Sanatan Sansaar — v1.0.2, SS Media — v1.0.0, Task share links
 
 ### Community 270 - "enqueue"
-Cohesion: 0.40
-Nodes (4): checklistProgress(), makeChecklistItem(), sanitizeChecklist(), stampChecklist()
+Cohesion: 0.31
+Nodes (7): Editor(), renderMarkdown(), enqueue(), sanitize(), AdminPermissionEditor(), handleDeleteProposal(), handleDeleteVersion()
 
 ### Community 271 - "set-superadmin.js"
 Cohesion: 0.50
 Nodes (3): crypto, hash, { hashPassword }
+
+### Community 273 - "columns.js"
+Cohesion: 0.25
+Nodes (8): getBoardColumns(), { getBoardColumns, setBoardColumns }, handler(), { logAudit }, { requireProjectAccess }, { requireSuperAdmin }, { sendJsonConfig }, { statusCounts }
+
+### Community 274 - "TaskTree"
+Cohesion: 0.36
+Nodes (8): KanbanBoard(), blankForm(), buildFilteredTree(), buildTree(), TaskTree(), categoryMap(), taskIndex(), useCategories()
 
 ### Community 275 - "snapshot-store.js"
 Cohesion: 0.50
 Nodes (4): reshapesTree(), RESHAPING_FIELDS, sameFieldValue(), unset()
 
 ## Knowledge Gaps
-- **541 isolated node(s):** `PRIORITY_COLOR`, `WEEKDAYS`, `MONTHS`, `PRIORITY_COLOR`, `PRIORITY_LABEL` (+536 more)
+- **539 isolated node(s):** `PRIORITY_COLOR`, `WEEKDAYS`, `MONTHS`, `PRIORITY_COLOR`, `PRIORITY_LABEL` (+534 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **186 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `logAudit()` connect `roles.js` to `API Handlers & Audit`, `Calendar View & Task Forms`, `next.config.js`, `Snapshot & Audit Store`, `columns.js`, `Diff Page`, `getKv`, `next.config.js 2`, `AST Artifact`, `1.0.0-tasks.json 2`, `index.js`, `Core Entities & Views`, `Diff Comparison (version vs proposal)`, `Diff API Endpoint`, `Project Config`, `Claude Local Settings (Permissions)`, `settings.local.json`?**
-  _High betweenness centrality (0.046) - this node is a cross-community bridge._
-- **Why does `ALL_PERMISSIONS` connect `settings.local.json` to `next.config.js`, `Editor, Nav & Admin UI`, `columns.js`, `SyncStatus.js`, `next.config.js 2`, `Core Entities & Views`, `Graph JSON Data 2`, `Diff API Endpoint`?**
-  _High betweenness centrality (0.039) - this node is a cross-community bridge._
-- **Why does `slugify()` connect `Core Entities & Views` to `Editor, Nav & Admin UI`, `Project Config`?**
-  _High betweenness centrality (0.029) - this node is a cross-community bridge._
+- **Why does `ALL_PERMISSIONS` connect `settings.local.json` to `next.config.js`, `columns.js`, `Diff Page`, `[name].js`, `next.config.js 2`, `1.0.0-tasks.json 2`, `Core Entities & Views`?**
+  _High betweenness centrality (0.060) - this node is a cross-community bridge._
+- **Why does `slugify()` connect `Project Config` to `Core Entities & Views`, `Graph JSON Data 2`?**
+  _High betweenness centrality (0.048) - this node is a cross-community bridge._
+- **Why does `logAudit()` connect `AST Artifact` to `API Handlers & Audit`, `Calendar View & Task Forms`, `next.config.js`, `Snapshot & Audit Store`, `columns.js`, `Dashboard Panels`, `Diff Page`, `[name].js`, `next.config.js 2`, `roles.js`, `tasks.json 2`, `1.0.0-tasks.json 2`, `index.js`, `Core Entities & Views`, `columns.js`, `Claude Local Settings (Permissions)`, `Project Config`?**
+  _High betweenness centrality (0.040) - this node is a cross-community bridge._
 - **What connects `PRIORITY_COLOR`, `WEEKDAYS`, `MONTHS` to the rest of the system?**
-  _573 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _571 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `API Handlers & Audit` be split into smaller, more focused modules?**
-  _Cohesion score 0.10336817653890824 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.1053763440860215 - nodes in this community are weakly interconnected._
 - **Should `REST API Endpoints` be split into smaller, more focused modules?**
   _Cohesion score 0.08333333333333333 - nodes in this community are weakly interconnected._
-- **Should `Calendar View & Task Forms` be split into smaller, more focused modules?**
-  _Cohesion score 0.11857707509881422 - nodes in this community are weakly interconnected._
+- **Should `PRD Store (Redis CRUD)` be split into smaller, more focused modules?**
+  _Cohesion score 0.1111111111111111 - nodes in this community are weakly interconnected._

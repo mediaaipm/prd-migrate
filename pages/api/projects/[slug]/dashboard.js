@@ -5,6 +5,7 @@ const { getProject, listProposals } = require('../../../../lib/prd-store')
 const { getAuditLogs } = require('../../../../lib/audit-log')
 const { getSprints } = require('../../../../lib/sprint-store')
 const { requirePermission, requireProjectAccess } = require('../../../../lib/require-permission')
+const { sendJsonCached } = require('../../../../lib/etag')
 
 async function getTasksForProject(slug) {
   const versionIds = await getKv().smembers(`versions:${slug}`)
@@ -200,8 +201,10 @@ export default async function handler(req, res) {
     } catch {}
     const velocity = { thisWeek: thisWeekDone, lastWeek: lastWeekDone }
 
-    res.setHeader('Cache-Control', 's-maxage=120, stale-while-revalidate=30')
-    return res.status(200).json({
+    // `private`, never `s-maxage` — see the note in pages/api/dashboard/index.js. This
+    // one is gated on dashboard:view plus per-project access, so a shared-cache hit
+    // hands a whole project's numbers to someone the ACL just turned away.
+    return sendJsonCached(req, res, {
       project: { name: project.name, slug: project.slug, description: project.description },
       completion,
       statusCounts,

@@ -616,6 +616,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   padding: 10px 16px;
   border-bottom: 1px solid var(--border);
   gap: 8px;
@@ -623,10 +624,11 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .version-row:last-child { border-bottom: none; }
 .version-row:hover { background: var(--bg); }
 
-.version-info { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.version-info { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; flex: 1 1 auto; min-width: 0; }
+.version-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 6px; flex: 0 0 auto; margin-left: auto; }
 .version-tag { font-family: 'Menlo', monospace; font-size: 12px; font-weight: 600; color: var(--text); }
 .latest-tag { font-size: 10px; padding: 1px 6px; border-radius: 4px; background: rgba(22,163,74,.1); color: var(--success); font-weight: 600; }
-.version-date { font-size: 11px; color: var(--muted); }
+.version-date { font-size: 11px; color: var(--muted); white-space: nowrap; }
 
 .status-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
 .status-tag.pending { background: rgba(234,179,8,.15); color: #854d0e; }
@@ -755,6 +757,127 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .tt-due-picker-item:hover { background: var(--hover); }
 .tt-due-picker-item input { cursor: pointer; }
 
+/* Filters drawer — the occasional controls (search, status/priority/category,
+   date ranges, link export) live here so the toolbar keeps only daily actions. */
+.tt-filters-btn { display: inline-flex; align-items: center; gap: 6px; }
+.tt-filters-btn.active { border-color: var(--accent, #2563eb); color: var(--accent, #2563eb); font-weight: 600; }
+.tt-filters-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--accent, #2563eb);
+  color: var(--on-accent, #fff);
+}
+
+.filter-sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: var(--overlay, rgba(0, 0, 0, .35));
+}
+.filter-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 901;
+  width: 320px;
+  max-width: 88vw;
+  display: flex;
+  flex-direction: column;
+  background: var(--card, #fff);
+  border-left: 1px solid var(--border);
+  box-shadow: -8px 0 28px rgba(0, 0, 0, .18);
+  animation: filter-sidebar-in .16s ease-out;
+}
+@keyframes filter-sidebar-in {
+  from { transform: translateX(16px); opacity: .6; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+.filter-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.filter-sidebar-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.filter-sidebar-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--accent, #2563eb);
+  color: var(--on-accent, #fff);
+}
+.filter-sidebar-head-actions { display: flex; align-items: center; gap: 4px; }
+.filter-sidebar-close { font-size: 13px; padding: 3px 8px; line-height: 1; }
+.filter-sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 14px 14px;
+}
+.filter-sidebar-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2, var(--surface));
+}
+
+.filter-sidebar-section { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.filter-sidebar-section:last-child { border-bottom: 0; }
+.filter-sidebar-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.filter-sidebar-list { display: flex; flex-direction: column; gap: 2px; }
+.filter-sidebar-list.scroll { max-height: 190px; overflow-y: auto; }
+.filter-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text);
+  padding: 5px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.filter-sidebar-item:hover { background: var(--hover); }
+.filter-sidebar-item input { cursor: pointer; }
+.filter-sidebar-range { display: flex; align-items: center; gap: 6px; }
+.filter-sidebar-range .tt-date-input { flex: 1; width: auto; min-width: 0; }
+.filter-sidebar-actions { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+.filter-sidebar-actions .btn-ghost { justify-content: flex-start; text-align: left; }
+
 .task-list { margin-top: 8px; display: flex; flex-direction: column; gap: 0; }
 
 /* Task node */
@@ -865,7 +988,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   line-height: 1;
   transition: border-color .12s, background .12s, color .12s;
 }
-/* Status button: solid color-coded badge (see .status-legend for key) */
+/* Status button: solid color-coded badge */
 .task-status { color: #fff; }
 .task-status.backlog { border-color: #64748b; background: #64748b; }
 .task-status.todo { border-color: #2563eb; background: #2563eb; }
@@ -874,33 +997,6 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .task-status.review { border-color: #9333ea; background: #9333ea; }
 .task-status.blocked { border-color: #dc2626; background: #dc2626; }
 .task-status.done { border-color: var(--success); background: var(--success); }
-
-/* Status color legend (top-right of task toolbar) */
-.status-legend {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-  margin-left: auto;
-  padding: 4px 8px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card, #fff);
-}
-.status-legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  color: var(--muted);
-  white-space: nowrap;
-}
-.status-legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
 
 /* Wraps rather than clipping. A story title is the one thing on the row you
    cannot guess from the rest of it, so truncating it to an ellipsis costs more
@@ -2107,6 +2203,345 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   padding: 16px 18px 18px;
 }
 
+/* ── Wide two-rail task modal (content left, metadata right) ────────────── */
+.kanban-modal--wide {
+  max-width: 1080px;
+  height: min(88vh, 940px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.kanban-modal--wide .kanban-modal-header {
+  flex-shrink: 0;
+  padding: 12px 16px;
+}
+
+.task-modal-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  flex: 1;
+  min-height: 0;
+}
+
+.task-modal-main {
+  min-width: 0;
+  overflow-y: auto;
+  padding: 16px 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.task-modal-side {
+  min-width: 0;
+  overflow-y: auto;
+  border-left: 1px solid var(--border);
+  background: var(--surface-2);
+  padding: 16px 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.task-modal-title-input {
+  font-size: 16px !important;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.task-modal-desc { min-height: 96px; }
+
+.task-modal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.task-modal-section + .task-modal-section {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.task-modal-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Sub-task completion bar sits inline with its heading. */
+.task-modal-progress {
+  flex: 1;
+  max-width: 140px;
+  height: 4px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+.task-modal-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width .2s ease;
+}
+
+/* Right rail fields */
+.task-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.task-modal-field-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.task-modal-field-static {
+  font-size: 13px;
+  color: var(--text);
+}
+.task-modal-field-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.task-modal-field .form-input { width: 100%; box-sizing: border-box; }
+.task-modal-field .task-assignees-list { gap: 5px; }
+/* AssigneeInput ships its own inline label — the rail already has one. */
+.task-modal-field .assignee-input > .task-assignees-label { display: none; }
+.task-modal-field .assignee-input-field { width: 100%; }
+
+/* Checklist — shared surface, editable by anyone who can open the card */
+.task-check-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.task-check-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  min-width: 0;
+}
+.task-check-row:hover { background: var(--hover); }
+.task-check-row input[type='checkbox'] {
+  cursor: pointer;
+  flex-shrink: 0;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.task-check-text {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  color: var(--text);
+  cursor: text;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.task-check-text:hover { background: var(--surface-2); }
+.task-check-row.is-done .task-check-text { color: var(--muted); text-decoration: line-through; }
+.task-check-edit { flex: 1; min-width: 0; font-size: 13px !important; padding: 3px 7px !important; }
+.task-check-by {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.task-check-remove {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+  padding: 3px 5px;
+  opacity: 0;
+}
+.task-check-row:hover .task-check-remove,
+.task-check-row:focus-within .task-check-remove { opacity: 1; }
+.task-check-remove:hover { color: var(--danger); background: var(--surface-2); }
+.task-check-add {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+.task-check-add .form-input { flex: 1; min-width: 0; font-size: 13px; }
+.task-check-add-btn { flex-shrink: 0; font-size: 12px; padding: 6px 12px; }
+.task-check-chip--complete { color: var(--tint-green-fg); border-color: var(--tint-green-fg); background: var(--tint-green-bg); }
+
+/* Attachments as tiles */
+.task-attach-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 10px;
+}
+.task-attach-tile {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.task-attach-tile.is-cover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.task-attach-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 92px;
+  background: var(--bg);
+  overflow: hidden;
+}
+.task-attach-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.task-attach-icon { font-size: 26px; }
+.task-attach-flag {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.task-attach-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 8px 8px;
+  min-width: 0;
+}
+.task-attach-meta .kanban-attach-name { font-size: 12px; }
+.task-attach-size { font-size: 10px; color: var(--muted); }
+.task-attach-actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 3px;
+  opacity: 0;
+  transition: opacity .12s;
+}
+.task-attach-tile:hover .task-attach-actions,
+.task-attach-tile:focus-within .task-attach-actions { opacity: 1; }
+.task-attach-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+}
+.task-attach-action:hover { background: var(--hover); }
+.task-attach-action--danger:hover { color: var(--danger); border-color: var(--danger); }
+
+.task-attach-drop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color .12s, background .12s, color .12s;
+}
+.task-attach-drop:hover { border-color: var(--accent); color: var(--text); }
+.task-attach-drop.is-over { border-color: var(--accent); background: var(--hover); color: var(--text); }
+.task-attach-drop strong { color: var(--accent); font-weight: 600; }
+.task-attach-input { display: none; }
+
+/* Comments — compose on top, thread below, initial avatar per author */
+.task-modal-comment-form {
+  padding: 0;
+  border-top: none;
+  background: transparent;
+  gap: 8px;
+}
+.task-modal-comments {
+  max-height: none;
+  padding: 0;
+  gap: 8px;
+}
+.task-modal-comment {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  background: var(--surface-2);
+}
+.task-modal-comment-body { min-width: 0; flex: 1; }
+.task-modal-avatar {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Footer action bar pinned below the scroll area */
+.task-modal-footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+.task-modal-footer-actions { display: flex; gap: 8px; }
+.task-modal-archive { color: var(--danger); }
+
+@media (max-width: 900px) {
+  .kanban-modal--wide { height: 92vh; }
+  .task-modal-body { grid-template-columns: minmax(0, 1fr); overflow-y: auto; }
+  .task-modal-main, .task-modal-side { overflow: visible; }
+  .task-modal-side {
+    border-left: none;
+    border-bottom: 1px solid var(--border);
+    order: -1;
+  }
+}
+
 /* Task detail view (tree title click) */
 .task-title--clickable { cursor: pointer; }
 .task-title--clickable:hover { text-decoration: underline; }
@@ -2552,6 +2987,56 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .swim-head-corner {
   color: var(--muted); position: sticky; left: 0; background: var(--bg); z-index: 1;
   font-size: 10px; letter-spacing: .08em;
+}
+
+/* Super-admin column editing in the swimlane head. The cell is one track of a
+   grid shared with every rail below, so nothing here may change its height —
+   the colour swatches float out instead. */
+.swim-head-col { position: relative; }
+.swim-head-col--drag-over {
+  background: var(--hover);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.swim-head-col--dragging { opacity: .45; }
+.swim-head-col .kanban-col-drag-handle { font-size: 12px; }
+.swim-head-col:hover .kanban-col-drag-handle { opacity: 1; }
+.swim-head-col .kanban-col-rename-input {
+  width: 110px;
+  text-transform: none;
+  font-family: inherit;
+}
+.swim-head-del { margin-left: auto; width: 20px; height: 20px; }
+.swim-head-col:hover .swim-head-del { opacity: 1; }
+.swim-head-colorpop {
+  position: absolute;
+  top: 100%;
+  left: 6px;
+  z-index: 6;
+  width: max-content;
+  max-width: 220px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 18px var(--overlay);
+}
+
+/* Add-status row — the swimlane stand-in for the plain board's trailing
+   "+ Add column" card. */
+.swim-add-col {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.swim-add-col-name { width: 190px; }
+.swim-add-col-colors {
+  padding: 0;
+  border-bottom: none;
+  background: none;
 }
 
 /* Board axes picker. Mono and understated — it labels the board's shape, it is

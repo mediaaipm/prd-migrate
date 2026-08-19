@@ -1,9 +1,14 @@
 const { listProjects } = require('../../../lib/prd-store')
-const { listTasks } = require('../../../lib/task-store')
-const { addNotification } = require('../../../lib/notification-store')
+const { loadTasks } = require('../../../lib/task-store')
+const { addNotifications } = require('../../../lib/notification-store')
 
-// Every 4h (see vercel.json): re-notify assignees of tasks whose due date was pushed back
-// and that are still open. Flag is set in the task PUT handler; cleared when the task is done.
+// Re-notify assignees of tasks whose due date was pushed back and that are still open.
+// Flag is set in the task PUT handler; cleared when the task is done.
+//
+// Same shape as due-reminders, and for the same reason: `loadTasks` rather than
+// `listTasks` (no numbering pass, no write-on-read seq backfill), all projects loaded
+// in one pipelined batch, and one notification write per recipient instead of one per
+// task.
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET
   if (secret) {
@@ -13,20 +18,30 @@ export default async function handler(req, res) {
     }
   }
 
-  let sent = 0
   const projects = await listProjects()
-  for (const p of projects) {
-    const tasks = await listTasks(p.slug, null)
-    for (const t of tasks) {
+  const lists = await Promise.all(projects.map(p => loadTasks(p.slug, null)))
+
+  const batch = new Map()
+  const queue = (name, entry) => {
+    if (!name) return
+    const cur = batch.get(name)
+    if (cur) cur.push(entry)
+    else batch.set(name, [entry])
+  }
+
+  projects.forEach((p, i) => {
+    const link = `/projects/${p.slug}/tasks`
+    for (const t of lists[i]) {
       if (t.archived || t.status === 'done' || !t.dueDelayed) continue
       const when = t.dueDate ? new Date(t.dueDate).toLocaleDateString() : ''
-      const link = `/projects/${p.slug}/tasks`
       const text = `Reminder: "${t.title}" due date was delayed${when ? ` to ${when}` : ''}`
       for (const name of (Array.isArray(t.assignees) ? t.assignees : [])) {
-        await addNotification(name, { type: 'due-delayed', text, link })
-        sent++
+        queue(name, { type: 'due-delayed', text, link })
       }
     }
-  }
+  })
+
+  const written = await Promise.all([...batch].map(([name, entries]) => addNotifications(name, entries)))
+  const sent = written.reduce((n, made) => n + made.length, 0)
   return res.status(200).json({ ok: true, sent })
 }

@@ -45,7 +45,14 @@ export default function Nav() {
   // overnight used to keep firing once a minute — 60 function invocations an hour,
   // per tab, per user, to update a badge nobody could see. That, not real usage,
   // is what a serverless invocation quota gets spent on.
+  //
+  // The interval is 5 minutes, not 1. At the app's real traffic (~740 function
+  // invocations a day) a single visible tab polling once a minute for an 8-hour
+  // day was ~480 of them — roughly two thirds of everything the account spent,
+  // to refresh a badge. Notifications are not time-critical enough to justify
+  // that; anything that is arrives on the next page navigation anyway.
   useEffect(() => {
+    const POLL_MS = 300000
     let alive = true
     let lastLoad = 0
 
@@ -76,11 +83,11 @@ export default function Nav() {
     // fire a request each time.
     function onVisible() {
       if (document.hidden) return
-      if (Date.now() - lastLoad >= 60000) load()
+      if (Date.now() - lastLoad >= POLL_MS) load()
     }
 
     load()
-    const t = setInterval(tick, 60000)
+    const t = setInterval(tick, POLL_MS)
     document.addEventListener('visibilitychange', onVisible)
     return () => {
       alive = false

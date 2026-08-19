@@ -869,9 +869,9 @@ export default function TasksPage({ currentUser }) {
               <h1>{contextLabel}</h1>
               <div style={{ fontSize: 13, color: 'var(--muted)' }}>
                 — <Link href="/">Projects</Link> / <Link href={`/projects/${slug}`}>{projectName || slug}</Link> / {contextLabel}
+                {version && <> - Tasks scoped to version {version}</>}
               </div>
             </div>
-            {version && <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>Tasks scoped to version {version}</p>}
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <div style={{ position: 'relative' }}>

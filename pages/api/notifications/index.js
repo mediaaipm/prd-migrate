@@ -1,7 +1,8 @@
 const { listNotifications, markAllRead } = require('../../../lib/notification-store')
 const { getAuditUser } = require('../../../lib/audit-log')
+const { withCpuLog } = require('../../../lib/cpu-log')
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   const user = getAuditUser(req)
   if (!user || !user.name) return res.status(200).json([])
 
@@ -14,3 +15,7 @@ export default async function handler(req, res) {
   }
   res.status(405).json({ error: 'Method not allowed' })
 }
+
+// The app's highest-volume route by a wide margin — Nav polls it on a timer, so it
+// is the one whose invocation count matters more than its per-call cost.
+export default withCpuLog(handler, '/api/notifications')
