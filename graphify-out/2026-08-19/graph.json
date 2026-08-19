@@ -330,7 +330,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_filtermultiselect",
-      "community": 279,
+      "community": 11,
       "norm_label": "filtermultiselect.js"
     },
     {
@@ -340,7 +340,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "components_filtermultiselect_filtermultiselect",
-      "community": 279,
+      "community": 11,
       "norm_label": "filtermultiselect()"
     },
     {
@@ -350,7 +350,7 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "components_filtermultiselect_datepicker",
-      "community": 279,
+      "community": 11,
       "norm_label": "datepicker()"
     },
     {
@@ -360,7 +360,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_filtersidebar",
-      "community": 11,
+      "community": 12,
       "norm_label": "filtersidebar.js"
     },
     {
@@ -370,7 +370,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "components_filtersidebar_filtersidebar",
-      "community": 11,
+      "community": 12,
       "norm_label": "filtersidebar()"
     },
     {
@@ -380,7 +380,7 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "components_filtersidebar_sidebarsection",
-      "community": 11,
+      "community": 12,
       "norm_label": "sidebarsection()"
     },
     {
@@ -390,7 +390,7 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "components_filtersidebar_sidebarchecklist",
-      "community": 11,
+      "community": 12,
       "norm_label": "sidebarchecklist()"
     },
     {
@@ -560,7 +560,7 @@
       "source_location": "L109",
       "_origin": "ast",
       "id": "components_kanbanboard_kanbanboard",
-      "community": 258,
+      "community": 12,
       "norm_label": "kanbanboard()"
     },
     {
@@ -680,7 +680,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_syncstatus",
-      "community": 278,
+      "community": 33,
       "norm_label": "syncstatus.js"
     },
     {
@@ -690,7 +690,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "components_syncstatus_syncstatus",
-      "community": 278,
+      "community": 33,
       "norm_label": "syncstatus()"
     },
     {
@@ -1040,7 +1040,7 @@
       "source_location": "L92",
       "_origin": "ast",
       "id": "components_tasktree_buildtree",
-      "community": 258,
+      "community": 12,
       "norm_label": "buildtree()"
     },
     {
@@ -1050,7 +1050,7 @@
       "source_location": "L115",
       "_origin": "ast",
       "id": "components_tasktree_buildfilteredtree",
-      "community": 258,
+      "community": 12,
       "norm_label": "buildfilteredtree()"
     },
     {
@@ -1090,7 +1090,7 @@
       "source_location": "L712",
       "_origin": "ast",
       "id": "components_tasktree_tasktree",
-      "community": 258,
+      "community": 12,
       "norm_label": "tasktree()"
     },
     {
@@ -1370,7 +1370,7 @@
       "source_location": "L92",
       "_origin": "ast",
       "id": "lib_categories_usecategories",
-      "community": 258,
+      "community": 12,
       "norm_label": "usecategories()"
     },
     {
@@ -1380,7 +1380,7 @@
       "source_location": "L116",
       "_origin": "ast",
       "id": "lib_categories_categorymap",
-      "community": 258,
+      "community": 12,
       "norm_label": "categorymap()"
     },
     {
@@ -1400,7 +1400,7 @@
       "source_location": "L137",
       "_origin": "ast",
       "id": "lib_categories_taskindex",
-      "community": 258,
+      "community": 12,
       "norm_label": "taskindex()"
     },
     {
@@ -1470,7 +1470,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "lib_client_permissions_hasperm",
-      "community": 4,
+      "community": 18,
       "norm_label": "hasperm()"
     },
     {
@@ -1510,7 +1510,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "lib_config_cache",
-      "community": 274,
+      "community": 258,
       "norm_label": "config-cache.js"
     },
     {
@@ -1520,7 +1520,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "lib_config_cache_revkey",
-      "community": 274,
+      "community": 258,
       "norm_label": "revkey()"
     },
     {
@@ -1530,7 +1530,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "lib_config_cache_bumprev",
-      "community": 274,
+      "community": 258,
       "norm_label": "bumprev()"
     },
     {
@@ -1540,7 +1540,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "lib_config_cache_withrev",
-      "community": 274,
+      "community": 258,
       "norm_label": "withrev()"
     },
     {
@@ -1860,7 +1860,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "lib_kanban_columns",
-      "community": 274,
+      "community": 258,
       "norm_label": "kanban-columns.js"
     },
     {
@@ -1870,7 +1870,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "lib_kanban_columns_default_columns",
-      "community": 274,
+      "community": 4,
       "norm_label": "default_columns"
     },
     {
@@ -1890,7 +1890,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "lib_kanban_columns_columnskey",
-      "community": 274,
+      "community": 258,
       "norm_label": "columnskey()"
     },
     {
@@ -1900,7 +1900,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "lib_kanban_columns_labelforstatus",
-      "community": 12,
+      "community": 4,
       "norm_label": "labelforstatus()"
     },
     {
@@ -1910,7 +1910,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "lib_kanban_columns_readcolumns",
-      "community": 274,
+      "community": 258,
       "norm_label": "readcolumns()"
     },
     {
@@ -1920,7 +1920,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "lib_kanban_columns_cachecolumns",
-      "community": 274,
+      "community": 258,
       "norm_label": "cachecolumns()"
     },
     {
@@ -1930,7 +1930,7 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "lib_kanban_columns_fetchcolumns",
-      "community": 274,
+      "community": 258,
       "norm_label": "fetchcolumns()"
     },
     {
@@ -1940,7 +1940,7 @@
       "source_location": "L64",
       "_origin": "ast",
       "id": "lib_kanban_columns_savecolumns",
-      "community": 274,
+      "community": 258,
       "norm_label": "savecolumns()"
     },
     {
@@ -2170,7 +2170,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "lib_optimistic",
-      "community": 275,
+      "community": 33,
       "norm_label": "optimistic.js"
     },
     {
@@ -2180,7 +2180,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "lib_optimistic_withdescendants",
-      "community": 275,
+      "community": 33,
       "norm_label": "withdescendants()"
     },
     {
@@ -2190,7 +2190,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "lib_optimistic_applypending",
-      "community": 275,
+      "community": 33,
       "norm_label": "applypending()"
     },
     {
@@ -2200,7 +2200,7 @@
       "source_location": "L72",
       "_origin": "ast",
       "id": "lib_optimistic_useoptimistic",
-      "community": 275,
+      "community": 19,
       "norm_label": "useoptimistic()"
     },
     {
@@ -3640,7 +3640,7 @@
       "source_location": "L116",
       "_origin": "ast",
       "id": "lib_submit_queue_subscribe",
-      "community": 275,
+      "community": 33,
       "norm_label": "subscribe()"
     },
     {
@@ -3650,7 +3650,7 @@
       "source_location": "L125",
       "_origin": "ast",
       "id": "lib_submit_queue_onsync",
-      "community": 277,
+      "community": 19,
       "norm_label": "onsync()"
     },
     {
@@ -3670,7 +3670,7 @@
       "source_location": "L154",
       "_origin": "ast",
       "id": "lib_submit_queue_sanitize",
-      "community": 277,
+      "community": 19,
       "norm_label": "sanitize()"
     },
     {
@@ -3680,7 +3680,7 @@
       "source_location": "L175",
       "_origin": "ast",
       "id": "lib_submit_queue_enqueue",
-      "community": 277,
+      "community": 19,
       "norm_label": "enqueue()"
     },
     {
@@ -4820,7 +4820,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "lib_use_submit_queue",
-      "community": 278,
+      "community": 33,
       "norm_label": "use-submit-queue.js"
     },
     {
@@ -4830,7 +4830,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "lib_use_submit_queue_empty",
-      "community": 278,
+      "community": 33,
       "norm_label": "empty"
     },
     {
@@ -4840,7 +4840,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "lib_use_submit_queue_usequeuestate",
-      "community": 278,
+      "community": 33,
       "norm_label": "usequeuestate()"
     },
     {
@@ -4850,7 +4850,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "lib_use_submit_queue_useunloadguard",
-      "community": 278,
+      "community": 33,
       "norm_label": "useunloadguard()"
     },
     {
@@ -5220,7 +5220,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pages_app",
-      "community": 278,
+      "community": 33,
       "norm_label": "_app.js"
     },
     {
@@ -5230,7 +5230,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "pages_app_loginscreen",
-      "community": 278,
+      "community": 33,
       "norm_label": "loginscreen()"
     },
     {
@@ -5240,7 +5240,7 @@
       "source_location": "L118",
       "_origin": "ast",
       "id": "pages_app_app",
-      "community": 278,
+      "community": 33,
       "norm_label": "app()"
     },
     {
@@ -5320,7 +5320,7 @@
       "source_location": "L221",
       "_origin": "ast",
       "id": "pages_admin_adminpermissioneditor",
-      "community": 277,
+      "community": 19,
       "norm_label": "adminpermissioneditor()"
     },
     {
@@ -5330,7 +5330,7 @@
       "source_location": "L276",
       "_origin": "ast",
       "id": "pages_admin_adminpasswordeditor",
-      "community": 277,
+      "community": 19,
       "norm_label": "adminpasswordeditor()"
     },
     {
@@ -5340,7 +5340,7 @@
       "source_location": "L318",
       "_origin": "ast",
       "id": "pages_admin_adminstab",
-      "community": 277,
+      "community": 19,
       "norm_label": "adminstab()"
     },
     {
@@ -5360,7 +5360,7 @@
       "source_location": "L581",
       "_origin": "ast",
       "id": "pages_admin_userrow",
-      "community": 277,
+      "community": 19,
       "norm_label": "userrow()"
     },
     {
@@ -5370,7 +5370,7 @@
       "source_location": "L753",
       "_origin": "ast",
       "id": "pages_admin_snapshots",
-      "community": 277,
+      "community": 19,
       "norm_label": "snapshots()"
     },
     {
@@ -5380,7 +5380,7 @@
       "source_location": "L904",
       "_origin": "ast",
       "id": "pages_admin_adminpage",
-      "community": 275,
+      "community": 19,
       "norm_label": "adminpage()"
     },
     {
@@ -8500,7 +8500,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "pages_index_home",
-      "community": 275,
+      "community": 19,
       "norm_label": "home()"
     },
     {
@@ -8630,7 +8630,7 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "pages_projects_slug_index_handledeleteproposal",
-      "community": 277,
+      "community": 19,
       "norm_label": "handledeleteproposal()"
     },
     {
@@ -8640,7 +8640,7 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "pages_projects_slug_index_handledeleteversion",
-      "community": 277,
+      "community": 19,
       "norm_label": "handledeleteversion()"
     },
     {
@@ -8660,7 +8660,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pages_projects_slug_tasks",
-      "community": 275,
+      "community": 19,
       "norm_label": "tasks.js"
     },
     {
@@ -8670,7 +8670,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "pages_projects_slug_tasks_sprintprogressbar",
-      "community": 275,
+      "community": 19,
       "norm_label": "sprintprogressbar()"
     },
     {
@@ -8680,7 +8680,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "pages_projects_slug_tasks_sprinttaskchip",
-      "community": 275,
+      "community": 19,
       "norm_label": "sprinttaskchip()"
     },
     {
@@ -8690,7 +8690,7 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "pages_projects_slug_tasks_sprintchips",
-      "community": 275,
+      "community": 19,
       "norm_label": "sprintchips()"
     },
     {
@@ -8700,7 +8700,7 @@
       "source_location": "L75",
       "_origin": "ast",
       "id": "pages_projects_slug_tasks_formatsprintdate",
-      "community": 275,
+      "community": 19,
       "norm_label": "formatsprintdate()"
     },
     {
@@ -8710,7 +8710,7 @@
       "source_location": "L80",
       "_origin": "ast",
       "id": "pages_projects_slug_tasks_daysleft",
-      "community": 275,
+      "community": 19,
       "norm_label": "daysleft()"
     },
     {
@@ -8720,7 +8720,7 @@
       "source_location": "L86",
       "_origin": "ast",
       "id": "pages_projects_slug_tasks_sprintssection",
-      "community": 277,
+      "community": 19,
       "norm_label": "sprintssection()"
     },
     {
@@ -8730,7 +8730,7 @@
       "source_location": "L520",
       "_origin": "ast",
       "id": "pages_projects_slug_tasks_status_count_columns",
-      "community": 275,
+      "community": 19,
       "norm_label": "status_count_columns"
     },
     {
@@ -8740,7 +8740,7 @@
       "source_location": "L529",
       "_origin": "ast",
       "id": "pages_projects_slug_tasks_statuscounts",
-      "community": 275,
+      "community": 19,
       "norm_label": "statuscounts()"
     },
     {
@@ -8750,7 +8750,7 @@
       "source_location": "L551",
       "_origin": "ast",
       "id": "pages_projects_slug_tasks_taskskeleton",
-      "community": 275,
+      "community": 19,
       "norm_label": "taskskeleton()"
     },
     {
@@ -8760,7 +8760,7 @@
       "source_location": "L565",
       "_origin": "ast",
       "id": "pages_projects_slug_tasks_taskspage",
-      "community": 275,
+      "community": 19,
       "norm_label": "taskspage()"
     },
     {
@@ -8800,7 +8800,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "pages_settings_roles_statusblocklistcard",
-      "community": 12,
+      "community": 4,
       "norm_label": "statusblocklistcard()"
     },
     {
@@ -13028,7 +13028,7 @@
       "contributor": null,
       "community": 90,
       "norm_label": "claude.md project instructions",
-      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_project_instructions"
+      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_project_instructions"
     },
     {
       "label": "lib/prd-store.js (Redis CRUD)",
@@ -13041,7 +13041,7 @@
       "contributor": null,
       "community": 89,
       "norm_label": "lib/prd-store.js (redis crud)",
-      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_prd_store"
+      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_prd_store"
     },
     {
       "label": "lib/api-fetch.js (Fetch Wrapper)",
@@ -13054,7 +13054,7 @@
       "contributor": null,
       "community": 82,
       "norm_label": "lib/api-fetch.js (fetch wrapper)",
-      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_api_fetch"
+      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_api_fetch"
     },
     {
       "label": "requirePermission Middleware",
@@ -13067,7 +13067,7 @@
       "contributor": null,
       "community": 92,
       "norm_label": "requirepermission middleware",
-      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_require_permission"
+      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_require_permission"
     },
     {
       "label": "buildTree() Client-Side Hierarchy",
@@ -13080,7 +13080,7 @@
       "contributor": null,
       "community": 83,
       "norm_label": "buildtree() client-side hierarchy",
-      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_build_tree"
+      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_build_tree"
     },
     {
       "label": "Redis Key Scheme",
@@ -13093,7 +13093,7 @@
       "contributor": null,
       "community": 91,
       "norm_label": "redis key scheme",
-      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_redis_key_scheme"
+      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_redis_key_scheme"
     },
     {
       "label": "Project Entity",
@@ -13106,7 +13106,7 @@
       "contributor": null,
       "community": 84,
       "norm_label": "project entity",
-      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_entity_project"
+      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_entity_project"
     },
     {
       "label": "Task Entity",
@@ -13119,7 +13119,7 @@
       "contributor": null,
       "community": 87,
       "norm_label": "task entity",
-      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_entity_task"
+      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_entity_task"
     },
     {
       "label": "Version Entity",
@@ -13132,7 +13132,7 @@
       "contributor": null,
       "community": 88,
       "norm_label": "version entity",
-      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_entity_version"
+      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_entity_version"
     },
     {
       "label": "Proposal Entity",
@@ -13145,7 +13145,7 @@
       "contributor": null,
       "community": 85,
       "norm_label": "proposal entity",
-      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_entity_proposal"
+      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_entity_proposal"
     },
     {
       "label": "Sprint Entity",
@@ -13158,7 +13158,7 @@
       "contributor": null,
       "community": 86,
       "norm_label": "sprint entity",
-      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_entity_sprint"
+      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_entity_sprint"
     },
     {
       "label": "Immutable Kebab-Case Slug",
@@ -13171,7 +13171,7 @@
       "contributor": null,
       "community": 93,
       "norm_label": "immutable kebab-case slug",
-      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_slug_convention"
+      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_slug_convention"
     },
     {
       "label": "updateStatus (drag status change)",
@@ -14308,6 +14308,39 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "components_kanbanboard",
+      "target": "components_filtermultiselect",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "components_kanbanboard",
+      "target": "components_filtermultiselect_filtermultiselect",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "components/KanbanBoard.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "components_kanbanboard",
+      "target": "components_filtermultiselect_datepicker",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "components/FilterSidebar.js",
@@ -14341,33 +14374,11 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "components/KanbanBoard.js",
-      "source_location": "L11",
-      "weight": 1.0,
-      "source": "components_kanbanboard",
-      "target": "components_filtersidebar",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
       "source_file": "components/TaskTree.js",
       "source_location": "L10",
       "weight": 1.0,
       "source": "components_tasktree",
       "target": "components_filtersidebar",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "components/KanbanBoard.js",
-      "source_location": "L11",
-      "weight": 1.0,
-      "source": "components_kanbanboard",
-      "target": "components_filtersidebar_filtersidebar",
       "confidence_score": 1.0
     },
     {
@@ -14385,33 +14396,11 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "components/KanbanBoard.js",
-      "source_location": "L11",
-      "weight": 1.0,
-      "source": "components_kanbanboard",
-      "target": "components_filtersidebar_sidebarsection",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
       "source_file": "components/TaskTree.js",
       "source_location": "L10",
       "weight": 1.0,
       "source": "components_tasktree",
       "target": "components_filtersidebar_sidebarsection",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "components/KanbanBoard.js",
-      "source_location": "L11",
-      "weight": 1.0,
-      "source": "components_kanbanboard",
-      "target": "components_filtersidebar_sidebarchecklist",
       "confidence_score": 1.0
     },
     {
@@ -39528,5 +39517,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "59c78344cee82affbbcb33a2853392c3f34677c8"
+  "built_at_commit": "c02f990ba53d0938d230f6cfbd3a5b391b28dbfc"
 }

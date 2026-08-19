@@ -1,16 +1,16 @@
-# Graph Report - PRD_Manager  (2026-08-19)
+# Graph Report - PRD_Manager  (2026-08-18)
 
 ## Corpus Check
-- 144 files · ~114,105 words
+- 144 files · ~113,750 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1291 nodes · 2454 edges · 280 communities (94 shown, 186 thin omitted)
+- 1291 nodes · 2453 edges · 276 communities (90 shown, 186 thin omitted)
 - Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 163 edges (avg confidence: 0.51)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `59c78344`
+- Built from commit: `c02f990b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -253,11 +253,8 @@
 - [[_COMMUNITY_enqueue|enqueue]]
 - [[_COMMUNITY_set-superadmin.js|set-superadmin.js]]
 - [[_COMMUNITY_columns.js|columns.js]]
-- [[_COMMUNITY_kanban-columns.js|kanban-columns.js]]
 - [[_COMMUNITY_snapshot-store.js|snapshot-store.js]]
 - [[_COMMUNITY_Project Diff API Handler|Project Diff API Handler]]
-- [[_COMMUNITY_enqueue|enqueue]]
-- [[_COMMUNITY_SyncStatus.js|SyncStatus.js]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `logAudit()` - 55 edges
@@ -276,17 +273,17 @@
   graphify/graph.html → public/graphify/graph.html
 - `DayTaskForm()` --calls--> `attSrc()`  [EXTRACTED]
   components/CalendarView.js → lib/attachment-src.js
-- `CalendarView()` --calls--> `hasPerm()`  [EXTRACTED]
-  components/CalendarView.js → lib/client-permissions.js
 - `CalendarView()` --calls--> `isSuperAdmin()`  [EXTRACTED]
   components/CalendarView.js → lib/client-permissions.js
 - `CategoryManager()` --calls--> `isSuperAdmin()`  [EXTRACTED]
   components/CategoryManager.js → lib/client-permissions.js
+- `GroupEditor()` --calls--> `apiFetch()`  [EXTRACTED]
+  components/GroupsTab.js → lib/api-fetch.js
 
 ## Import Cycles
 - 1-file cycle: `pages/_document.js -> pages/_document.js`
 
-## Communities (280 total, 186 thin omitted)
+## Communities (276 total, 186 thin omitted)
 
 ### Community 0 - "API Handlers & Audit"
 Cohesion: 0.10
@@ -305,8 +302,8 @@ Cohesion: 0.11
 Nodes (17): Admin Panel, Admins Tab _(superadmin only)_, Audit Log Tab, Authentication, Diff Viewer, Features, Pages Reference, PRD Manager (+9 more)
 
 ### Community 4 - "Editor, Nav & Admin UI"
-Cohesion: 0.12
-Nodes (15): GroupEditor(), Nav(), apiFetch(), apiFetchOrLogout(), canSeeProject(), canView(), hasPerm(), isSuperAdmin() (+7 more)
+Cohesion: 0.11
+Nodes (17): GroupEditor(), Nav(), apiFetch(), apiFetchOrLogout(), canSeeProject(), canView(), isSuperAdmin(), SELF_SERVICE_PERMS (+9 more)
 
 ### Community 5 - "Snapshot & Audit Store"
 Cohesion: 0.15
@@ -326,11 +323,11 @@ Nodes (3): ACTION_LABELS, Dashboard(), timeAgo()
 
 ### Community 11 - "Package Dependencies"
 Cohesion: 0.10
-Nodes (13): AssigneeInput(), AutoTextarea(), FilterSidebar(), SidebarCheckList(), SidebarSection(), MONTH_ABBR, PRIORITY_COLOR, PRIORITY_LABEL (+5 more)
+Nodes (12): AssigneeInput(), AutoTextarea(), DatePicker(), FilterMultiSelect(), MONTH_ABBR, PRIORITY_COLOR, PRIORITY_LABEL, PRIORITY_ORDER (+4 more)
 
 ### Community 12 - "Graph JSON Data"
-Cohesion: 0.11
-Nodes (20): AVATAR_THEMES, flattenForBoard(), formatDate(), getDescendantStats(), MONTH_ABBR, PRIORITY_COLOR, PRIORITY_LABEL, PRIORITY_ORDER (+12 more)
+Cohesion: 0.09
+Nodes (28): FilterSidebar(), SidebarCheckList(), SidebarSection(), KanbanBoard(), AVATAR_THEMES, buildFilteredTree(), buildTree(), flattenForBoard() (+20 more)
 
 ### Community 13 - "Graphify Detect Config"
 Cohesion: 0.33
@@ -341,12 +338,12 @@ Cohesion: 0.06
 Nodes (60): addMembers(), { ALL_PERMISSIONS }, createGroup(), deleteGroup(), getGroup(), getGroupsForUser(), getKv(), GroupError (+52 more)
 
 ### Community 18 - "Version Content JSON"
-Cohesion: 0.19
-Nodes (14): blankForm(), CalendarView(), DayTaskForm(), dueKey(), MONTHS, PRIORITY_COLOR, WEEKDAYS, ymd() (+6 more)
+Cohesion: 0.18
+Nodes (15): blankForm(), CalendarView(), DayTaskForm(), dueKey(), MONTHS, PRIORITY_COLOR, WEEKDAYS, ymd() (+7 more)
 
 ### Community 19 - "Graph JSON Data 2"
-Cohesion: 0.21
-Nodes (10): Editor(), renderMarkdown(), GroupsTab(), PermissionGrid(), ProjectPicker(), SubmitButton(), UserAccessEditor(), PERMISSION_GROUPS (+2 more)
+Cohesion: 0.09
+Nodes (26): Editor(), renderMarkdown(), GroupsTab(), PermissionGrid(), ProjectPicker(), SubmitButton(), UserAccessEditor(), useOptimistic() (+18 more)
 
 ### Community 21 - "Seed Tasks Script"
 Cohesion: 0.07
@@ -377,8 +374,8 @@ Cohesion: 0.14
 Nodes (22): deleteSprint(), getKv(), getSprints(), { Redis }, saveSprint(), saveSprints(), sprintKey(), { getAuditLogs } (+14 more)
 
 ### Community 33 - "Vercel Deploy Config"
-Cohesion: 0.17
-Nodes (28): acquireLock(), backoffMs(), discardAllParked(), discardParked(), drain(), emit(), emitSync(), getPending() (+20 more)
+Cohesion: 0.11
+Nodes (35): SyncStatus(), applyPending(), withDescendants(), acquireLock(), backoffMs(), discardAllParked(), discardParked(), drain() (+27 more)
 
 ### Community 35 - "Vercel Cron Config"
 Cohesion: 0.22
@@ -449,8 +446,8 @@ Cohesion: 0.04
 Nodes (42): 10. Roadmap, 1.1 Summary, 1.2 Why it exists, 1.3 Goals, 1.4 Non-goals, 1. Overview, 2. Users & Roles, 3.1 Redis keys (+34 more)
 
 ### Community 258 - "categories.js"
-Cohesion: 0.16
-Nodes (20): CategoryManager(), KanbanBoard(), buildFilteredTree(), buildTree(), TaskTree(), cacheCategories(), CAT_COLORS, categoriesKey() (+12 more)
+Cohesion: 0.17
+Nodes (21): CategoryManager(), cacheCategories(), CAT_COLORS, categoriesKey(), categoriesWithTaskValues(), categorySlug(), fetchCategories(), readCategories() (+13 more)
 
 ### Community 259 - "store-report.js"
 Cohesion: 0.17
@@ -500,21 +497,9 @@ Nodes (4): checklistProgress(), makeChecklistItem(), sanitizeChecklist(), stampC
 Cohesion: 0.50
 Nodes (3): crypto, hash, { hashPassword }
 
-### Community 274 - "kanban-columns.js"
-Cohesion: 0.36
-Nodes (9): bumpRev(), revKey(), withRev(), cacheColumns(), columnsKey(), DEFAULT_COLUMNS, fetchColumns(), readColumns() (+1 more)
-
 ### Community 275 - "snapshot-store.js"
-Cohesion: 0.12
-Nodes (12): applyPending(), useOptimistic(), withDescendants(), subscribe(), reshapesTree(), RESHAPING_FIELDS, sameFieldValue(), unset() (+4 more)
-
-### Community 277 - "enqueue"
-Cohesion: 0.22
-Nodes (11): enqueue(), onSync(), sanitize(), AdminPasswordEditor(), AdminPermissionEditor(), AdminsTab(), Snapshots(), UserRow() (+3 more)
-
-### Community 278 - "SyncStatus.js"
-Cohesion: 0.36
-Nodes (4): SyncStatus(), EMPTY, useQueueState(), useUnloadGuard()
+Cohesion: 0.50
+Nodes (4): reshapesTree(), RESHAPING_FIELDS, sameFieldValue(), unset()
 
 ## Knowledge Gaps
 - **541 isolated node(s):** `PRIORITY_COLOR`, `WEEKDAYS`, `MONTHS`, `PRIORITY_COLOR`, `PRIORITY_LABEL` (+536 more)
@@ -527,7 +512,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Why does `logAudit()` connect `roles.js` to `API Handlers & Audit`, `Calendar View & Task Forms`, `next.config.js`, `Snapshot & Audit Store`, `columns.js`, `Diff Page`, `getKv`, `next.config.js 2`, `AST Artifact`, `1.0.0-tasks.json 2`, `index.js`, `Core Entities & Views`, `Diff Comparison (version vs proposal)`, `Diff API Endpoint`, `Project Config`, `Claude Local Settings (Permissions)`, `settings.local.json`?**
   _High betweenness centrality (0.046) - this node is a cross-community bridge._
 - **Why does `ALL_PERMISSIONS` connect `settings.local.json` to `next.config.js`, `Editor, Nav & Admin UI`, `columns.js`, `SyncStatus.js`, `next.config.js 2`, `Core Entities & Views`, `Graph JSON Data 2`, `Diff API Endpoint`?**
-  _High betweenness centrality (0.038) - this node is a cross-community bridge._
+  _High betweenness centrality (0.039) - this node is a cross-community bridge._
 - **Why does `slugify()` connect `Core Entities & Views` to `Editor, Nav & Admin UI`, `Project Config`?**
   _High betweenness centrality (0.029) - this node is a cross-community bridge._
 - **What connects `PRIORITY_COLOR`, `WEEKDAYS`, `MONTHS` to the rest of the system?**

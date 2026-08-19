@@ -8,7 +8,7 @@ import MentionInput from './MentionInput'
 import TaskForm, { blankForm } from './TaskForm'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
-import FilterMultiSelect, { DatePicker } from './FilterMultiSelect'
+import FilterSidebar, { SidebarSection, SidebarCheckList } from './FilterSidebar'
 import { DEFAULT_COLUMNS, COL_COLORS, useColumns, saveColumns, labelForStatus } from '../lib/kanban-columns'
 import { useCategories, categoriesWithTaskValues, categoryMap, effectiveCategory, taskIndex, railRollups, RAIL_STATE_LABEL } from '../lib/categories'
 import CategoryManager from './CategoryManager'
@@ -216,8 +216,9 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   const [kbDueTo, setKbDueTo] = useState('')
   const [kbDueDates, setKbDueDates] = useState([])       // specific YYYY-MM-DD picks
   const [kbPerson, setKbPerson] = useState('')
-  const [kbLabel, setKbLabel] = useState('')
+  const [kbLabels, setKbLabels] = useState([])           // multi-select
   const [kbCategories, setKbCategories] = useState([])    // multi-select
+  const [showKbFilters, setShowKbFilters] = useState(false)   // right-hand drawer
 
   function toggleKbCategory(c) {
     setKbCategories(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])
@@ -338,10 +339,13 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   function toggleKbDueDate(d) {
     setKbDueDates(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d])
   }
+  function toggleKbLabel(id) {
+    setKbLabels(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
   function clearKbFilters() {
     setKbSearch(''); setKbPriorities([]); setKbStatuses([]); setKbDate('')
     setKbStartFrom(''); setKbStartTo(''); setKbDueFrom(''); setKbDueTo(''); setKbDueDates([])
-    setKbPerson(''); setKbLabel(''); setKbCategories([])
+    setKbPerson(''); setKbLabels([]); setKbCategories([])
   }
 
   // Comments
@@ -478,7 +482,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     }
     if (kbPriorities.length && !kbPriorities.includes(t.priority || 'medium')) return false
     if (kbStatuses.length && !kbStatuses.includes(t.status || 'todo')) return false
-    if (kbLabel && !(Array.isArray(t.labelIds) && t.labelIds.includes(kbLabel))) return false
+    if (kbLabels.length && !(Array.isArray(t.labelIds) && t.labelIds.some(id => kbLabels.includes(id)))) return false
     if (kbCategories.length && !kbCategories.includes(catOf(t) || '')) return false
     const sd = (t.startDate || '').slice(0, 10)
     if (kbStartFrom && !(sd && sd >= kbStartFrom)) return false
@@ -515,8 +519,19 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   )].sort()
 
   const hasKbFilters = !!(kbSearch || kbPriorities.length || kbStatuses.length || kbDate ||
-    kbStartFrom || kbStartTo || kbDueFrom || kbDueTo || kbDueDates.length || kbPerson || kbLabel ||
+    kbStartFrom || kbStartTo || kbDueFrom || kbDueTo || kbDueDates.length || kbPerson || kbLabels.length ||
     kbCategories.length)
+  // Badge on the Filters button — one count per filter that is actually narrowing the board.
+  const kbFilterCount =
+    (kbStatuses.length ? 1 : 0) +
+    (kbPriorities.length ? 1 : 0) +
+    (kbCategories.length ? 1 : 0) +
+    (kbLabels.length ? 1 : 0) +
+    (kbStartFrom || kbStartTo ? 1 : 0) +
+    (kbDueFrom || kbDueTo ? 1 : 0) +
+    (kbDueDates.length ? 1 : 0) +
+    (kbDate ? 1 : 0) +
+    (kbPerson ? 1 : 0)
   // Strict match: show ONLY the cards that themselves match. A matched sub-task whose
   // parent did not match renders as an orphan card with a parent breadcrumb (via
   // getOrphanSubsInCol) — the non-matching parent is not drawn as its own card. So
@@ -2100,6 +2115,9 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
 
   return (
     <div>
+      {/* Toolbar keeps only what is touched on every visit — add, search, the board
+          axes and the expand/collapse pair. Everything else lives one click away in
+          the Filters drawer, the same split the list view uses. */}
       <div className="kanban-filter-bar">
         {canEditAll && (
           <button
@@ -2122,90 +2140,6 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
             <button className="btn-ghost search-clear" onClick={() => setKbSearch('')} title="Clear">&#x2715;</button>
           )}
         </div>
-        <FilterMultiSelect
-          label="Status"
-          options={columns.map(c => ({ value: c.status, label: c.label }))}
-          selected={kbStatuses}
-          onToggle={toggleKbStatus}
-          onClear={() => setKbStatuses([])}
-        />
-        <FilterMultiSelect
-          label="Priority"
-          options={PRIORITY_ORDER.map(p => ({ value: p, label: p.charAt(0).toUpperCase() + p.slice(1) }))}
-          selected={kbPriorities}
-          onToggle={toggleKbPriority}
-          onClear={() => setKbPriorities([])}
-        />
-        <div className="tt-date-filter" title="Filter by start date">
-          <span className="tt-date-filter-label">Start</span>
-          <input type="date" className="form-input tt-date-input" value={kbStartFrom} onChange={e => setKbStartFrom(e.target.value)} title="Start date from" />
-          <span className="tt-date-filter-sep">–</span>
-          <input type="date" className="form-input tt-date-input" value={kbStartTo} onChange={e => setKbStartTo(e.target.value)} title="Start date to" />
-        </div>
-        <div className="tt-date-filter" title="Filter by due date">
-          <span className="tt-date-filter-label">Due</span>
-          <input type="date" className="form-input tt-date-input" value={kbDueFrom} onChange={e => setKbDueFrom(e.target.value)} title="Due date from" />
-          <span className="tt-date-filter-sep">–</span>
-          <input type="date" className="form-input tt-date-input" value={kbDueTo} onChange={e => setKbDueTo(e.target.value)} title="Due date to" />
-        </div>
-        {availableDueDates.length > 0 && (
-          <DatePicker
-            label="Due dates"
-            dates={availableDueDates}
-            selected={kbDueDates}
-            onToggle={toggleKbDueDate}
-            onClear={() => setKbDueDates([])}
-            format={formatIsoDate}
-          />
-        )}
-        {labels.length > 0 && (
-          <select className="form-input filter-select" value={kbLabel} onChange={e => setKbLabel(e.target.value)}>
-            <option value="">All labels</option>
-            {labels.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-          </select>
-        )}
-        <select className="form-input filter-select" value={kbDate} onChange={e => setKbDate(e.target.value)}>
-          <option value="">All dates</option>
-          <option value="overdue">Overdue</option>
-          <option value="this-week">Due this week</option>
-          <option value="this-month">Due this month</option>
-          <option value="no-date">No due date</option>
-        </select>
-        {assignees.length > 0 && (
-          <div className="search-bar" style={{ marginBottom: 0, minWidth: 140, maxWidth: 180 }}>
-            <input
-              className="form-input search-input"
-              list="kb-assignee-list"
-              placeholder="Filter by person…"
-              value={kbPerson}
-              onChange={e => setKbPerson(e.target.value)}
-              style={{ fontSize: 12, padding: '5px 28px 5px 10px' }}
-            />
-            {kbPerson && (
-              <button className="btn-ghost search-clear" onClick={() => setKbPerson('')} title="Clear">&#x2715;</button>
-            )}
-            <datalist id="kb-assignee-list">
-              {assignees.map(a => <option key={a.name} value={a.name} />)}
-            </datalist>
-          </div>
-        )}
-        <button
-          className="btn-ghost"
-          style={{ whiteSpace: 'nowrap', fontSize: 12 }}
-          onClick={copyAllLinks}
-          title="Copy a shareable link for every card shown"
-        >
-          {copiedAll ? `✓ Copied ${copiedAll}` : '🔗 Copy links'}
-        </button>
-        {categories.length > 0 && (
-          <FilterMultiSelect
-            label="Category"
-            options={[...categories.map(c => ({ value: c.id, label: c.name })), { value: '', label: 'Uncategorised' }]}
-            selected={kbCategories}
-            onToggle={toggleKbCategory}
-            onClear={() => setKbCategories([])}
-          />
-        )}
         {/* The board's three axes. Only the first is a real choice today —
             "None" is the plain column board. The other two are fixed selects
             rather than labels so the shape of the board is legible at a glance,
@@ -2282,45 +2216,196 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
             )}
           </div>
         )}
-        {labelsApi && (
-          <button className="btn-ghost" style={{ whiteSpace: 'nowrap', fontSize: 12 }} onClick={() => setShowLabelMgr(true)}>
-            🏷 Labels
-          </button>
-        )}
-        {slug && (
-          <button
-            className="btn-ghost"
-            style={{ whiteSpace: 'nowrap', fontSize: 12 }}
-            onClick={() => setShowCatMgr(true)}
-            title="Categories group work within a story (Frontend, Backend, UI/UX…)"
-          >
-            🗂 Categories{categories.length ? ` (${categories.length})` : ''}
-          </button>
-        )}
-        {/* The plain board adds columns from the trailing "+ Add column" card;
-            swimlanes have no such slot — the head is a grid track shared with
-            every rail — so the entry point moves into the toolbar. */}
-        {canEditColumns && layout === 'swimlanes' && (
-          <button
-            className="btn-ghost"
-            style={{ whiteSpace: 'nowrap', fontSize: 12 }}
-            onClick={() => setAddingCol(v => !v)}
-            title="Add a status column — the layout is shared by everyone"
-          >
-            ＋ Status
-          </button>
-        )}
-        {canEditAll && slug && (
-          <button className="btn-ghost" style={{ whiteSpace: 'nowrap', fontSize: 12 }} onClick={openAclMgr} title="Task id prefix & assignee permissions">
-            ⚙ Task Settings
-          </button>
-        )}
+        <button
+          className={`btn-ghost tt-filters-btn${kbFilterCount ? ' active' : ''}`}
+          onClick={() => setShowKbFilters(true)}
+          style={{ fontSize: 12, padding: '5px 10px', whiteSpace: 'nowrap' }}
+          title="Status, priority, dates, labels, categories and board settings"
+        >
+          ☰ Filters{kbFilterCount ? <span className="tt-filters-count">{kbFilterCount}</span> : null}
+        </button>
         {hasKbFilters && (
           <button className="btn-ghost" style={{ whiteSpace: 'nowrap', fontSize: 12 }} onClick={clearKbFilters}>
-            Clear filters
+            Clear
           </button>
         )}
+        {boardTasks.length > 0 && (
+          <span className="task-count-label">
+            {hasKbFilters ? `${visibleTasks.length} of ${boardTasks.length}` : `${boardTasks.length} task${boardTasks.length !== 1 ? 's' : ''}`}
+          </span>
+        )}
       </div>
+
+      <FilterSidebar
+        open={showKbFilters}
+        onClose={() => setShowKbFilters(false)}
+        activeCount={kbFilterCount}
+        onClear={clearKbFilters}
+        footer={
+          <>
+            <span className="task-count-label">
+              {hasKbFilters ? `${visibleTasks.length} of ${boardTasks.length} shown` : `${boardTasks.length} task${boardTasks.length !== 1 ? 's' : ''}`}
+            </span>
+            <button className="btn-add-task" style={{ fontSize: 12, padding: '5px 12px' }} onClick={() => setShowKbFilters(false)}>Done</button>
+          </>
+        }
+      >
+        <SidebarSection label="Status" count={kbStatuses.length} onClear={() => setKbStatuses([])}>
+          <SidebarCheckList
+            options={columns.map(c => ({ value: c.status, label: c.label }))}
+            selected={kbStatuses}
+            onToggle={toggleKbStatus}
+            scroll
+          />
+        </SidebarSection>
+
+        <SidebarSection label="Priority" count={kbPriorities.length} onClear={() => setKbPriorities([])}>
+          <SidebarCheckList
+            options={PRIORITY_ORDER.map(p => ({ value: p, label: p.charAt(0).toUpperCase() + p.slice(1) }))}
+            selected={kbPriorities}
+            onToggle={toggleKbPriority}
+          />
+        </SidebarSection>
+
+        {categories.length > 0 && (
+          <SidebarSection label="Category" count={kbCategories.length} onClear={() => setKbCategories([])}>
+            <SidebarCheckList
+              options={[...categories.map(c => ({ value: c.id, label: c.name })), { value: '', label: 'Uncategorised' }]}
+              selected={kbCategories}
+              onToggle={toggleKbCategory}
+              scroll
+            />
+          </SidebarSection>
+        )}
+
+        {labels.length > 0 && (
+          <SidebarSection label="Labels" count={kbLabels.length} onClear={() => setKbLabels([])}>
+            <SidebarCheckList
+              options={labels.map(l => ({ value: l.id, label: l.name }))}
+              selected={kbLabels}
+              onToggle={toggleKbLabel}
+              scroll
+            />
+          </SidebarSection>
+        )}
+
+        <SidebarSection label="Start date" count={kbStartFrom || kbStartTo ? 1 : 0} onClear={() => { setKbStartFrom(''); setKbStartTo('') }}>
+          <div className="filter-sidebar-range">
+            <input type="date" className="form-input tt-date-input" value={kbStartFrom} onChange={e => setKbStartFrom(e.target.value)} title="Start date from" />
+            <span className="tt-date-filter-sep">–</span>
+            <input type="date" className="form-input tt-date-input" value={kbStartTo} onChange={e => setKbStartTo(e.target.value)} title="Start date to" />
+          </div>
+        </SidebarSection>
+
+        <SidebarSection label="Due date" count={(kbDueFrom || kbDueTo ? 1 : 0) + (kbDate ? 1 : 0)} onClear={() => { setKbDueFrom(''); setKbDueTo(''); setKbDate('') }}>
+          <div className="filter-sidebar-range">
+            <input type="date" className="form-input tt-date-input" value={kbDueFrom} onChange={e => setKbDueFrom(e.target.value)} title="Due date from" />
+            <span className="tt-date-filter-sep">–</span>
+            <input type="date" className="form-input tt-date-input" value={kbDueTo} onChange={e => setKbDueTo(e.target.value)} title="Due date to" />
+          </div>
+          <select
+            className="form-input filter-select"
+            style={{ width: '100%', marginTop: 6 }}
+            value={kbDate}
+            onChange={e => setKbDate(e.target.value)}
+            title="Quick due-date window"
+          >
+            <option value="">All dates</option>
+            <option value="overdue">Overdue</option>
+            <option value="this-week">Due this week</option>
+            <option value="this-month">Due this month</option>
+            <option value="no-date">No due date</option>
+          </select>
+        </SidebarSection>
+
+        {availableDueDates.length > 0 && (
+          <SidebarSection label="Specific due dates" count={kbDueDates.length} onClear={() => setKbDueDates([])}>
+            <SidebarCheckList
+              options={availableDueDates.map(d => ({ value: d, label: formatIsoDate(d) }))}
+              selected={kbDueDates}
+              onToggle={toggleKbDueDate}
+              scroll
+            />
+          </SidebarSection>
+        )}
+
+        {assignees.length > 0 && (
+          <SidebarSection label="Person" count={kbPerson ? 1 : 0} onClear={() => setKbPerson('')}>
+            <div className="search-bar" style={{ marginBottom: 0 }}>
+              <input
+                className="form-input search-input"
+                list="kb-assignee-list"
+                placeholder="Filter by person…"
+                value={kbPerson}
+                onChange={e => setKbPerson(e.target.value)}
+                style={{ fontSize: 12, padding: '6px 28px 6px 10px' }}
+              />
+              {kbPerson && (
+                <button className="btn-ghost search-clear" onClick={() => setKbPerson('')} title="Clear">&#x2715;</button>
+              )}
+              <datalist id="kb-assignee-list">
+                {assignees.map(a => <option key={a.name} value={a.name} />)}
+              </datalist>
+            </div>
+          </SidebarSection>
+        )}
+
+        <SidebarSection label="Tools">
+          <div className="filter-sidebar-actions">
+            <button
+              className="btn-ghost"
+              onClick={copyAllLinks}
+              style={{ fontSize: 12, padding: '6px 10px' }}
+              title="Copy a shareable link for every card shown"
+            >
+              {copiedAll ? `✓ Copied ${copiedAll}` : '🔗 Copy links'}
+            </button>
+            {labelsApi && (
+              <button
+                className="btn-ghost"
+                onClick={() => { setShowKbFilters(false); setShowLabelMgr(true) }}
+                style={{ fontSize: 12, padding: '6px 10px' }}
+                title="Create, rename and recolour the board's labels"
+              >
+                🏷 Labels{labels.length ? ` (${labels.length})` : ''}
+              </button>
+            )}
+            {slug && (
+              <button
+                className="btn-ghost"
+                onClick={() => { setShowKbFilters(false); setShowCatMgr(true) }}
+                style={{ fontSize: 12, padding: '6px 10px' }}
+                title="Categories group work within a story (Frontend, Backend, UI/UX…)"
+              >
+                🗂 Categories{categories.length ? ` (${categories.length})` : ''}
+              </button>
+            )}
+            {/* The plain board adds columns from the trailing "+ Add column" card;
+                swimlanes have no such slot — the head is a grid track shared with
+                every rail — so the entry point lives here instead. */}
+            {canEditColumns && layout === 'swimlanes' && (
+              <button
+                className="btn-ghost"
+                onClick={() => { setShowKbFilters(false); setAddingCol(true) }}
+                style={{ fontSize: 12, padding: '6px 10px' }}
+                title="Add a status column — the layout is shared by everyone"
+              >
+                ＋ Status column
+              </button>
+            )}
+            {canEditAll && slug && (
+              <button
+                className="btn-ghost"
+                onClick={() => { setShowKbFilters(false); openAclMgr() }}
+                style={{ fontSize: 12, padding: '6px 10px' }}
+                title="Task id prefix & assignee permissions"
+              >
+                ⚙ Task Settings
+              </button>
+            )}
+          </div>
+        </SidebarSection>
+      </FilterSidebar>
       {colError && <div className="kanban-col-error">{colError}</div>}
       {canEditColumns && layout === 'swimlanes' && addingCol && (
         <div className="swim-add-col">
