@@ -14,7 +14,7 @@ export default function Nav() {
   const router = useRouter()
   const { pathname, query } = router
   const { pending } = useQueueState()
-  const { theme, toggle: toggleTheme } = useTheme()
+  const { meta: themeMeta, next: nextThemeMeta, cycle: cycleTheme } = useTheme()
   const projectSlug = query.slug || (pathname.match(/^\/projects\/([^/]+)/) || [])[1]
   const [currentUser, setCurrentUser] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -149,14 +149,15 @@ export default function Nav() {
       {isSuperAdmin(currentUser) && (
         <Link href="/settings/roles" className={`nav-link${pathname === '/settings/roles' ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>Access Control</Link>
       )}
+      {/* Cycles the whole theme registry, one step per click. */}
       <button
         className="nav-theme-toggle"
-        onClick={toggleTheme}
-        title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        aria-label="Toggle dark mode"
-        aria-pressed={theme === 'dark'}
+        onClick={cycleTheme}
+        title={`Theme: ${themeMeta.label} — click for ${nextThemeMeta.label}`}
+        aria-label={`Theme: ${themeMeta.label}. Switch to ${nextThemeMeta.label}`}
       >
-        {theme === 'dark' ? '☀️' : '🌙'}
+        <span aria-hidden="true">{themeMeta.icon}</span>
+        <span className="nav-theme-label">{themeMeta.label}</span>
       </button>
       <div className="nav-notif">
         <button className="nav-notif-bell" onClick={() => setShowNotifs(v => !v)} title="Notifications" aria-label="Notifications">

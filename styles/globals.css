@@ -43,9 +43,9 @@
   --tint-gray-fg:   #6b7280;
 }
 
-/* Dark theme. `data-theme` is stamped on <html> by the blocking script in
+/* Dark baseline. `data-mode` + `data-theme` are stamped on <html> by the blocking script in
    pages/_document.js, so the first paint is already the right colour. */
-html[data-theme="dark"] {
+html[data-mode="dark"] {
   color-scheme: dark;
   --bg: #0e1117;
   --surface: #161a22;
@@ -79,6 +79,255 @@ html[data-theme="dark"] {
   --tint-green-bg:  rgba(34,197,94,.16);   --tint-green-fg:  #86efac;
   --tint-indigo-bg: rgba(99,102,241,.20);  --tint-indigo-fg: #a5b4fc;
   --tint-gray-fg:   #9aa4b6;
+}
+
+/* ─── Theme variants ───────────────────────────────────────────────────────
+   Each variant overrides only the tokens that differ from its mode's baseline
+   (`:root` for light, `html[data-mode="dark"]` for dark) — everything else, and
+   every dark-mode exception at the bottom of this file, is inherited.
+
+   To add a theme:
+     1. add an entry to THEMES in lib/theme.js  → { id, label, icon, mode }
+     2. add one `html[data-theme="<id>"]` block below
+   Variant blocks must stay *after* the two baseline blocks above: same
+   specificity, so source order is what makes them win. */
+
+/* Light Neon — white surfaces, electric magenta ink. */
+html[data-theme="light-neon"] {
+  --bg: #f2f0ff;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --surface-2: #f7f2ff;
+  --bg-subtle: rgba(217,0,255,.04);
+  --hover: rgba(217,0,255,.07);
+  --overlay: rgba(40,0,70,.38);
+  --sidebar-bg: #1a0b3d;
+  --sidebar-text: #f0d9ff;
+  --sidebar-muted: #a78bfa;
+  --accent: #c400e8;
+  --accent-hover: #a000c2;
+  --on-accent: #ffffff;
+  --danger: #e60050;
+  --success: #00a86b;
+  --warning: #e07800;
+  --border: #ddd0f5;
+  --text: #17103a;
+  --muted: #5f5590;
+  --shadow: 0 1px 3px rgba(124,0,196,.14), 0 1px 2px rgba(124,0,196,.10);
+
+  --tint-violet-bg: #fbeaff;  --tint-violet-fg: #a000c2;
+  --tint-indigo-bg: #eeeaff;  --tint-indigo-fg: #4c2ce0;
+  --tint-blue-bg:   #e6f6ff;  --tint-blue-fg:   #0069c2;
+  --tint-red-bg:    #ffeaf1;  --tint-red-fg:    #d10046;  --tint-red-border: #ffc2d5;
+  --tint-green-bg:  #e6fff5;  --tint-green-fg:  #008a5a;
+}
+
+/* Dark Neon — near-black violet ground, cyan ink. */
+html[data-theme="dark-neon"] {
+  --bg: #06020f;
+  --surface: #0e0624;
+  --card: #0e0624;
+  --surface-2: #170b33;
+  --bg-subtle: rgba(0,240,255,.05);
+  --hover: rgba(0,240,255,.10);
+  --overlay: rgba(2,0,10,.72);
+  --sidebar-bg: #0a0320;
+  --sidebar-text: #d9ccff;
+  --sidebar-muted: #8b7ac0;
+  --accent: #00e5ff;
+  --accent-hover: #7df3ff;
+  --on-accent: #04121a;
+  --danger: #ff3d7f;
+  --success: #2bff9e;
+  --warning: #ffd23d;
+  --border: #2d1a63;
+  --text: #ece6ff;
+  --muted: #a294d4;
+  --shadow: 0 0 0 1px rgba(0,229,255,.08), 0 2px 14px rgba(0,229,255,.12);
+
+  --tint-violet-bg: rgba(168,85,247,.22); --tint-violet-fg: #e0b3ff;
+  --tint-indigo-bg: rgba(99,102,241,.24); --tint-indigo-fg: #b6c0ff;
+  --tint-blue-bg:   rgba(0,229,255,.16);  --tint-blue-fg:   #7df3ff;
+  --tint-red-bg:    rgba(255,61,127,.18); --tint-red-fg:    #ff9ac1;  --tint-red-border: rgba(255,61,127,.45);
+  --tint-green-bg:  rgba(43,255,158,.15); --tint-green-fg:  #86ffca;
+}
+
+/* Sunrise — dawn peach ground, burnt-orange ink. */
+html[data-theme="sunrise"] {
+  --bg: #fff4ea;
+  --surface: #fffaf6;
+  --card: #fffaf6;
+  --surface-2: #ffefe1;
+  --bg-subtle: rgba(232,89,12,.04);
+  --hover: rgba(232,89,12,.08);
+  --overlay: rgba(60,28,10,.40);
+  --sidebar-bg: #48291a;
+  --sidebar-text: #ffe6d2;
+  --sidebar-muted: #c9a086;
+  --accent: #e8590c;
+  --accent-hover: #c2410c;
+  --on-accent: #ffffff;
+  --danger: #d1354b;
+  --success: #2f8f4e;
+  --warning: #d97706;
+  --border: #f2dac3;
+  --text: #3b2415;
+  --muted: #8a6a52;
+  --shadow: 0 1px 3px rgba(120,60,20,.12), 0 1px 2px rgba(120,60,20,.08);
+
+  --tint-amber-bg:  #ffeeda;  --tint-amber-fg:  #b45309;
+  --tint-yellow-bg: #fff6d9;  --tint-yellow-fg: #92700a;
+  --tint-slate-bg:  #f4e9de;  --tint-slate-fg:  #6b5445;
+  --tint-red-bg:    #ffe6e6;  --tint-red-fg:    #c2273c;  --tint-red-border: #f6c9c9;
+  --tint-green-bg:  #e8f6ea;  --tint-green-fg:  #2f7d43;
+}
+
+/* Morning — cool daylight blue, high-clarity surfaces. */
+html[data-theme="morning"] {
+  --bg: #eff6ff;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --surface-2: #e7f1fd;
+  --bg-subtle: rgba(2,132,199,.04);
+  --hover: rgba(2,132,199,.08);
+  --overlay: rgba(8,30,50,.38);
+  --sidebar-bg: #123047;
+  --sidebar-text: #d8ecff;
+  --sidebar-muted: #7ea7c4;
+  --accent: #0284c7;
+  --accent-hover: #0369a1;
+  --on-accent: #ffffff;
+  --danger: #dc2626;
+  --success: #059669;
+  --warning: #d97706;
+  --border: #cde0f5;
+  --text: #10263d;
+  --muted: #5b7a95;
+  --shadow: 0 1px 3px rgba(12,60,110,.10), 0 1px 2px rgba(12,60,110,.07);
+
+  --tint-blue-bg:   #e2f1ff;  --tint-blue-fg:   #0b6bab;
+  --tint-slate-bg:  #e8eff7;  --tint-slate-fg:  #46617a;
+  --tint-green-bg:  #e3f7ef;  --tint-green-fg:  #04785c;
+  --tint-indigo-bg: #e8ecff;  --tint-indigo-fg: #3f4bc4;
+}
+
+/* Sunset — dusk plum ground, molten-orange ink. */
+html[data-theme="sunset"] {
+  --bg: #1a0e1c;
+  --surface: #2a1526;
+  --card: #2a1526;
+  --surface-2: #381d2e;
+  --bg-subtle: rgba(255,107,53,.06);
+  --hover: rgba(255,107,53,.12);
+  --overlay: rgba(18,5,14,.72);
+  --sidebar-bg: #140916;
+  --sidebar-text: #ffd9c7;
+  --sidebar-muted: #a9788a;
+  --accent: #ff6b35;
+  --accent-hover: #ff8f61;
+  --on-accent: #260a02;
+  --danger: #ff4d6d;
+  --success: #5fd98a;
+  --warning: #ffc857;
+  --border: #4d2a3f;
+  --text: #ffe9dd;
+  --muted: #c39aa5;
+  --shadow: 0 1px 3px rgba(0,0,0,.55), 0 2px 12px rgba(255,107,53,.10);
+
+  --tint-amber-bg:  rgba(255,107,53,.20); --tint-amber-fg:  #ffb082;
+  --tint-yellow-bg: rgba(255,200,87,.18); --tint-yellow-fg: #ffdb8a;
+  --tint-red-bg:    rgba(255,77,109,.18); --tint-red-fg:    #ffa2b4;  --tint-red-border: rgba(255,77,109,.45);
+  --tint-violet-bg: rgba(199,125,255,.20); --tint-violet-fg: #dcb5ff;
+  --tint-slate-bg:  rgba(195,154,165,.16); --tint-slate-fg:  #dcc0c8;
+}
+
+/* Evening — indigo twilight, periwinkle ink. */
+html[data-theme="evening"] {
+  --bg: #0b1020;
+  --surface: #141b32;
+  --card: #141b32;
+  --surface-2: #1c2442;
+  --bg-subtle: rgba(129,140,248,.06);
+  --hover: rgba(129,140,248,.10);
+  --overlay: rgba(4,7,18,.72);
+  --sidebar-bg: #070c1a;
+  --sidebar-text: #cfd8ff;
+  --sidebar-muted: #7c88b5;
+  --accent: #818cf8;
+  --accent-hover: #a5b4fc;
+  --on-accent: #0b1020;
+  --danger: #fb7185;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --border: #2b3559;
+  --text: #e3e8ff;
+  --muted: #97a1c9;
+  --shadow: 0 1px 3px rgba(0,0,0,.55), 0 2px 12px rgba(70,90,200,.14);
+
+  --tint-indigo-bg: rgba(129,140,248,.22); --tint-indigo-fg: #c3caff;
+  --tint-violet-bg: rgba(167,139,250,.22); --tint-violet-fg: #d5c6ff;
+  --tint-blue-bg:   rgba(96,165,250,.20);  --tint-blue-fg:   #a9cbff;
+  --tint-slate-bg:  rgba(151,161,201,.18); --tint-slate-fg:  #ccd3ee;
+}
+
+/* Chocolate — cocoa ground, caramel ink, cream text. */
+html[data-theme="chocolate"] {
+  --bg: #1b1310;
+  --surface: #2a1e18;
+  --card: #2a1e18;
+  --surface-2: #372721;
+  --bg-subtle: rgba(217,144,88,.06);
+  --hover: rgba(217,144,88,.11);
+  --overlay: rgba(12,7,5,.72);
+  --sidebar-bg: #140d0a;
+  --sidebar-text: #ecd9c6;
+  --sidebar-muted: #9c8271;
+  --accent: #d99058;
+  --accent-hover: #edb07c;
+  --on-accent: #2a1607;
+  --danger: #e5736b;
+  --success: #8fbf6b;
+  --warning: #e3b23c;
+  --border: #4a352a;
+  --text: #f3e4d7;
+  --muted: #b39b88;
+  --shadow: 0 1px 3px rgba(0,0,0,.55), 0 2px 10px rgba(90,50,20,.20);
+
+  --tint-amber-bg:  rgba(217,144,88,.20); --tint-amber-fg:  #f0be93;
+  --tint-yellow-bg: rgba(227,178,60,.18); --tint-yellow-fg: #efd08a;
+  --tint-green-bg:  rgba(143,191,107,.16); --tint-green-fg: #c2dda6;
+  --tint-red-bg:    rgba(229,115,107,.18); --tint-red-fg:   #f2ada7;  --tint-red-border: rgba(229,115,107,.45);
+  --tint-slate-bg:  rgba(179,155,136,.16); --tint-slate-fg: #d8c6b6;
+}
+
+/* Blackhole — true black (OLED), violet event horizon. */
+html[data-theme="blackhole"] {
+  --bg: #000000;
+  --surface: #08080b;
+  --card: #08080b;
+  --surface-2: #101015;
+  --bg-subtle: rgba(176,108,255,.06);
+  --hover: rgba(176,108,255,.12);
+  --overlay: rgba(0,0,0,.82);
+  --sidebar-bg: #000000;
+  --sidebar-text: #dcdcea;
+  --sidebar-muted: #75758a;
+  --accent: #b06cff;
+  --accent-hover: #c99bff;
+  --on-accent: #0a0012;
+  --danger: #ff5470;
+  --success: #3ddc97;
+  --warning: #ffb400;
+  --border: #22222c;
+  --text: #eaeaf2;
+  --muted: #8a8a9c;
+  --shadow: 0 0 0 1px rgba(176,108,255,.10), 0 2px 16px rgba(176,108,255,.10);
+
+  --tint-violet-bg: rgba(176,108,255,.20); --tint-violet-fg: #d7b3ff;
+  --tint-slate-bg:  rgba(138,138,156,.18); --tint-slate-fg:  #c8c8d6;
+  --tint-blue-bg:   rgba(96,165,250,.18);  --tint-blue-fg:   #a5c8ff;
+  --tint-green-bg:  rgba(61,220,151,.16);  --tint-green-fg:  #8ff0c4;
+  --tint-red-bg:    rgba(255,84,112,.18);  --tint-red-fg:    #ff9fb1;  --tint-red-border: rgba(255,84,112,.45);
 }
 
 html, body { height: 100%; }
@@ -3839,6 +4088,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   transition: background .15s, border-color .15s;
 }
 .nav-theme-toggle:hover { background: rgba(255,255,255,.14); }
+/* The nav bar has room for the icon only; the name rides along in the title
+   attribute there and gets its own words in the drawer. */
+.nav-theme-label { display: none; }
 .nav-mobile-drawer .nav-theme-toggle {
   align-self: flex-start;
   display: inline-flex;
@@ -3847,6 +4099,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   font-size: 14px;
   padding: 10px 14px;
 }
+.nav-mobile-drawer .nav-theme-label { display: inline; }
 
 /* ─── Dark-mode exceptions ─────────────────────────────────────────────────
    Everything above that hard-codes a light surface or an ink mixed for a light
@@ -3856,66 +4109,66 @@ button:disabled { opacity: .5; cursor: not-allowed; }
    the page), so only the ink has to be re-picked for the dark ground. */
 
 /* Badges: dark ink on a colour wash → light ink on the same wash. */
-html[data-theme="dark"] .meta-badge.pending,
-html[data-theme="dark"] .badge.pending,
-html[data-theme="dark"] .status-tag.pending { background: rgba(234,179,8,.16); color: #fcd34d; }
-html[data-theme="dark"] .project-status--on-hold { background: rgba(234,179,8,.16); color: #fcd34d; }
-html[data-theme="dark"] .project-status--archived { background: rgba(148,163,184,.16); color: #cbd5e1; }
-html[data-theme="dark"] .project-priority--high { background: rgba(248,113,113,.14); color: #fca5a5; }
-html[data-theme="dark"] .project-priority--low { background: rgba(148,163,184,.14); color: #cbd5e1; }
+html[data-mode="dark"] .meta-badge.pending,
+html[data-mode="dark"] .badge.pending,
+html[data-mode="dark"] .status-tag.pending { background: rgba(234,179,8,.16); color: #fcd34d; }
+html[data-mode="dark"] .project-status--on-hold { background: rgba(234,179,8,.16); color: #fcd34d; }
+html[data-mode="dark"] .project-status--archived { background: rgba(148,163,184,.16); color: #cbd5e1; }
+html[data-mode="dark"] .project-priority--high { background: rgba(248,113,113,.14); color: #fca5a5; }
+html[data-mode="dark"] .project-priority--low { background: rgba(148,163,184,.14); color: #cbd5e1; }
 
 /* Task row meta chips. */
-html[data-theme="dark"] .task-due { color: #fcd34d; border-color: rgba(252,211,77,.28); background: rgba(245,158,11,.10); }
-html[data-theme="dark"] .task-start { color: #6ee7b7; border-color: rgba(110,231,183,.28); background: rgba(16,185,129,.10); }
-html[data-theme="dark"] .task-desc { color: #b6bfcd; border-color: rgba(148,163,184,.25); background: rgba(148,163,184,.08); }
-html[data-theme="dark"] .task-assignee-badge { color: #c4b5fd; border-color: rgba(196,181,253,.28); background: rgba(167,139,250,.12); }
-html[data-theme="dark"] .task-updates-badge { color: #7dd3fc; border-color: rgba(125,211,252,.28); background: rgba(56,189,248,.12); }
-html[data-theme="dark"] .task-progress-chip--complete {
+html[data-mode="dark"] .task-due { color: #fcd34d; border-color: rgba(252,211,77,.28); background: rgba(245,158,11,.10); }
+html[data-mode="dark"] .task-start { color: #6ee7b7; border-color: rgba(110,231,183,.28); background: rgba(16,185,129,.10); }
+html[data-mode="dark"] .task-desc { color: #b6bfcd; border-color: rgba(148,163,184,.25); background: rgba(148,163,184,.08); }
+html[data-mode="dark"] .task-assignee-badge { color: #c4b5fd; border-color: rgba(196,181,253,.28); background: rgba(167,139,250,.12); }
+html[data-mode="dark"] .task-updates-badge { color: #7dd3fc; border-color: rgba(125,211,252,.28); background: rgba(56,189,248,.12); }
+html[data-mode="dark"] .task-progress-chip--complete {
   color: #6ee7b7;
   background: rgba(16,185,129,.12);
   border-color: rgba(110,231,183,.3);
 }
 
 /* Deep-link highlight: #fffbeb would be a white flash on a dark page. */
-html[data-theme="dark"] .task-row--focused { background: rgba(245,158,11,.14); }
+html[data-mode="dark"] .task-row--focused { background: rgba(245,158,11,.14); }
 
 /* Kanban columns share --bg with the page, which is invisible once both are dark. */
-html[data-theme="dark"] .kanban-column { background: var(--surface-2); }
-html[data-theme="dark"] .kanban-col-delete-btn:hover { background: rgba(248,113,113,.14); color: #f87171; border-color: #f87171; }
+html[data-mode="dark"] .kanban-column { background: var(--surface-2); }
+html[data-mode="dark"] .kanban-col-delete-btn:hover { background: rgba(248,113,113,.14); color: #f87171; border-color: #f87171; }
 
 /* Column colour comes from the board data, mixed for a white card. Lift it toward
    white so a mid-tone column name is still readable on the dark cell. */
-html[data-theme="dark"] .kanban-subtask-status-select {
+html[data-mode="dark"] .kanban-subtask-status-select {
   color: color-mix(in srgb, var(--status-color, #64748b) 62%, #ffffff);
   border-color: color-mix(in srgb, var(--status-color, #64748b) 62%, #ffffff);
   background: color-mix(in srgb, var(--status-color, #64748b) 20%, transparent);
 }
 
 /* Skeleton shimmer: the sweep has to be lighter than the track, not white. */
-html[data-theme="dark"] .skeleton {
+html[data-mode="dark"] .skeleton {
   background: linear-gradient(90deg, var(--border) 25%, #333b49 50%, var(--border) 75%);
   background-size: 600px 100%;
 }
 
 /* Diff gutters. */
-html[data-theme="dark"] .diff-line-added { background: rgba(22,163,74,.18); color: #86efac; }
-html[data-theme="dark"] .diff-line-removed { background: rgba(220,38,38,.16); color: #fca5a5; }
+html[data-mode="dark"] .diff-line-added { background: rgba(22,163,74,.18); color: #86efac; }
+html[data-mode="dark"] .diff-line-removed { background: rgba(220,38,38,.16); color: #fca5a5; }
 
 /* Code block already ships dark; align it with the theme's own surfaces. */
-html[data-theme="dark"] .md-preview pre { background: var(--surface-2); color: var(--text); }
+html[data-mode="dark"] .md-preview pre { background: var(--surface-2); color: var(--text); }
 
 /* Failed-write toast: light red card → dark red card. */
-html[data-theme="dark"] .sync-status-error {
+html[data-mode="dark"] .sync-status-error {
   border-color: rgba(248,113,113,.45);
   background: #2a1618;
 }
-html[data-theme="dark"] .sync-status-error-body strong { color: #fca5a5; }
-html[data-theme="dark"] .sync-status-error-body span { color: #fecaca; }
+html[data-mode="dark"] .sync-status-error-body strong { color: #fca5a5; }
+html[data-mode="dark"] .sync-status-error-body span { color: #fecaca; }
 
 /* Hover lifts read as nothing on a dark page unless the shadow is opaque. */
-html[data-theme="dark"] .card:hover,
-html[data-theme="dark"] .project-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.55); }
-html[data-theme="dark"] .kanban-card:hover { box-shadow: 0 6px 16px rgba(0,0,0,.5); }
+html[data-mode="dark"] .card:hover,
+html[data-mode="dark"] .project-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.55); }
+html[data-mode="dark"] .kanban-card:hover { box-shadow: 0 6px 16px rgba(0,0,0,.5); }
 
 /* Status-count chips (project task page). The hue arrives inline as
    --status-color; everything derived from it is here so dark mode can lift the
@@ -3940,11 +4193,11 @@ html[data-theme="dark"] .kanban-card:hover { box-shadow: 0 6px 16px rgba(0,0,0,.
   background: var(--status-color, var(--muted));
   flex-shrink: 0;
 }
-html[data-theme="dark"] .status-count-chip {
+html[data-mode="dark"] .status-count-chip {
   color: color-mix(in srgb, var(--status-color, #64748b) 62%, #ffffff);
   background: color-mix(in srgb, var(--status-color, #64748b) 18%, transparent);
 }
 
 /* Initials avatars carry an inline hue mixed for a white row; inline styles win
    over any rule here, so the whole chip is lifted instead of recoloured. */
-html[data-theme="dark"] .task-assignee-avatar { filter: brightness(1.55) saturate(.95); }
+html[data-mode="dark"] .task-assignee-avatar { filter: brightness(1.55) saturate(.95); }
