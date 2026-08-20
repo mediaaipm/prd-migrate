@@ -2204,16 +2204,6 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
             >
               {allLanesExpanded ? '⤡ Collapse all tasks' : '⤢ Expand all tasks'}
             </button>
-            {/* The board-level add. The lane and cell buttons are more precise,
-                but they only exist once there is a lane — this one works on an
-                empty board and on one filtered down to nothing. */}
-            {canEditAll && (
-              <button
-                className="btn-primary swim-add-task"
-                onClick={() => openCellAdd(LOOSE_LANE, null, columns[0]?.status || 'todo')}
-                title="Add a task — pick its story, category and column in the dialog"
-              >+ Add task</button>
-            )}
           </div>
         )}
         <button

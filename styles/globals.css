@@ -3527,7 +3527,6 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   transition: background .12s, color .12s;
 }
 .swim-lane-add:hover { background: var(--accent, #2563eb); color: var(--on-accent); }
-.swim-add-task { white-space: nowrap; font-size: 12px; padding: 4px 12px; }
 .swim-add-story { flex: 1; min-width: 0; max-width: 340px; font-size: 12px; padding: 3px 6px; }
 /* The card keeps its natural height and the chip is pinned to the bottom of the
    cell. Stretching the card to fill instead left a one-line title floating above

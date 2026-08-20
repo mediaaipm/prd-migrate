@@ -744,8 +744,9 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
   // the `order` field that numbers (1.2.3, 1.2.4 …) are derived from, so a drag both
   // moves the row and renumbers it. Under newest/oldest the numbers look shuffled.
   const [sortBy, setSortBy] = useState('order')
+  // One box for both — same as the board's. A query that names a real person is
+  // treated as a person search; anything else is a plain text match.
   const [search, setSearch] = useState('')
-  const [filterPerson, setFilterPerson] = useState('')
   const [filterStatuses, setFilterStatuses] = useState([])
   const [filterPriorities, setFilterPriorities] = useState([])
   const [filterCategories, setFilterCategories] = useState([])
@@ -847,25 +848,31 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
   const byId = taskIndex(liveTasks)
   const effCat = t => effectiveCategory(t, byId)
 
-  const q = search.toLowerCase()
-  const pq = filterPerson.toLowerCase().trim()
-  const isFiltering = q || pq || filterStatuses.length > 0 || filterPriorities.length > 0 || filterCategories.length > 0 || startFrom || startTo || dueFrom || dueTo || dueDates.length > 0
+  const q = search.toLowerCase().trim()
+  // If the query names a real user, surface ONLY the tasks that person is on
+  // (assignee or @mention) — never rows that merely mention the name in their
+  // title or description. Same rule the board uses.
+  const isPersonQuery = !!q && assignees.some(p => (p.name || '').toLowerCase().includes(q))
+  const isFiltering = q || filterStatuses.length > 0 || filterPriorities.length > 0 || filterCategories.length > 0 || startFrom || startTo || dueFrom || dueTo || dueDates.length > 0
   const filtered = isFiltering
     ? liveTasks.filter(t => {
-        const taskAssignees = Array.isArray(t.assignees) ? t.assignees : (t.assignee ? [t.assignee] : [])
-        const matchesSearch = !q || (
+        const taskAssignees = (Array.isArray(t.assignees) ? t.assignees : (t.assignee ? [t.assignee] : []))
+          .map(a => (typeof a === 'object' ? a?.name : a) || '')
+        const onPerson = !!q && (
+          taskAssignees.some(a => a.toLowerCase().includes(q)) ||
+          (Array.isArray(t.updates) && t.updates.some(u => Array.isArray(u.mentions) && u.mentions.some(m => (m || '').toLowerCase().includes(q))))
+        )
+        const matchesSearch = !q || (isPersonQuery ? onPerson : (
           t.title.toLowerCase().includes(q) ||
           (t.description || '').toLowerCase().includes(q) ||
-          taskAssignees.some(a => a.toLowerCase().includes(q)) ||
-          (Array.isArray(t.updates) && t.updates.some(u => Array.isArray(u.mentions) && u.mentions.some(m => (m || '').toLowerCase().includes(q)))) ||
+          onPerson ||
           (t.id || '').toString().toLowerCase().includes(q) ||
           (t.seq != null && t.seq.toString() === q) ||
           (t.seq != null && taskLabel(t).toLowerCase().includes(q)) ||
           (t.number || '').toString().includes(q) ||
           (t.autoNumber || '').toString().includes(q) ||
           (t.numberOverride || '').toString().includes(q)
-        )
-        const matchesPerson = !pq || taskAssignees.some(a => a.toLowerCase().includes(pq))
+        ))
         const matchesStatus = filterStatuses.length === 0 || filterStatuses.includes(t.status || 'todo')
         const matchesPriority = filterPriorities.length === 0 || filterPriorities.includes(t.priority || 'medium')
         const matchesCategory = filterCategories.length === 0 || filterCategories.includes(effCat(t) || '')
@@ -874,7 +881,7 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
         const dd = t.dueDate || ''
         const matchesDue = (!dueFrom || (dd && dd >= dueFrom)) && (!dueTo || (dd && dd <= dueTo))
         const matchesDueSet = dueDates.length === 0 || dueDates.includes(dd.slice(0, 10))
-        return matchesSearch && matchesPerson && matchesStatus && matchesPriority && matchesCategory && matchesStart && matchesDue && matchesDueSet
+        return matchesSearch && matchesStatus && matchesPriority && matchesCategory && matchesStart && matchesDue && matchesDueSet
       }).sort(TASK_COMPARATORS[sortBy] || TASK_COMPARATORS.order)
     : null
   // Matched tasks plus their ancestors, nested so parents give context to matched children.
@@ -889,8 +896,8 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
   const catById = categoryMap(categories)
 
   // Badge on the Filters button — one count per filter that is actually narrowing the list.
+  // Search is not counted — it sits in the toolbar with its own clear button.
   const activeFilterCount =
-    (search ? 1 : 0) +
     (filterStatuses.length ? 1 : 0) +
     (filterPriorities.length ? 1 : 0) +
     (filterCategories.length ? 1 : 0) +
@@ -899,7 +906,7 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
     (dueDates.length ? 1 : 0)
 
   function clearFilters() {
-    setSearch(''); setFilterPerson(''); setFilterStatuses([]); setFilterPriorities([]); setFilterCategories([])
+    setSearch(''); setFilterStatuses([]); setFilterPriorities([]); setFilterCategories([])
     setStartFrom(''); setStartTo(''); setDueFrom(''); setDueTo(''); setDueDates([])
   }
 
@@ -996,24 +1003,22 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
             </button>
           </div>
         )}
-        {liveTasks.length > 0 && assignees.length > 0 && (
-          <div className="search-bar" style={{ marginBottom: 0, minWidth: 150, maxWidth: 200 }}>
-            <input
-              className="form-input search-input"
-              list="tt-assignee-list"
-              placeholder="Filter by person…"
-              value={filterPerson}
-              onChange={e => setFilterPerson(e.target.value)}
-              style={{ fontSize: 12, padding: '5px 28px 5px 10px' }}
-            />
-            {filterPerson && (
-              <button className="btn-ghost search-clear" onClick={() => setFilterPerson('')} title="Clear">&#x2715;</button>
-            )}
-            <datalist id="tt-assignee-list">
-              {assignees.map(a => <option key={a.name} value={a.name} />)}
-            </datalist>
-          </div>
-        )}
+        <div className="search-bar" style={{ marginBottom: 0, flex: 1, minWidth: 160 }}>
+          <input
+            className="form-input search-input"
+            list="tt-assignee-list"
+            placeholder="Search tasks or people…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ fontSize: 12, padding: '5px 28px 5px 10px' }}
+          />
+          {search && (
+            <button className="btn-ghost search-clear" onClick={() => setSearch('')} title="Clear">&#x2715;</button>
+          )}
+          <datalist id="tt-assignee-list">
+            {assignees.map(a => <option key={a.name} value={a.name} />)}
+          </datalist>
+        </div>
         {liveTasks.length > 0 && (
           <select
             className="form-input filter-select"
@@ -1059,21 +1064,6 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
           </>
         }
       >
-        <SidebarSection label="Search" count={search ? 1 : 0} onClear={() => setSearch('')}>
-          <div className="search-bar" style={{ marginBottom: 0 }}>
-            <input
-              className="form-input search-input"
-              placeholder="Search tasks…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{ fontSize: 12, padding: '6px 28px 6px 10px' }}
-            />
-            {search && (
-              <button className="btn-ghost search-clear" onClick={() => setSearch('')} title="Clear">&#x2715;</button>
-            )}
-          </div>
-        </SidebarSection>
-
         {liveTasks.length > 0 && (
           <SidebarSection label="Status" count={filterStatuses.length} onClear={() => setFilterStatuses([])}>
             <SidebarCheckList
