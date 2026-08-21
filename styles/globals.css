@@ -3195,8 +3195,11 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   --swim-col-w: 236px;
   /* Tall enough for the whole compact card — number row, one line of title, one
      row of labels — *and* the "+N more" chip under it. Anything tighter and the
-     title, the only shrinkable child, is what gets squeezed out. */
-  --swim-cell-h: 106px;
+     card, which may shrink, gets clipped by its own `overflow: hidden` and the
+     chip row is what disappears — half a chip, not no chip. Measured worst case
+     is ~92px of content; the rest is slack so a 1px line-height rounding in one
+     browser does not cost a row. */
+  --swim-cell-h: 112px;
   min-width: max-content;
   border: 1px solid var(--border);
   border-radius: var(--radius, 8px);
@@ -3546,10 +3549,18 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
+  /* The column-board card ends on its title, so it carries a bottom margin. The
+     swim card ends on its labels, and the cell height is fixed — that margin is
+     8px taken straight out of the chip row. Flex `gap` already spaces this. */
+  margin-bottom: 0;
 }
 /* Labels cost a row, and the cell height is fixed — so a labelled card spends
    one line of title to pay for them rather than clipping the labels off. */
-.kanban-card--swim-labelled .kanban-card-title { -webkit-line-clamp: 1; line-clamp: 1; }
+/* Scoped to `.swim-cell` on purpose: the two-line rule above is three classes
+   deep, so the plain `.kanban-card--swim-labelled` form lost the cascade and
+   every labelled card kept a two-line title — which pushed the chip row past
+   the card's `overflow: hidden` and sliced the chips in half. */
+.swim-cell .kanban-card--swim-labelled .kanban-card-title { -webkit-line-clamp: 1; line-clamp: 1; }
 /* One line of chips, whatever the card carries: the overflow is on the hover
    title and in the +N popup, and a second row would break the fixed height. */
 .kanban-card-swim-labels {
