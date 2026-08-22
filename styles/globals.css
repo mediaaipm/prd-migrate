@@ -340,6 +340,39 @@ body {
   font-size: 14px;
 }
 
+/* ─── Ambient dot lattice ──────────────────────────────────────────────────
+   Sits behind every page. Nothing ever changes position — only opacity
+   breathes — so it stays off the layout path and never competes with the
+   drag feedback on the kanban board. Painted from --border, so all of the
+   theme variants get a correctly-toned grid without a per-theme rule; the
+   low/high bounds are vars because a 1px dot that reads on a light ground
+   disappears on a dark one. body's own background propagates to the canvas,
+   which is what leaves room for a z-index:-1 layer above it. */
+body::before {
+  --dot-lo: .26;
+  --dot-hi: .52;
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+  background-size: 22px 22px;
+  opacity: var(--dot-hi);
+  animation: dot-breathe 12s ease-in-out infinite alternate;
+}
+
+html[data-mode="dark"] body::before { --dot-lo: .42; --dot-hi: .82; }
+
+@keyframes dot-breathe {
+  from { opacity: var(--dot-lo); }
+  to   { opacity: var(--dot-hi); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before { animation: none; }
+}
+
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
@@ -917,6 +950,17 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   transition: background .12s, color .12s;
   margin-bottom: -2px;
 }
+/* counts + task-ids + view switcher, riding the right end of the tabs row */
+.task-context-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  padding-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .task-context-tab:hover { background: var(--bg); color: var(--text); text-decoration: none; }
 .task-context-tab.active {
   background: var(--surface);
@@ -2981,6 +3025,8 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   .page { padding: 16px 12px; }
   .page-header h1 { font-size: 19px; }
   .task-context-tabs { margin-top: 12px; }
+  /* narrow screens: tools drop to their own line under the tabs */
+  .task-context-tools { margin-left: 0; flex: 1 1 100%; flex-wrap: wrap; justify-content: flex-end; padding-bottom: 8px; }
 
   /* Toolbar: search goes full-width on second row */
   .task-tree-toolbar { flex-wrap: wrap; }

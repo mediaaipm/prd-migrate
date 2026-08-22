@@ -3,6 +3,31 @@ const { requirePermission, requireProjectAccess } = require('../../../../../../l
 const { loadAttachment, readAttachmentKey } = require('../../../../../../lib/task-media');
 const { withCpuLog } = require('../../../../../../lib/cpu-log');
 
+// The stored content type is whatever the uploader's data URL claimed — the client
+// picks it, so it is attacker-controlled. Echoing it back means a `text/html` or
+// `image/svg+xml` upload becomes a document on THIS origin, and SVG executes script,
+// which is stored XSS against every viewer's session. `nosniff` does not help: it
+// stops sniffing, not an explicit type.
+//
+// So only raster types the browser cannot be tricked into treating as a document are
+// served inline. Anything else — svg, pdf, html, office files — keeps working as an
+// attachment, but as an octet-stream download that never renders in place.
+const INLINE_TYPES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+  'image/avif',
+  'image/bmp',
+]);
+
+// The filename reaches a response header, so a raw CR/LF in it would let the
+// uploader inject one. RFC 5987's filename* is percent-encoded, which escapes
+// every such character for free — no separate sanitiser to get wrong.
+function contentDisposition(name) {
+  return `attachment; filename*=UTF-8''${encodeURIComponent(String(name || 'download'))}`;
+}
+
 // Serves the bytes for one attachment. Task lists now carry a `url` pointing here
 // instead of an inline data URL, which is the whole point: this response is
 // individually cacheable and revalidates cheaply, where a base64 blob buried in a
@@ -50,9 +75,15 @@ async function handler(req, res) {
   //
   // res.end() is the raw node method (Next only wraps it to count bytes), so going
   // straight there skips the stringify and the hash entirely.
+  const inline = INLINE_TYPES.has(resolved.contentType);
+
   res.setHeader('Cache-Control', 'private, max-age=31536000, immutable');
-  res.setHeader('Content-Type', resolved.contentType);
+  res.setHeader('Content-Type', inline ? resolved.contentType : 'application/octet-stream');
   res.setHeader('X-Content-Type-Options', 'nosniff');
+  // Belt and braces: if this URL is navigated to directly it becomes a document, and
+  // `sandbox` strips it of script, forms and same-origin privileges even then.
+  res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+  if (!inline) res.setHeader('Content-Disposition', contentDisposition(resolved.name));
   res.setHeader('Content-Length', String(resolved.buf.length));
 
   res.statusCode = 200;

@@ -42,8 +42,9 @@ function LoginScreen({ onLogin }) {
 
   return (
     <div style={{
+      // No background here — body already paints --bg, and an opaque fill would
+      // hide the ambient dot lattice on the one screen with room for it.
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'var(--bg)',
     }}>
       <form onSubmit={handleSubmit} style={{
         background: 'var(--sidebar-bg)', borderRadius: 12, padding: '40px 36px',

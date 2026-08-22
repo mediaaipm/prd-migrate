@@ -83,7 +83,7 @@ function daysLeft(endDate) {
   return diff
 }
 
-function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger }) {
+function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger, newSprintTrigger }) {
   const [serverSprints, setServerSprints] = useState([])
   const [loadingS, setLoadingS]           = useState(true)
   const [showModal, setShowModal]         = useState(false)
@@ -111,6 +111,12 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
     if (item.optimistic?.entity === 'sprint') return loadSprints()
   }), [loadSprints])
   useEffect(() => { if (refreshTrigger > 0) loadSprints() }, [refreshTrigger]) // eslint-disable-line react-hooks/exhaustive-deps
+  const lastNewSprintTrigger = useRef(newSprintTrigger)
+  useEffect(() => {
+    if (newSprintTrigger === lastNewSprintTrigger.current) return // ignore mount / remount
+    lastNewSprintTrigger.current = newSprintTrigger
+    openNew()
+  }, [newSprintTrigger]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function openNew() {
     setEditingSprint(null)
@@ -419,36 +425,6 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger 
         </div>
       )}
 
-      {/* Empty state */}
-      {sprints.length === 0 && (
-        <div style={{
-          border: '1px solid color-mix(in srgb, var(--tint-indigo-fg) 45%, transparent)', borderRadius: 12,
-          background: 'linear-gradient(135deg, var(--tint-indigo-bg) 0%, var(--tint-green-bg) 100%)',
-          padding: '16px 20px', marginBottom: 10,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 18 }}>⚡</span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--muted)' }}>No sprints yet</span>
-            <span style={{ fontSize: 12, color: 'var(--muted)' }}>— Create a sprint to track focused work</span>
-          </div>
-          <button onClick={openNew} style={{
-            padding: '6px 14px', borderRadius: 8, border: '1px solid var(--tint-indigo-fg)',
-            background: 'var(--tint-indigo-fg)', color: 'var(--surface)', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
-          }}>+ New Sprint</button>
-        </div>
-      )}
-
-      {/* New sprint button (when sprints exist) */}
-      {sprints.length > 0 && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
-          <button onClick={openNew} style={{
-            padding: '5px 14px', borderRadius: 8, border: '1px solid var(--tint-indigo-fg)',
-            background: 'var(--surface)', color: 'var(--tint-indigo-fg)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-          }}>+ New Sprint</button>
-        </div>
-      )}
-
       {/* Create / Edit modal */}
       {showModal && (
         <div style={{
@@ -580,6 +556,7 @@ export default function TasksPage({ currentUser }) {
   const [showArchived, setShowArchived] = useState(false)
   const [sprintKey, setSprintKey] = useState(0)
   const [sprintRefreshTrigger, setSprintRefreshTrigger] = useState(0)
+  const [newSprintTrigger, setNewSprintTrigger]           = useState(0)
   const [showExportMenu, setShowExportMenu] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [importFormat, setImportFormat] = useState('csv')
@@ -874,6 +851,16 @@ export default function TasksPage({ currentUser }) {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button
+              onClick={() => setNewSprintTrigger(t => t + 1)}
+              style={{
+                fontSize: 13, padding: '6px 14px', borderRadius: 8,
+                border: '1px solid var(--tint-indigo-fg)', background: 'var(--tint-indigo-fg)',
+                color: 'var(--on-accent)', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+              }}
+            >
+              + New Sprint
+            </button>
             <div style={{ position: 'relative' }}>
               <button
                 onClick={() => setShowExportMenu(p => !p)}
@@ -934,6 +921,32 @@ export default function TasksPage({ currentUser }) {
               v{v.version}
             </Link>
           ))}
+          <div className="task-context-tools">
+            {!loading && <span className="badge">{tasks.length}</span>}
+            {!loading && <StatusCounts tasks={tasks} />}
+            {currentUser?.isAdmin && slug && (
+              <button className="btn-ghost" style={{ whiteSpace: 'nowrap', fontSize: 12 }} onClick={openIdSettings} title="Set task ID prefix & start number">
+                ⚙ Task IDs
+              </button>
+            )}
+            <div className="kanban-view-toggle">
+              <button
+                className={`kanban-view-btn${viewMode === 'list' ? ' active' : ''}`}
+                onClick={() => setViewMode('list')}
+                title="List view"
+              >List</button>
+              <button
+                className={`kanban-view-btn${viewMode === 'kanban' ? ' active' : ''}`}
+                onClick={() => setViewMode('kanban')}
+                title="Kanban board"
+              >Kanban</button>
+              <button
+                className={`kanban-view-btn${viewMode === 'calendar' ? ' active' : ''}`}
+                onClick={() => setViewMode('calendar')}
+                title="Calendar view"
+              >Calendar</button>
+            </div>
+          </div>
         </div>
 
         {slug && (
@@ -943,39 +956,11 @@ export default function TasksPage({ currentUser }) {
             tasks={tasks}
             onSprintChange={() => setSprintKey(k => k + 1)}
             refreshTrigger={sprintRefreshTrigger}
+            newSprintTrigger={newSprintTrigger}
           />
         )}
 
         <div className="section-card" style={{ marginTop: 0 }}>
-          <div className="section-card-header">
-            <span>{contextLabel}</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              {!loading && <span className="badge">{tasks.length}</span>}
-              {!loading && <StatusCounts tasks={tasks} />}
-              {currentUser?.isAdmin && slug && (
-                <button className="btn-ghost" style={{ whiteSpace: 'nowrap', fontSize: 12 }} onClick={openIdSettings} title="Set task ID prefix & start number">
-                  ⚙ Task IDs
-                </button>
-              )}
-              <div className="kanban-view-toggle">
-                <button
-                  className={`kanban-view-btn${viewMode === 'list' ? ' active' : ''}`}
-                  onClick={() => setViewMode('list')}
-                  title="List view"
-                >List</button>
-                <button
-                  className={`kanban-view-btn${viewMode === 'kanban' ? ' active' : ''}`}
-                  onClick={() => setViewMode('kanban')}
-                  title="Kanban board"
-                >Kanban</button>
-                <button
-                  className={`kanban-view-btn${viewMode === 'calendar' ? ' active' : ''}`}
-                  onClick={() => setViewMode('calendar')}
-                  title="Calendar view"
-                >Calendar</button>
-              </div>
-            </div>
-          </div>
           {loading ? <TaskSkeleton /> : viewMode === 'kanban' ? (
             <KanbanBoard key={apiBase} tasks={tasks} apiBase={apiBase} slug={slug} currentUser={scopedUser} taskAcl={taskAcl} onAclChange={setTaskAcl} taskPrefix={taskPrefix} onPrefixChange={setTaskPrefix} taskSeqStart={taskSeqStart} onSeqStartChange={setTaskSeqStart} focusTaskId={focusTaskId} />
           ) : viewMode === 'calendar' ? (

@@ -1,7 +1,8 @@
 # PRD — PRD Manager
 
-**Version:** 2.0.0
-**Status:** Describes the system as built (as of 2026-07-13)
+**Version:** 2.1.0
+**Status:** Describes the system as built (as of 2026-08-22), plus §4.5a — kanban
+flow patterns that are specified but not yet built
 **Supersedes:** [docs/PRD-v1-graph-vision.md](docs/PRD-v1-graph-vision.md) (archived — described a Git/graph architecture that was never built)
 
 ---
@@ -178,6 +179,39 @@ reconciliation is local-only — it does not rewrite the shared layout.
 > **R-4 (resolved):** columns previously lived in `localStorage` keyed by apiBase,
 > so a custom column one person created was invisible to everyone else.
 
+### 4.5a Kanban flow patterns — planned
+The board covers *structure* well (story lanes × category rails, filters, labels,
+per-status ACL, checklists, comments, attachments, history). It has no *flow
+control*: nothing caps work in progress, nothing surfaces a stuck card, and
+nothing models a blocking relation — `blocked` is a status, so a task cannot be
+blocked and in-progress at once. The patterns below close that gap, cheapest first.
+
+**Tier 1 — column plumbing only, no task-schema change**
+
+| Pattern | Behaviour | Storage |
+|---|---|---|
+| WIP limits | Column header shows `3/5`; the column tints over limit and a drop past it warns (soft, never a hard block). Super admin sets it in the existing column editor. | `wip` on the column object in `columns:{slug}` |
+| Column collapse | Fold a column to a narrow rail with a count. Six columns × swimlanes is unreadable; Backlog and Done are usually noise. | `localStorage['kanban-cols-collapsed:{slug}']`, same pattern as the lane keys |
+| Card density | Compact / normal / cover toggle — biggest readability win per line of code in swimlane mode. | `localStorage['kanban-density:{slug}']` |
+| More lane axes | `subLane` is hard-coded `category \| none`; the top axis is hard-coded to story. Add assignee, priority, label and sprint to both by swapping the rail key extractor. | existing `kanban-sublane:{slug}` / `kanban-layout:{slug}` |
+
+**Tier 2 — one new task field**
+
+| Pattern | Behaviour | Storage |
+|---|---|---|
+| Card aging | Left-edge heat bar: 0–2d none, 3–7d amber, 8d+ red. Shows stuck work without anyone filing a report. | `statusChangedAt`, stamped in `updateTask()` when `status` changes |
+| Sprint on the board | `/api/projects/{slug}/sprint.js` exists and the board never calls it. Sprint filter chip, "current sprint only" toggle, sprint as a lane axis. | none — reuses the sprint entity |
+| Multi-select + bulk move | Shift-click or marquee, then one drag moves N cards; the context menu acts on the selection instead of one task. | client state only |
+
+**Tier 3 — new relation or new entity**
+
+| Pattern | Behaviour | Storage |
+|---|---|---|
+| Blocked-by edges | Card shows ⛔ and a blocker count; the chip links to the blocking task; a move to `done` is refused while a blocker is open. A real relation, orthogonal to status. | `task.blockedBy[]` (task ids), enforced in the task PATCH |
+| Column policy | Per-column entry criteria text plus an optional required-checklist gate — dragging into `in-review` with unticked items warns. Reuses the existing checklist code. | fields on the column object |
+| Flow metrics | Cycle time, throughput per week, aging-WIP scatter. Depends on `statusChangedAt` — build card aging first. | derived |
+| Automation rules | On drop into column X: assign to the mover, stamp a done date, tick a checklist item, move the parent when every sub-task lands. | `rules:{slug}`, run client-side on drop and enforced server-side in the task PATCH |
+
 ### 4.6 Views
 - **Tree** ([TaskTree.js](components/TaskTree.js)) — nested list, inline edit, drag to
   reparent, undo for a drag-move.
@@ -341,20 +375,26 @@ whole-system. Losing the Upstash instance loses everything since the last snapsh
 
 ## 10. Roadmap
 
-**Now — must ship before external users**
-- Real sessions + hashed passwords (§5)
-- Per-task Redis keys, fixing R-1/R-3
-- Server-side kanban columns (R-4)
+The previous "Now" list has shipped: real sessions + hashed passwords (§5),
+per-task Redis keys (R-1/R-3), server-side kanban columns (R-4).
+
+**Now**
+- Kanban WIP limits and column collapse — §4.5a tier 1, no schema change
+- Card density toggle and the extra lane axes (assignee / priority / label / sprint)
 
 **Next**
+- `statusChangedAt` on tasks, then card aging — §4.5a tier 2
+- Sprints on the board (the API exists; the board never calls it)
+- Multi-select + bulk task operations
 - Scheduled automatic snapshots
 - Comments/mentions on proposals, not just tasks
-- Bulk task operations
 - Saved filters / views
 
 **Later**
+- `task.blockedBy[]` dependency edges — §4.5a tier 3, and the surviving good idea
+  from the v1 graph vision, minus the Git/Graphify machinery
+- Flow metrics: cycle time, throughput, aging WIP (needs card aging first)
+- Column policies and drop automation rules
 - Task ↔ PRD-section linking (cite the requirement a task implements)
-- Dependency edges between tasks and projects — the surviving good idea from the
-  v1 graph vision, minus the Git/Graphify machinery
 - Impact analysis: "which tasks and projects does changing this requirement touch?"
 - Slack notifications
