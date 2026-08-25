@@ -23,7 +23,7 @@ async function handler(req, res) {
   }
   if (req.method === 'POST') {
     if (!await requirePermission('task:create', slug)(req, res)) return;
-    const { id, title, description, status, priority, assignee, assignees, startDate, dueDate, parentId, numberOverride, attachments, cover, labelIds, category } = req.body || {};
+    const { id, title, description, status, priority, assignee, assignees, startDate, dueDate, parentId, numberOverride, attachments, cover, labelIds, category, points } = req.body || {};
     if (!title) return res.status(400).json({ error: 'title is required' });
     if (!await requireLabels(slug, labelIds, res)) return;
     // Prefer a name the creator typed in the form; fall back to the logged-in user.
@@ -32,7 +32,7 @@ async function handler(req, res) {
     let task;
     try {
       validateAttachments(attachments);
-      task = await createTask(slug, v, { id, title, description, status, priority, assignee, assignees, assignedBy, startDate, dueDate, parentId, numberOverride, attachments, cover, labelIds, category });
+      task = await createTask(slug, v, { id, title, description, status, priority, assignee, assignees, assignedBy, startDate, dueDate, parentId, numberOverride, attachments, cover, labelIds, category, points });
     } catch (e) {
       if (e instanceof AttachmentError) return res.status(413).json({ error: e.message });
       // The stored list would exceed what redis accepts in one write. Report it as

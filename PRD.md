@@ -1,7 +1,7 @@
 # PRD — PRD Manager
 
-**Version:** 2.1.0
-**Status:** Describes the system as built (as of 2026-08-22), plus §4.5a — kanban
+**Version:** 2.2.0
+**Status:** Describes the system as built (as of 2026-08-25), plus §4.5a — kanban
 flow patterns that are specified but not yet built
 **Supersedes:** [docs/PRD-v1-graph-vision.md](docs/PRD-v1-graph-vision.md) (archived — described a Git/graph architecture that was never built)
 
@@ -63,7 +63,10 @@ motion.
 **Granular permissions** (assignable to admins — [lib/permissions.js](lib/permissions.js)):
 `project:create`, `project:update`, `proposal:create`, `proposal:update`,
 `proposal:delete`, `proposal:promote`, `task:create`, `task:update`,
-`assignee:manage`, `snapshot:manage`, `audit:view`
+`assignee:manage`, `holiday:manage`, `snapshot:manage`, `audit:view`
+
+`holiday:manage` is **global, not project-scoped** — the holiday calendar is
+org-wide (§4.7a). Changing the working week itself stays superadmin-only.
 
 **Project scoping:** an admin may carry an `assignedProjects` list. If set, they are
 gated out of every other project. If unset, they see all projects.
@@ -105,6 +108,9 @@ Upstash Redis (REST)          Vercel Cron → /api/cron/* (daily reminders)
 | `taskseq:{slug}` | int | atomic counter for task display ids |
 | `sprint:{slug}` | json | array of sprints |
 | `labels:{slug}` | json | array of labels |
+| `holidays:{year}` | json | **org-wide** array of holidays for one year |
+| `holidays-seeded:{year}` | string | marker: this year was auto-seeded, don't seed again |
+| `holiday-config` | json | `{ weekendDays[], country }` — the working week |
 | `user:{name}` | hash | profile: password, role, permissions, assignedProjects |
 | `assignees` | set | all user names |
 | `notifications:{name}` | json | array, capped at 100 |
@@ -220,8 +226,82 @@ blocked and in-progress at once. The patterns below close that gap, cheapest fir
 - **Dashboard** — per-project and global rollups.
 
 ### 4.7 Sprints
-`{ id, name, startDate, endDate, taskIds[], status }`, status
+`{ id, name, goal, startDate, endDate, capacityPoints, taskIds[], status }`, status
 `planned | active | completed`. Tasks are hydrated into the sprint on read.
+
+Three timestamps are **derived from the status transition, never sent by the client**:
+`startedAt` (first move to `active`), `completedAt` (first move to `completed`,
+cleared on reopen), and `plannedTaskIds` — the membership snapshot taken at the
+moment the sprint went active. That snapshot is the baseline scope change is
+measured against; without it "we added work mid-sprint" is unprovable.
+
+### 4.7a Sprint analytics — progress, velocity, people, holidays
+
+`GET /api/projects/{slug}/sprint-analytics[?sprintId=]` gated on `sprint:view`.
+All arithmetic lives in [lib/sprint-metrics.js](lib/sprint-metrics.js) as pure
+functions — no Redis, no clock, no session — so it is exercisable from a script.
+The route only gathers inputs and assembles the response. Surfaced at
+`/projects/{slug}/sprints` ([components/SprintAnalytics.js](components/SprintAnalytics.js)),
+with a compact strip on the tasks page's active-sprint banner.
+
+**Estimates.** `task.points` is optional. `pointsOf(task)` falls back to **1**, so a
+team that never estimates gets identical, valid, count-based numbers; `usesPoints`
+tells the UI whether to say "points" or "tasks".
+
+**Progress.** Per sprint: done/total in tasks and points, a per-status breakdown,
+scope change vs the baseline, overdue/blocked/unassigned counts, and a `health`
+verdict (`ahead | on-track | at-risk | behind | done | not-started`) comparing
+progress against elapsed **working** time rather than calendar time.
+
+**Burndown.** One row per calendar day. The ideal line steps down **only on working
+days**, so weekends and holidays render as flat runs instead of the straight
+diagonal that makes every team look behind on a Monday. Rows after today carry
+`isFuture` and a null remaining value, so the actual line stops at today rather
+than diving to zero.
+
+**Velocity.** Completed sprints only — an in-flight sprint's partial total would
+drag every average down permanently. Reports history, average, median, trend and a
+rolling 3-sprint forecast.
+
+**People.** Per assignee, per sprint and all-time: assigned/done/in-progress/
+blocked/overdue, points, completion rate, on-time rate (completed ≤ `dueDate`),
+average cycle time and throughput per working day. A task with several assignees
+credits **each of them in full** — splitting points would make every paired card
+look like half a card. The consequence is that column totals can exceed the sprint
+total, which the UI states as a footnote.
+
+Cycle time needs a finish timestamp, so `task.completedAt` is stamped server-side
+in `updateTask` on the transition into `done` and cleared on the way out. A
+client-supplied `completedAt` is deleted from the patch before that runs — it is
+derived, never dictated. Tasks that were already `done` before this existed are
+dated to the sprint start and flagged `legacyDone` rather than being silently
+counted as instantaneous.
+
+### 4.7b Holidays
+
+An **org-wide** calendar (not per project — a company holiday is a company holiday),
+managed at Admin → Holidays by a superadmin or anyone holding `holiday:manage`.
+
+`{ id, date: 'YYYY-MM-DD', name, type, recurring, source }` where `type` is
+`public | optional | company`. A **public** or **company** holiday is a non-working
+day; an **optional** (restricted) holiday still counts as one, since the office is
+open. `holiday-config` holds the working week — `weekendDays` (0=Sun..6=Sat),
+which may legitimately be empty for an org that works seven days.
+
+**Auto-seeded.** The first read of a year with no stored list seeds it from
+[lib/holiday-seed.js](lib/holiday-seed.js) — six fixed-date holidays generated for
+any year, plus a per-year table of the festival dates that move. These are
+best-effort defaults, lunar dates shift, and every seeded row is editable and
+deletable exactly like a manual one. A `holidays-seeded:{year}` marker means an
+admin who clears a year does not get it re-seeded on the next read.
+
+Every holiday call from the analytics route is individually guarded: a missing or
+throwing holiday module costs the numbers their holiday awareness and nothing
+more — working days fall back to weekends-only, and the page still renders.
+
+All date maths is UTC-anchored on `'YYYY-MM-DD'` strings. `new Date('2026-01-26')`
+read back with local getters shifts a day west of Greenwich, which is how a
+burndown silently loses one.
 
 ### 4.8 Labels
 Project-scoped colored tags `{ id, name, color }`, referenced by `task.labelIds`.
@@ -328,7 +408,8 @@ Also unresolved: `CRON_SECRET` is optional — if unset, the cron endpoints are 
 **Version** — `{ version, content, createdAt, updatedAt }`
 **Proposal** — `{ id, title, description, content, assignee, startDate, dueDate, status, createdAt, promotedToVersion }`
 **Task** — see §4.4
-**Sprint** — `{ id, name, startDate, endDate, taskIds[], status, createdAt, updatedAt }`
+**Sprint** — `{ id, name, goal, startDate, endDate, capacityPoints, taskIds[], plannedTaskIds[], status, startedAt, completedAt, createdAt, updatedAt }`
+**Holiday** — `{ id, date, name, type, recurring, source }` (org-wide, keyed by year)
 **Label** — `{ id, name, color }`
 **User** — `{ name, username, password, role, permissions[], assignedProjects[] }`
 
@@ -383,17 +464,20 @@ per-task Redis keys (R-1/R-3), server-side kanban columns (R-4).
 - Card density toggle and the extra lane axes (assignee / priority / label / sprint)
 
 **Next**
-- `statusChangedAt` on tasks, then card aging — §4.5a tier 2
+- `statusChangedAt` on tasks, then card aging — §4.5a tier 2. `completedAt` now
+  exists (§4.7a); `statusChangedAt` is the same stamp generalised to every column
 - Sprints on the board (the API exists; the board never calls it)
 - Multi-select + bulk task operations
 - Scheduled automatic snapshots
 - Comments/mentions on proposals, not just tasks
 - Saved filters / views
+- Holiday-aware due-date reminders — the cron jobs still fire on public holidays
 
 **Later**
 - `task.blockedBy[]` dependency edges — §4.5a tier 3, and the surviving good idea
   from the v1 graph vision, minus the Git/Graphify machinery
-- Flow metrics: cycle time, throughput, aging WIP (needs card aging first)
+- Aging WIP (needs card aging first). Cycle time and throughput have shipped
+  per-person in §4.7a; the board-level view is what is left
 - Column policies and drop automation rules
 - Task ↔ PRD-section linking (cite the requirement a task implements)
 - Impact analysis: "which tasks and projects does changing this requirement touch?"

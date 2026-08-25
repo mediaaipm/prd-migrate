@@ -143,6 +143,11 @@ export default function Nav() {
           Project Dashboard
         </Link>
       )}
+      {projectSlug && canView(currentUser, 'sprint') && (
+        <Link href={`/projects/${projectSlug}/sprints`} className={`nav-link${pathname.endsWith('/sprints') ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>
+          Sprints
+        </Link>
+      )}
       {(currentUser?.isAdmin || currentUser?.role === 'admin') && (
         <Link href="/admin" className={`nav-link${pathname === '/admin' ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>Admin</Link>
       )}

@@ -1425,6 +1425,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 }
 
 .task-num-input { max-width: 160px; flex: none; }
+.task-points-input { max-width: 90px; flex: none; }
 .task-desc-input { resize: vertical; font-family: inherit; }
 
 /* Auto-growing textarea (height set inline by AutoTextarea) */
@@ -2600,6 +2601,13 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   font-size: 13px;
   color: var(--text);
 }
+.task-modal-field-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--muted);
+}
 .task-modal-field-pair {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2626,6 +2634,23 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   min-width: 0;
 }
 .task-check-row:hover { background: var(--hover); }
+.task-check-row.is-dragging { opacity: .45; }
+.task-check-row--drop-before { box-shadow: inset 0 2px 0 var(--accent); }
+.task-check-row--drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
+.task-check-grip {
+  flex-shrink: 0;
+  margin-right: -4px;
+  color: var(--muted);
+  cursor: grab;
+  font-size: 12px;
+  line-height: 1;
+  user-select: none;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.task-check-row:hover .task-check-grip,
+.task-check-row:focus-within .task-check-grip { opacity: 1; }
+.task-check-grip:active { cursor: grabbing; }
 .task-check-row input[type='checkbox'] {
   cursor: pointer;
   flex-shrink: 0;
@@ -3072,7 +3097,8 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 
   /* Sprint section compact */
   .task-form-row { flex-wrap: wrap; }
-  .task-num-input { max-width: 100%; flex: 1 1 100%; }
+  .task-num-input,
+  .task-points-input { max-width: 100%; flex: 1 1 100%; }
 }
 
 /* ─── Trello-style additions ───────────────────────────────────────────── */
@@ -4156,6 +4182,1004 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   padding: 10px 14px;
 }
 .nav-mobile-drawer .nav-theme-label { display: inline; }
+
+/* ─── Sprint analytics + holidays ──────────────────────────────────────────
+   Three related surfaces live here: the sprint analytics screen (.sa-*), the
+   holidays admin screen (.holiday-*), and the extra chips the two features add
+   to the existing gradient sprint banner on the tasks page (.sprint-*).
+
+   Colour contract: every surface and every ink is a token, so the dark baseline
+   and the named themes stay a straight swap. The only literals are the hues the
+   JS hands in inline as --bar-color, and those are handled exactly like
+   --status-color at the bottom of this file: the wash and the hairline are
+   color-mix()ed off the one hue, and the dark-mode lift for them sits at the end
+   of this block. --bar-pct is a percentage (width for bars, height for columns). */
+
+/* ── Analytics shell ───────────────────────────────────────────────────── */
+.sprint-analytics {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sa-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Segmented pill row — same idea as .task-context-tabs, but self-contained so
+   it can ride inside the toolbar instead of anchoring to a page edge. */
+.sa-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.sa-tab {
+  padding: 5px 12px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.sa-tab:hover:not(:disabled) { background: var(--hover); color: var(--text); }
+.sa-tab.active {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--accent);
+  box-shadow: var(--shadow);
+}
+
+/* ── Cards + stats ─────────────────────────────────────────────────────── */
+.sa-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.sa-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  min-width: 0;
+}
+.sa-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.sa-card-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sa-card-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.sa-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  min-width: 0;
+}
+
+/* A stat tile stands on its own inside .sa-grid; dropped inside a card body it
+   sheds its frame so the card supplies the one border. */
+.sa-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  min-width: 0;
+}
+.sa-card .sa-stat,
+.sa-card-body .sa-stat {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.sa-stat-value {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.sa-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: var(--muted);
+}
+.sa-stat-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 1px 7px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--tint-slate-bg);
+  color: var(--tint-slate-fg);
+}
+.sa-stat-delta.up   { background: var(--tint-green-bg); color: var(--tint-green-fg); }
+.sa-stat-delta.down { background: var(--tint-red-bg);   color: var(--tint-red-fg); }
+.sa-stat-delta.flat { background: var(--tint-slate-bg); color: var(--tint-slate-fg); }
+
+/* ── Chips ─────────────────────────────────────────────────────────────── */
+.sa-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.sa-chip--good {
+  background: var(--tint-green-bg);
+  color: var(--tint-green-fg);
+  border-color: color-mix(in srgb, var(--tint-green-fg) 38%, transparent);
+}
+.sa-chip--warn {
+  background: var(--tint-amber-bg);
+  color: var(--tint-amber-fg);
+  border-color: color-mix(in srgb, var(--tint-amber-fg) 38%, transparent);
+}
+.sa-chip--bad {
+  background: var(--tint-red-bg);
+  color: var(--tint-red-fg);
+  border-color: var(--tint-red-border);
+}
+.sa-chip--info {
+  background: var(--tint-blue-bg);
+  color: var(--tint-blue-fg);
+  border-color: color-mix(in srgb, var(--tint-blue-fg) 38%, transparent);
+}
+/* Takes the chip's own ink, so it needs no variant of its own. */
+.sa-chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+/* ── Bars + meters (hue arrives inline as --bar-color) ─────────────────── */
+.sa-bar {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bar-color, var(--accent)) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bar-color, var(--accent)) 22%, transparent);
+}
+.sa-bar-fill {
+  display: block;
+  height: 100%;
+  width: var(--bar-pct, 0%);
+  max-width: 100%;
+  border-radius: inherit;
+  background: var(--bar-color, var(--accent));
+  transition: width .35s ease;
+}
+.sa-meter {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bar-color, var(--accent)) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bar-color, var(--accent)) 20%, transparent);
+}
+.sa-meter-fill {
+  display: block;
+  height: 100%;
+  width: var(--bar-pct, 0%);
+  max-width: 100%;
+  border-radius: inherit;
+  background: var(--bar-color, var(--accent));
+  transition: width .35s ease;
+}
+
+/* ── Legend ────────────────────────────────────────────────────────────── */
+.sa-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.sa-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.sa-legend-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  background: var(--bar-color, var(--accent));
+  flex-shrink: 0;
+}
+
+/* ── Chart ─────────────────────────────────────────────────────────────── */
+/* Scrolls inside itself: a 30-day burndown must never push the page sideways. */
+.sa-chart {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 0 2px;
+  min-width: 0;
+}
+.sa-chart::-webkit-scrollbar { height: 6px; }
+.sa-chart::-webkit-scrollbar-track { background: transparent; }
+.sa-chart::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.sa-chart-svg {
+  display: block;
+  min-width: 460px;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+/* Defaults only — anything the JS paints itself (a fill= / stroke= attribute)
+   keeps its own colour, so these can never fight a series hue. */
+.sa-chart-svg text:not([fill]) { fill: var(--muted); font-size: 10px; font-weight: 600; }
+.sa-chart-svg line:not([stroke]) { stroke: var(--border); }
+.sa-chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  padding: 24px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+/* ── Tables ────────────────────────────────────────────────────────────── */
+.sa-table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  min-width: 0;
+}
+.sa-table-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+.sa-table-scroll::-webkit-scrollbar-track { background: transparent; }
+.sa-table-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.sa-table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.sa-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 8px 10px;
+  text-align: left;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  white-space: nowrap;
+}
+.sa-table td {
+  padding: 7px 10px;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+.sa-table tbody tr:hover td { background: var(--hover); }
+.sa-table-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ── Member rows ───────────────────────────────────────────────────────── */
+.sa-member {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.sa-member-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sa-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  cursor: default;
+}
+
+/* ── Velocity columns ──────────────────────────────────────────────────── */
+.sa-velocity {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.sa-velocity-bar {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 132px;
+  padding-top: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.sa-velocity-col {
+  flex: 1 1 0;
+  min-width: 18px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+}
+/* The number sitting above each column. */
+.sa-velocity-value {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.sa-velocity-fill {
+  width: 100%;
+  max-width: 34px;
+  height: var(--bar-pct, 0%);
+  max-height: 100%;
+  border-radius: 5px 5px 0 0;
+  background: var(--bar-color, var(--accent));
+  transition: height .35s ease;
+}
+.sa-velocity-label {
+  max-width: 100%;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Works either as a caption under the chart or, dropped straight inside
+   .sa-velocity-bar, as the dashed average rule sitting at --bar-pct height. */
+.sa-velocity-avg {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.sa-velocity-bar > .sa-velocity-avg {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--bar-pct, 0%);
+  padding-right: 2px;
+  border-top: 1px dashed color-mix(in srgb, var(--muted) 55%, transparent);
+  font-size: 10px;
+  line-height: 1.6;
+  text-align: right;
+  pointer-events: none;
+}
+
+/* ── Health badge ──────────────────────────────────────────────────────── */
+.sa-health {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--tint-slate-bg);
+  color: var(--tint-slate-fg);
+}
+.sa-health.ahead {
+  background: var(--tint-green-bg);
+  color: var(--tint-green-fg);
+  border-color: color-mix(in srgb, var(--tint-green-fg) 38%, transparent);
+}
+.sa-health.on-track {
+  background: var(--tint-blue-bg);
+  color: var(--tint-blue-fg);
+  border-color: color-mix(in srgb, var(--tint-blue-fg) 38%, transparent);
+}
+.sa-health.at-risk {
+  background: var(--tint-amber-bg);
+  color: var(--tint-amber-fg);
+  border-color: color-mix(in srgb, var(--tint-amber-fg) 38%, transparent);
+}
+.sa-health.behind {
+  background: var(--tint-red-bg);
+  color: var(--tint-red-fg);
+  border-color: var(--tint-red-border);
+}
+.sa-health.done {
+  background: var(--tint-indigo-bg);
+  color: var(--tint-indigo-fg);
+  border-color: color-mix(in srgb, var(--tint-indigo-fg) 38%, transparent);
+}
+.sa-health.not-started {
+  background: var(--tint-slate-bg);
+  color: var(--tint-slate-fg);
+  border-color: color-mix(in srgb, var(--tint-slate-fg) 30%, transparent);
+}
+
+/* ── Upcoming holidays list (inside an analytics card) ─────────────────── */
+.sa-holidays {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.sa-holiday-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  border-radius: 6px;
+  min-width: 0;
+}
+.sa-holiday-row + .sa-holiday-row { border-top: 1px solid var(--border); }
+.sa-holiday-row:hover { background: var(--hover); }
+.sa-holiday-date {
+  flex-shrink: 0;
+  min-width: 58px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.sa-holiday-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sa-holiday-type {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: capitalize;
+  background: var(--tint-slate-bg);
+  color: var(--tint-slate-fg);
+}
+
+/* ── Small print ───────────────────────────────────────────────────────── */
+.sa-empty {
+  padding: 24px 16px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 12.5px;
+  text-align: center;
+}
+.sa-note {
+  padding-left: 9px;
+  border-left: 2px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+/* Same sweep as .skeleton — shares its @keyframes shimmer, no second animation. */
+.sa-skeleton {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--border) 25%, var(--surface-2) 50%, var(--border) 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+/* ── Holidays admin ────────────────────────────────────────────────────── */
+.holiday-admin {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.holiday-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.holiday-hint {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+/* Segmented like .tt-expand-group: prev / year / next reads as one control. */
+.holiday-year-nav {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.holiday-year-btn {
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.6;
+  transition: background .12s, color .12s;
+}
+.holiday-year-btn + .holiday-year-btn { border-left: 1px solid var(--border); }
+.holiday-year-btn:hover:not(:disabled) { background: var(--hover); }
+.holiday-year-btn.active { background: var(--accent); color: var(--on-accent); }
+/* Fixed width: paging a year must not shuffle the arrows either side of it. */
+.holiday-year-value {
+  min-width: 64px;
+  padding: 5px 10px;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.holiday-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+.holiday-form-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.holiday-form-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.holiday-form-check input {
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+}
+.holiday-error {
+  margin-top: 6px;
+  color: var(--tint-red-fg);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.holiday-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.holiday-month {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.holiday-month-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 14px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.holiday-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  min-width: 0;
+}
+.holiday-item + .holiday-item { border-top: 1px solid var(--border); }
+.holiday-item:hover { background: var(--hover); }
+.holiday-item-date {
+  flex-shrink: 0;
+  min-width: 46px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.holiday-item-dow {
+  flex-shrink: 0;
+  min-width: 30px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.holiday-item-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* "· falls on a weekend" — a footnote to the name, never louder than it. */
+.holiday-item-note {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.holiday-item-badge {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  white-space: nowrap;
+  background: var(--tint-slate-bg);
+  color: var(--tint-slate-fg);
+}
+.holiday-item-badge.is-public,
+.sa-holiday-type.is-public {
+  background: var(--tint-indigo-bg);
+  color: var(--tint-indigo-fg);
+  border-color: color-mix(in srgb, var(--tint-indigo-fg) 34%, transparent);
+}
+.holiday-item-badge.is-optional,
+.sa-holiday-type.is-optional {
+  background: var(--tint-slate-bg);
+  color: var(--tint-slate-fg);
+  border-color: color-mix(in srgb, var(--tint-slate-fg) 28%, transparent);
+}
+.holiday-item-badge.is-company,
+.sa-holiday-type.is-company {
+  background: var(--tint-violet-bg);
+  color: var(--tint-violet-fg);
+  border-color: color-mix(in srgb, var(--tint-violet-fg) 34%, transparent);
+}
+/* Provenance ('seed' / 'manual') and the recurring marker: the two quietest
+   things in the row, so they share one outlined-ghost treatment. */
+.holiday-item-src,
+.holiday-item-repeat {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  line-height: 1.6;
+  color: var(--tint-gray-fg);
+}
+.holiday-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.holiday-item:hover .holiday-item-actions,
+.holiday-item:focus-within .holiday-item-actions { opacity: 1; }
+/* No hover on touch — the row would otherwise have no visible way to be edited. */
+@media (hover: none) {
+  .holiday-item-actions { opacity: 1; }
+}
+/* Inline edit: the row turns into a panel hosting a .holiday-form, so it stacks
+   and takes an accent edge — the one row being edited has to be unmistakable. */
+.holiday-item.is-editing {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px 14px 12px;
+  background: var(--surface-2);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.holiday-item.is-editing:hover { background: var(--surface-2); }
+.holiday-item.is-editing .holiday-item-actions { opacity: 1; margin-left: 0; }
+/* The row is already a framed panel; the nested form drops its own frame. */
+.holiday-item.is-editing .holiday-form {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.holiday-empty {
+  padding: 20px 16px;
+  color: var(--muted);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.holiday-weekend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.holiday-weekend-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-right: 2px;
+}
+.holiday-weekend-note {
+  font-size: 11px;
+  color: var(--muted);
+}
+.holiday-weekend-day {
+  min-width: 40px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-align: center;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.holiday-weekend-day:hover:not(:disabled) { background: var(--hover); color: var(--text); }
+.holiday-weekend-day.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+/* Read-only for anyone who is not a super admin: still legible, still says which
+   days are off, just visibly not a control. */
+.holiday-weekend-day[disabled] {
+  cursor: default;
+  opacity: .7;
+}
+.holiday-weekend-day.active[disabled] {
+  opacity: .85;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+/* ── Sprint banner extras (inside the gradient active-sprint card) ──────── */
+/* That card's ground is a --tint-indigo-bg to --tint-green-bg wash, so these sit
+   on --surface with tint ink, matching the Manage / Complete buttons already in
+   it. Both halves of every pair are tokens, so when the wash inverts in dark
+   mode the ink inverts with it. */
+.sprint-holiday-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--tint-indigo-fg) 22%, transparent);
+}
+.sprint-holiday-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--tint-indigo-fg) 38%, transparent);
+  color: var(--tint-indigo-fg);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.sprint-workdays {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--tint-gray-fg);
+  font-size: 11.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.sprint-goal {
+  margin-top: 8px;
+  padding-left: 9px;
+  border-left: 2px solid color-mix(in srgb, var(--tint-indigo-fg) 45%, transparent);
+  color: var(--text);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.sprint-analytics-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--tint-violet-fg) 45%, transparent);
+  background: var(--surface);
+  color: var(--tint-violet-fg);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background .12s, border-color .12s;
+}
+.sprint-analytics-link:hover {
+  background: color-mix(in srgb, var(--tint-violet-fg) 10%, var(--surface));
+  border-color: var(--tint-violet-fg);
+  text-decoration: none;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .sa-toolbar,
+  .holiday-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  /* Tabs keep to one line and scroll rather than wrapping into a two-row block. */
+  .sa-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .sa-tabs::-webkit-scrollbar { display: none; }
+  .sa-tab { flex: 0 0 auto; }
+  .sa-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .holiday-form-row { flex-direction: column; align-items: stretch; }
+  .holiday-form-row > .form-input,
+  .holiday-form-row > select,
+  .holiday-form-row > button { width: 100%; max-width: none; }
+  .holiday-year-nav { align-self: flex-start; }
+  .holiday-item { flex-wrap: wrap; row-gap: 4px; }
+  .holiday-item-name { flex: 1 1 100%; order: 3; }
+  .holiday-item-actions { opacity: 1; }
+}
+
+/* ── Dark mode ─────────────────────────────────────────────────────────── */
+/* Everything above is tokens except the inline --bar-color hue. Same treatment
+   as .status-count-chip below: lift the hue toward white so a mid-tone series
+   colour still reads on the dark ground, and thicken the wash a little. */
+html[data-mode="dark"] .sa-bar,
+html[data-mode="dark"] .sa-meter {
+  background: color-mix(in srgb, var(--bar-color, var(--accent)) 20%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bar-color, var(--accent)) 30%, transparent);
+}
+html[data-mode="dark"] .sa-bar-fill,
+html[data-mode="dark"] .sa-meter-fill,
+html[data-mode="dark"] .sa-velocity-fill,
+html[data-mode="dark"] .sa-legend-swatch {
+  background: color-mix(in srgb, var(--bar-color, var(--accent)) 78%, #ffffff);
+}
+/* Shimmer sweep has to be lighter than its track; --surface-2 sits *below*
+   --border once the page is dark, so there the sweep mixes toward the ink. */
+html[data-mode="dark"] .sa-skeleton {
+  background: linear-gradient(90deg, var(--border) 25%, color-mix(in srgb, var(--border) 62%, var(--text)) 50%, var(--border) 75%);
+  background-size: 600px 100%;
+}
+/* If the JS hands an avatar an inline hue mixed for a white row, inline wins over
+   any rule here — so lift the whole chip, the way .task-assignee-avatar is. */
+html[data-mode="dark"] .sa-avatar[style] { filter: brightness(1.45) saturate(.95); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sa-skeleton { animation: none; }
+  .sa-bar-fill,
+  .sa-meter-fill,
+  .sa-velocity-fill,
+  .sa-tab,
+  .holiday-year-btn,
+  .holiday-weekend-day,
+  .holiday-item-actions,
+  .sprint-analytics-link { transition: none; }
+}
 
 /* ─── Dark-mode exceptions ─────────────────────────────────────────────────
    Everything above that hard-codes a light surface or an ink mixed for a light

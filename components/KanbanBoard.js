@@ -81,6 +81,8 @@ function toEditForm(task) {
     startDate: task.startDate ? task.startDate.slice(0, 10) : '',
     dueDate: task.dueDate ? task.dueDate.slice(0, 10) : '',
     category: task.category || '',
+    // Empty string, not null: this is an <input> value, and the PUT normalises it back.
+    points: task.points == null ? '' : String(task.points),
     labelIds: Array.isArray(task.labelIds) ? task.labelIds : [],
     attachments: Array.isArray(task.attachments) ? task.attachments : [],
     cover: task.cover || null,
@@ -359,6 +361,10 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   const [newCheckText, setNewCheckText] = useState('')
   const [editingCheckId, setEditingCheckId] = useState(null)
   const [checkDraft, setCheckDraft] = useState('')
+  // Drag-to-reorder inside the checklist: the item in flight, and the row it is
+  // hovering plus the edge it would land on.
+  const [checkDragId, setCheckDragId] = useState(null)
+  const [checkDropTarget, setCheckDropTarget] = useState(null)   // { id, pos }
 
   // Updates panel — reachable straight from a card, no edit rights needed.
   const [updatesFor, setUpdatesFor] = useState(null)   // task id
@@ -913,7 +919,12 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     if (!editForm?.title.trim() || !editingTask) return
     // The select's empty option means "inherit", which is stored as null — an empty
     // string would work by accident (falsy) but reads as a real value in redis.
-    const body = { ...editForm, category: editForm.category || null }
+    const body = {
+      ...editForm,
+      category: editForm.category || null,
+      // Blank means unestimated, which is null in redis — '' would store as a real value.
+      points: editForm.points === '' || editForm.points == null ? null : Number(editForm.points),
+    }
     enqueueUpdate(editingTask.id, body, `Save card “${editForm.title.trim()}”`)
     closeEdit()
   }
@@ -999,6 +1010,52 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
 
   function removeCheckItem(id) {
     commitChecklist((editForm.checklist || []).filter(i => i.id !== id), 'Remove checklist item')
+  }
+
+  // Reorder is a checklist write like any other, so it rides the same shared
+  // path: no task-edit rights needed, and it saves the moment the row lands.
+  // `dragTypeRef` keeps the board's own card/column drop targets out of it.
+  function endCheckDrag() {
+    setCheckDragId(null)
+    setCheckDropTarget(null)
+    if (dragTypeRef.current === 'check') dragTypeRef.current = null
+  }
+
+  function onCheckDragStart(e, id) {
+    dragTypeRef.current = 'check'
+    setCheckDragId(id)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', id)
+    e.stopPropagation()
+  }
+
+  function onCheckDragOver(e, id) {
+    if (dragTypeRef.current !== 'check' || checkDragId === id) return
+    e.preventDefault()
+    e.stopPropagation()
+    e.dataTransfer.dropEffect = 'move'
+    const r = e.currentTarget.getBoundingClientRect()
+    const pos = (e.clientY - r.top) / r.height < 0.5 ? 'before' : 'after'
+    setCheckDropTarget(prev => (prev?.id === id && prev?.pos === pos) ? prev : { id, pos })
+  }
+
+  function onCheckDrop(e, targetId) {
+    if (dragTypeRef.current !== 'check') return
+    e.preventDefault()
+    e.stopPropagation()
+    const id = checkDragId
+    const pos = checkDropTarget?.pos
+    endCheckDrag()
+    if (!id || id === targetId) return
+    const items = [...(editForm.checklist || [])]
+    const from = items.findIndex(i => i.id === id)
+    if (from === -1) return
+    const [moved] = items.splice(from, 1)
+    let idx = items.findIndex(i => i.id === targetId)
+    if (idx === -1) idx = items.length
+    if (pos === 'after') idx += 1
+    items.splice(idx, 0, moved)
+    commitChecklist(items, 'Reorder checklist')
   }
 
   // Post from the card's Updates panel. The patch carries only `updates`, so the
@@ -3055,7 +3112,17 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                       {items.length > 0 && (
                         <div className="task-check-list">
                           {items.map(item => (
-                            <div key={item.id} className={`task-check-row${item.done ? ' is-done' : ''}`}>
+                            <div
+                              key={item.id}
+                              className={`task-check-row${item.done ? ' is-done' : ''}${checkDragId === item.id ? ' is-dragging' : ''}${checkDropTarget?.id === item.id ? ` task-check-row--drop-${checkDropTarget.pos}` : ''}`}
+                              draggable={editingCheckId !== item.id}
+                              onDragStart={e => onCheckDragStart(e, item.id)}
+                              onDragOver={e => onCheckDragOver(e, item.id)}
+                              onDrop={e => onCheckDrop(e, item.id)}
+                              onDragEnd={endCheckDrag}
+                              onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setCheckDropTarget(p => (p?.id === item.id ? null : p)) }}
+                            >
+                              <span className="task-check-grip" title="Drag to reorder" aria-hidden="true">⠿</span>
                               <input
                                 type="checkbox"
                                 checked={!!item.done}
@@ -3239,6 +3306,20 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                     <option value="high">High priority</option>
                     <option value="critical">Critical priority</option>
                   </select>
+                </div>
+
+                <div className="task-modal-field">
+                  <span className="task-modal-field-label">Story points</span>
+                  <input
+                    className="form-input"
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    placeholder="Unestimated"
+                    value={editForm.points ?? ''}
+                    onChange={e => setEditForm(p => ({ ...p, points: e.target.value }))}
+                  />
+                  <span className="task-modal-field-hint">Drives sprint velocity and the burndown. Blank counts as 1.</span>
                 </div>
 
                 {categories.length > 0 && (() => {

@@ -5,8 +5,10 @@ import { apiFetch } from '../lib/api-fetch'
 import { ALL_PERMISSIONS, PERMISSION_LABELS } from '../lib/permissions'
 import PermissionGrid, { ProjectPicker } from '../components/PermissionGrid'
 import GroupsTab from '../components/GroupsTab'
+import HolidaysTab from '../components/HolidaysTab'
 import UserAccessEditor from '../components/UserAccessEditor'
 import SubmitButton from '../components/SubmitButton'
+import { hasPerm } from '../lib/client-permissions'
 import { enqueue, onSync } from '../lib/submit-queue'
 import { useOptimistic } from '../lib/optimistic'
 
@@ -904,6 +906,9 @@ function Snapshots() {
 export default function AdminPage({ currentUser }) {
   const router = useRouter()
   const isSuperAdmin = currentUser?.role === 'superadmin' || (currentUser?.isAdmin && !currentUser?.role)
+  // The holiday calendar is org-wide, so it is not gated on a project: a subadmin
+  // holding holiday:manage gets the tab alongside every superadmin.
+  const canHolidays = isSuperAdmin || hasPerm(currentUser, 'holiday:manage')
   const [tab, setTab] = useState('users')
   const [rawUsers, setRawUsers] = useState([])
   const users = useOptimistic(rawUsers, { entity: 'user', key: 'name' })
@@ -966,7 +971,7 @@ export default function AdminPage({ currentUser }) {
         </div>
 
         <div style={{ display: 'flex', gap: 2, marginTop: 20 }}>
-          {['users', ...(isSuperAdmin ? ['admins', 'groups'] : []), 'snapshots', 'audit'].map(t => (
+          {['users', ...(isSuperAdmin ? ['admins', 'groups'] : []), ...(canHolidays ? ['holidays'] : []), 'snapshots', 'audit'].map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -978,7 +983,7 @@ export default function AdminPage({ currentUser }) {
                 borderBottom: tab === t ? '2px solid var(--accent, #818cf8)' : '2px solid transparent',
               }}
             >
-              {t === 'users' ? 'Users' : t === 'admins' ? 'Admins' : t === 'groups' ? 'Groups' : t === 'snapshots' ? 'Snapshots' : 'Audit Log'}
+              {t === 'users' ? 'Users' : t === 'admins' ? 'Admins' : t === 'groups' ? 'Groups' : t === 'holidays' ? 'Holidays' : t === 'snapshots' ? 'Snapshots' : 'Audit Log'}
             </button>
           ))}
         </div>
@@ -1061,6 +1066,7 @@ export default function AdminPage({ currentUser }) {
 
         {tab === 'admins' && isSuperAdmin && <AdminsTab />}
         {tab === 'groups' && isSuperAdmin && <GroupsTab />}
+        {tab === 'holidays' && canHolidays && <HolidaysTab currentUser={currentUser} />}
         {tab === 'snapshots' && <Snapshots />}
         {tab === 'audit' && <AuditLog />}
       </main>

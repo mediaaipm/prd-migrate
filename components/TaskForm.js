@@ -16,7 +16,7 @@ function readFileAsDataUrl(file) {
 }
 
 export function blankForm() {
-  return { title: '', description: '', status: 'todo', priority: 'medium', category: '', assignees: [], assignedBy: '', startDate: '', dueDate: '', numberOverride: '', attachments: [], cover: null, labelIds: [] }
+  return { title: '', description: '', status: 'todo', priority: 'medium', category: '', assignees: [], assignedBy: '', startDate: '', dueDate: '', numberOverride: '', points: '', attachments: [], cover: null, labelIds: [] }
 }
 
 // The one task composer/editor. The list, the board and the board's modals all
@@ -155,6 +155,18 @@ export default function TaskForm({ initial, onSave, onCancel, label, assignees =
           <option value="high">High priority</option>
           <option value="critical">Critical priority</option>
         </select>
+        {/* Optional. Left blank the task counts as 1 in velocity and burndown, so a
+            team that does not estimate loses nothing by ignoring this. */}
+        <input
+          className="form-input task-points-input"
+          type="number"
+          min="0"
+          step="0.5"
+          placeholder="Pts"
+          title="Story points (optional) — blank counts as 1"
+          value={form.points ?? ''}
+          onChange={f('points')}
+        />
         {categories.length > 0 && (
           // Blank is not "no category" but "inherit from the nearest ancestor" —
           // spelling that out here is cheaper than explaining it after the fact.

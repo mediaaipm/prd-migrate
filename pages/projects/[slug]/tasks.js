@@ -83,6 +83,16 @@ function daysLeft(endDate) {
   return diff
 }
 
+// Holiday dates arrive as plain 'YYYY-MM-DD'. Handing that to `new Date()` and
+// reading it back with local getters shifts the day west of Greenwich, so build
+// and format it in UTC.
+function formatHolidayDate(s) {
+  const m = typeof s === 'string' && /^(\d{4})-(\d{2})-(\d{2})/.exec(s)
+  if (!m) return ''
+  return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]))
+    .toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric' })
+}
+
 function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger, newSprintTrigger }) {
   const [serverSprints, setServerSprints] = useState([])
   const [loadingS, setLoadingS]           = useState(true)
@@ -95,6 +105,13 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger,
   const [formEnd, setFormEnd]         = useState('')
   const [formTaskIds, setFormTaskIds] = useState([])
   const [formStatus, setFormStatus]   = useState('active')
+  const [formGoal, setFormGoal]         = useState('')
+  const [formCapacity, setFormCapacity] = useState('')
+
+  // Working-day and holiday figures for the banner. Purely additive: a failed or
+  // missing analytics endpoint leaves this null and every element it feeds is
+  // skipped, so the banner falls back to exactly what it rendered before.
+  const [analytics, setAnalytics] = useState(null)
 
   const sprints = useOptimistic(serverSprints, { entity: 'sprint', scope: `/api/projects/${slug}/sprint` })
 
@@ -106,11 +123,28 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger,
       .catch(() => setLoadingS(false))
   }, [slug])
 
-  useEffect(() => { loadSprints() }, [loadSprints])
+  const loadAnalytics = useCallback(() => {
+    if (!slug) return Promise.resolve()
+    return apiFetch(`/api/projects/${slug}/sprint-analytics`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setAnalytics(d && typeof d === 'object' ? d : null))
+      .catch(() => setAnalytics(null))
+  }, [slug])
+
+  useEffect(() => { loadSprints(); loadAnalytics() }, [loadSprints, loadAnalytics])
   useEffect(() => onSync(item => {
-    if (item.optimistic?.entity === 'sprint') return loadSprints()
-  }), [loadSprints])
-  useEffect(() => { if (refreshTrigger > 0) loadSprints() }, [refreshTrigger]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (item.optimistic?.entity === 'sprint') { loadAnalytics(); return loadSprints() }
+  }), [loadSprints, loadAnalytics])
+  useEffect(() => { if (refreshTrigger > 0) { loadSprints(); loadAnalytics() } }, [refreshTrigger]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // SprintSummary per sprint id — the only thing the banner reads from analytics.
+  const metrics = useMemo(() => {
+    const out = {}
+    for (const s of (Array.isArray(analytics?.sprints) ? analytics.sprints : [])) {
+      if (s && s.id) out[s.id] = s
+    }
+    return out
+  }, [analytics])
   const lastNewSprintTrigger = useRef(newSprintTrigger)
   useEffect(() => {
     if (newSprintTrigger === lastNewSprintTrigger.current) return // ignore mount / remount
@@ -121,6 +155,7 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger,
   function openNew() {
     setEditingSprint(null)
     setFormName(''); setFormStart(''); setFormEnd(''); setFormTaskIds([]); setFormStatus('active')
+    setFormGoal(''); setFormCapacity('')
     setShowModal(true)
   }
 
@@ -131,14 +166,33 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger,
     setFormEnd(sprint.endDate || '')
     setFormTaskIds(sprint.taskIds || [])
     setFormStatus(sprint.status || 'active')
+    setFormGoal(sprint.goal || '')
+    setFormCapacity(sprint.capacityPoints == null ? '' : String(sprint.capacityPoints))
     setShowModal(true)
   }
 
   const sprintScope = `/api/projects/${slug}/sprint`
 
+  // Blank means "no capacity planned", which is a null on the record — not 0,
+  // which would read as a sprint that can hold nothing.
+  function capacityValue(raw) {
+    const trimmed = String(raw ?? '').trim()
+    if (!trimmed) return null
+    const n = Number(trimmed)
+    return Number.isFinite(n) && n >= 0 ? n : null
+  }
+
   function handleSave(e) {
     e.preventDefault()
-    const body = { name: formName, startDate: formStart || null, endDate: formEnd || null, taskIds: formTaskIds, status: formStatus }
+    const body = {
+      name: formName,
+      startDate: formStart || null,
+      endDate: formEnd || null,
+      taskIds: formTaskIds,
+      status: formStatus,
+      goal: formGoal,
+      capacityPoints: capacityValue(formCapacity),
+    }
     if (editingSprint) {
       enqueue({
         url: `${sprintScope}?id=${editingSprint.id}`,
@@ -165,7 +219,14 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger,
   // The sprint PUT replaces the whole record, so every status flip has to resend the
   // fields it is not changing.
   function setSprintStatus(sprint, status) {
-    const body = { name: sprint.name, startDate: sprint.startDate, endDate: sprint.endDate, taskIds: sprint.taskIds, status }
+    const body = {
+      name: sprint.name, startDate: sprint.startDate, endDate: sprint.endDate,
+      taskIds: sprint.taskIds, status,
+      // The PUT replaces the record, so the goal and capacity have to ride along
+      // or starting a sprint would silently erase them.
+      goal: sprint.goal ?? '',
+      capacityPoints: sprint.capacityPoints ?? null,
+    }
     enqueue({
       url: `${sprintScope}?id=${sprint.id}`,
       method: 'PUT',
@@ -274,6 +335,10 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger,
         const doneTasks    = allItems.filter(t => t.status === 'done').length
         const remaining = daysLeft(sprint.endDate)
         const isOverdue = remaining !== null && remaining < 0
+        // Null whenever analytics is unavailable — every element below that reads
+        // it is skipped, leaving the banner exactly as it was.
+        const m = metrics[sprint.id] || null
+        const sprintHolidays = Array.isArray(m?.holidays) ? m.holidays.slice(0, 3) : []
         return (
           <div key={sprint.id} style={{
             border: '1px solid color-mix(in srgb, var(--tint-indigo-fg) 45%, transparent)', borderRadius: 12,
@@ -299,7 +364,15 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger,
                   {isOverdue ? `${Math.abs(remaining)}d overdue` : remaining === 0 ? 'Ends today' : `${remaining}d left`}
                 </span>
               )}
+              {m && sprint.endDate && (
+                <span className="sprint-workdays">
+                  {Number(m.workingDaysLeft) || 0} working day{(Number(m.workingDaysLeft) || 0) === 1 ? '' : 's'} left
+                </span>
+              )}
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+                <Link href={`/projects/${slug}/sprints?sprint=${encodeURIComponent(sprint.id)}`} className="sprint-analytics-link">
+                  Analytics
+                </Link>
                 <button onClick={() => openEdit(sprint)} style={{
                   padding: '5px 12px', borderRadius: 7, border: '1px solid color-mix(in srgb, var(--tint-indigo-fg) 45%, transparent)',
                   background: 'var(--surface)', color: 'var(--tint-indigo-fg)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
@@ -314,6 +387,16 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger,
                 }}>Delete</button>
               </div>
             </div>
+            {sprint.goal && <p className="sprint-goal">{sprint.goal}</p>}
+            {sprintHolidays.length > 0 && (
+              <div className="sprint-holiday-strip">
+                {sprintHolidays.map((h, i) => (
+                  <span key={h?.date || `hol-${i}`} className="sprint-holiday-chip" title={`${h?.name || 'Holiday'} · ${h?.type || 'public'}`}>
+                    {formatHolidayDate(h?.date)} · {h?.name || 'Holiday'}
+                  </span>
+                ))}
+              </div>
+            )}
             {allItems.length > 0 && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                 <SprintProgressBar done={doneTasks} total={allItems.length} />
@@ -465,6 +548,18 @@ function SprintsSection({ slug, tasks: allTasks, onSprintChange, refreshTrigger,
                   <input type="date" value={formEnd} onChange={e => setFormEnd(e.target.value)}
                     style={{ width: '100%', padding: '8px 11px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 13, boxSizing: 'border-box' }} />
                 </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 5 }}>Sprint Goal</label>
+                <textarea value={formGoal} onChange={e => setFormGoal(e.target.value)} rows={2}
+                  placeholder="What does this sprint set out to achieve?"
+                  style={{ width: '100%', padding: '8px 11px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 13, boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 5 }}>Capacity (points)</label>
+                <input type="number" min={0} step={1} value={formCapacity} onChange={e => setFormCapacity(e.target.value)}
+                  placeholder="Leave blank if you don't plan in points"
+                  style={{ width: '100%', padding: '8px 11px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 13, boxSizing: 'border-box' }} />
               </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 8 }}>

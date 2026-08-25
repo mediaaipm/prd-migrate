@@ -59,6 +59,9 @@ async function route(req, res) {
       updates.dueDelayed = !!(before.dueDate && updates.dueDate && new Date(updates.dueDate) > new Date(before.dueDate));
     }
     if (updates.status === 'done') updates.dueDelayed = false;
+    // `points` rides through as a plain field: task-store normalises it (null when
+    // blank/NaN/negative) and derives `completedAt` from the status transition, so
+    // neither can be dictated by the request body.
     // Restore the attachment bytes the client could not send back — see lib/task-media.js.
     let task;
     try {
