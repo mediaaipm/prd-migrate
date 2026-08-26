@@ -4,6 +4,7 @@ import SubmitButton from './SubmitButton'
 import { apiFetch } from '../lib/api-fetch'
 import { enqueue, newId, onSync } from '../lib/submit-queue'
 import { useOptimistic } from '../lib/optimistic'
+import SprintBoard from './SprintBoard'
 
 // ─── Active Sprint ────────────────────────────────────────────────────────────
 
@@ -66,6 +67,27 @@ function SprintChips({ tasks, sprintIdSet }) {
 }
 
 
+// Board or chips, for every sprint in the section at once. Chips are the compact
+// read of what is in a sprint; the board is where the sprint is actually run.
+function SprintViewToggle({ view, onChange }) {
+  return (
+    <div className="sprint-view-toggle" role="group" aria-label="Sprint view">
+      <button
+        type="button"
+        className={view === 'board' ? 'is-on' : ''}
+        onClick={() => onChange('board')}
+        title="Kanban board — drag cards to move them"
+      >▦ Board</button>
+      <button
+        type="button"
+        className={view === 'chips' ? 'is-on' : ''}
+        onClick={() => onChange('chips')}
+        title="Compact chip list"
+      >☰ Chips</button>
+    </div>
+  )
+}
+
 function formatSprintDate(d) {
   if (!d) return null
   return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
@@ -87,7 +109,7 @@ function formatHolidayDate(s) {
     .toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric' })
 }
 
-export default function SprintsSection({ slug, tasks: allTasks, onSprintChange, onViewAnalytics, refreshTrigger, newSprintTrigger }) {
+export default function SprintsSection({ slug, tasks: allTasks, currentUser, taskAcl, taskPrefix, onSprintChange, onViewAnalytics, refreshTrigger, newSprintTrigger }) {
   const [serverSprints, setServerSprints] = useState([])
   const [loadingS, setLoadingS]           = useState(true)
   const [showModal, setShowModal]         = useState(false)
@@ -140,6 +162,33 @@ export default function SprintsSection({ slug, tasks: allTasks, onSprintChange, 
     }
     return out
   }, [analytics])
+  // Board or chips, remembered per project. Board is the default: a sprint is a thing
+  // you run, and chips only read back what was planned. Read in an effect rather than
+  // in the initializer so the server and the first client render agree.
+  const [view, setView] = useState('board')
+  useEffect(() => {
+    if (!slug) return
+    try {
+      const saved = localStorage.getItem(`sprint-view:${slug}`)
+      if (saved === 'board' || saved === 'chips') setView(saved)
+    } catch {}
+  }, [slug])
+  function chooseView(next) {
+    setView(next)
+    try { localStorage.setItem(`sprint-view:${slug}`, next) } catch {}
+  }
+
+  // A sprint record embeds a snapshot of its tasks as of the last GET; the page's task
+  // list is the optimistic one. Prefer the live copy for root-list tasks so a card
+  // dropped into a new column stays there instead of springing back until the sprint
+  // refetch lands. Version-scoped cards keep the embedded copy — a task id is only
+  // unique within its own version list.
+  const liveById = useMemo(() => new Map((allTasks || []).map(t => [t.id, t])), [allTasks])
+  const resolveItems = useCallback(items => (items || []).map(t => {
+    const live = t.version ? null : liveById.get(t.id)
+    return live ? { ...t, ...live } : t
+  }), [liveById])
+
   const lastNewSprintTrigger = useRef(newSprintTrigger)
   useEffect(() => {
     if (newSprintTrigger === lastNewSprintTrigger.current) return // ignore mount / remount
@@ -364,7 +413,7 @@ export default function SprintsSection({ slug, tasks: allTasks, onSprintChange, 
       {/* Active sprint banners */}
       {activeSprints.map(sprint => {
         const sprintIdSet  = new Set(sprint.taskIds || [])
-        const allItems     = sprint.tasks || []
+        const allItems     = resolveItems(sprint.tasks)
         const doneTasks    = allItems.filter(t => t.status === 'done').length
         const remaining = daysLeft(sprint.endDate)
         const isOverdue = remaining !== null && remaining < 0
@@ -402,7 +451,8 @@ export default function SprintsSection({ slug, tasks: allTasks, onSprintChange, 
                   {Number(m.workingDaysLeft) || 0} working day{(Number(m.workingDaysLeft) || 0) === 1 ? '' : 's'} left
                 </span>
               )}
-              <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+                <SprintViewToggle view={view} onChange={chooseView} />
                 {onViewAnalytics ? (
                   <button type="button" onClick={() => onViewAnalytics(sprint.id)} className="sprint-analytics-link">
                     Analytics
@@ -441,9 +491,17 @@ export default function SprintsSection({ slug, tasks: allTasks, onSprintChange, 
                 <SprintProgressBar done={doneTasks} total={allItems.length} />
               </div>
             )}
-            {allItems.length > 0 && (
+            {allItems.length > 0 && (view === 'board' ? (
+              <SprintBoard
+                slug={slug}
+                tasks={allItems}
+                currentUser={currentUser}
+                taskAcl={taskAcl}
+                taskPrefix={taskPrefix}
+              />
+            ) : (
               <SprintChips tasks={allItems} sprintIdSet={sprintIdSet} />
-            )}
+            ))}
             {allItems.length === 0 && (
               <p style={{ fontSize: 12, color: 'var(--muted)', margin: 0 }}>
                 No tasks in this sprint yet — click <strong>Manage</strong> to add some.
@@ -456,10 +514,13 @@ export default function SprintsSection({ slug, tasks: allTasks, onSprintChange, 
       {/* Planned sprints */}
       {plannedSprints.length > 0 && (
         <div style={{ border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface-2)', padding: '12px 16px', marginBottom: 10 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '0.05em', marginBottom: 8 }}>PLANNED</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '0.05em' }}>PLANNED</span>
+            <div style={{ marginLeft: 'auto' }}><SprintViewToggle view={view} onChange={chooseView} /></div>
+          </div>
           {plannedSprints.map((sprint, i) => {
             const sprintIdSet = new Set(sprint.taskIds || [])
-            const allItems    = sprint.tasks || []
+            const allItems    = resolveItems(sprint.tasks)
             return (
               <div key={sprint.id} style={{
                 padding: '8px 0', borderBottom: i < plannedSprints.length - 1 ? '1px solid var(--border)' : 'none',
@@ -490,7 +551,17 @@ export default function SprintsSection({ slug, tasks: allTasks, onSprintChange, 
                 </div>
                 {allItems.length > 0 && (
                   <div style={{ marginTop: 8 }}>
-                    <SprintChips tasks={allItems} sprintIdSet={sprintIdSet} />
+                    {view === 'board' ? (
+                      <SprintBoard
+                        slug={slug}
+                        tasks={allItems}
+                        currentUser={currentUser}
+                        taskAcl={taskAcl}
+                        taskPrefix={taskPrefix}
+                      />
+                    ) : (
+                      <SprintChips tasks={allItems} sprintIdSet={sprintIdSet} />
+                    )}
                   </div>
                 )}
               </div>
@@ -512,7 +583,7 @@ export default function SprintsSection({ slug, tasks: allTasks, onSprintChange, 
             <div style={{ border: '1px solid var(--border)', borderRadius: 10, background: 'var(--surface-2)', padding: '10px 14px', marginTop: 6 }}>
               {completedSprints.map((sprint, i) => {
                 const sprintIdSet = new Set(sprint.taskIds || [])
-                const allItems    = sprint.tasks || []
+                const allItems    = resolveItems(sprint.tasks)
                 const doneTasks   = allItems.filter(t => t.status === 'done').length
                 return (
                   <div key={sprint.id} style={{

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import Nav from '../../../components/Nav'
@@ -7,11 +7,17 @@ import SprintsSection from '../../../components/SprintsSection'
 import { apiFetch } from '../../../lib/api-fetch'
 import { useOptimistic } from '../../../lib/optimistic'
 import { onSync } from '../../../lib/submit-queue'
+import { scopeUserToProject } from '../../../lib/scoped-user'
 
 export default function ProjectSprints({ currentUser }) {
   const router = useRouter()
   const { slug, sprint } = router.query
   const [projectName, setProjectName] = useState('')
+  // Fed to the sprint board so it offers only the moves the server will accept:
+  // `taskAcl` is the project's per-assignee status rule, `access` its role policy.
+  const [taskAcl, setTaskAcl] = useState(null)
+  const [taskPrefix, setTaskPrefix] = useState('')
+  const [access, setAccess] = useState(null)
 
   // The sprint modal picks tasks out of this list, so the page owns the fetch that
   // used to live on the Tasks page. Same optimistic scope as the Tasks page uses, so a
@@ -49,9 +55,25 @@ export default function ProjectSprints({ currentUser }) {
     if (!router.isReady || !slug) return
     apiFetch(`/api/projects/${slug}`)
       .then(r => (r.ok ? r.json() : null))
-      .then(p => { if (p) setProjectName(p.name || '') })
+      .then(p => {
+        if (!p) return
+        setProjectName(p.name || '')
+        setTaskAcl(p.taskAcl || null)
+        setTaskPrefix(p.taskPrefix || '')
+      })
       .catch(() => {})
   }, [router.isReady, slug])
+
+  // This project's effective role policy — same overlay the Tasks page applies.
+  useEffect(() => {
+    if (!router.isReady || !slug) return
+    apiFetch(`/api/projects/${slug}/access`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(a => setAccess(a))
+      .catch(() => {})
+  }, [router.isReady, slug])
+
+  const scopedUser = useMemo(() => scopeUserToProject(currentUser, access), [currentUser, access])
 
   // The chosen sprint lives in the URL so the view is linkable and the back
   // button steps through it. `shallow` keeps the page from re-running data
@@ -128,6 +150,9 @@ export default function ProjectSprints({ currentUser }) {
             key={sprintKey}
             slug={slug}
             tasks={tasks}
+            currentUser={scopedUser}
+            taskAcl={taskAcl}
+            taskPrefix={taskPrefix}
             onSprintChange={() => setSprintKey(k => k + 1)}
             onViewAnalytics={focusAnalytics}
             refreshTrigger={tasksVersion}

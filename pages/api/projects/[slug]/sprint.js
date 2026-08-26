@@ -17,7 +17,11 @@ async function buildTaskMap(slug) {
   for (const g of groups) {
     // Sprints embed whole task objects; without the strip the board's sprint view
     // re-downloaded every attachment on every load.
-    for (const t of stripTasksMedia(g.tasks, slug, g.version)) map[t.id] = t
+    //
+    // `version` is stamped on the embedded copy only (tasks are stored without it):
+    // a sprint spans every version list, and the sprint board has to know which
+    // task route a card belongs to before it can move it.
+    for (const t of stripTasksMedia(g.tasks, slug, g.version)) map[t.id] = { ...t, version: g.version }
   }
   return map
 }

@@ -310,8 +310,8 @@
     "semantic_hash": ""
   },
   "pages/api/projects/[slug]/sprint.js": {
-    "mtime": 1787663358.9694464,
-    "ast_hash": "e1c39eee5f756e111309806270f5f3d3",
+    "mtime": 1787747872.4262495,
+    "ast_hash": "2c9464f61289cd0e08b52c9881d50efa",
     "semantic_hash": ""
   },
   "pages/api/projects/[slug]/tasks/[taskId].js": {
@@ -390,8 +390,8 @@
     "semantic_hash": ""
   },
   "pages/projects/[slug]/tasks.js": {
-    "mtime": 1787730212.69892,
-    "ast_hash": "103643190cc5733a2647696e4fb34a66",
+    "mtime": 1787747866.3379412,
+    "ast_hash": "3507bfca9ee75c38d8277e268ba07537",
     "semantic_hash": ""
   },
   "prds/aipm/meta.json": {
@@ -800,8 +800,8 @@
     "semantic_hash": ""
   },
   "pages/projects/[slug]/sprints.js": {
-    "mtime": 1787730155.8199434,
-    "ast_hash": "d2e2a498f6bc15fa819beed9030db5f3",
+    "mtime": 1787747997.1988013,
+    "ast_hash": "30c9fbaa402fc95eda4cabaafb18205b",
     "semantic_hash": ""
   },
   "lib/task-acceptance.js": {
@@ -810,8 +810,18 @@
     "semantic_hash": ""
   },
   "components/SprintsSection.js": {
-    "mtime": 1787731285.54923,
-    "ast_hash": "e5e6fdaaaa78eed21bf7597e5ababb29",
+    "mtime": 1787748098.0226128,
+    "ast_hash": "194d6eea8da947216881ffe8226b0b51",
+    "semantic_hash": ""
+  },
+  "components/SprintBoard.js": {
+    "mtime": 1787750661.969426,
+    "ast_hash": "ce2870c243d8fb65440b8717579bcee6",
+    "semantic_hash": ""
+  },
+  "lib/scoped-user.js": {
+    "mtime": 1787747852.306549,
+    "ast_hash": "f4447e92a3a8a247ace6d59b3a170b2c",
     "semantic_hash": ""
   }
 }

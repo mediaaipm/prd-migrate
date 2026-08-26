@@ -5193,6 +5193,266 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   text-decoration: none;
 }
 
+/* ── Sprint board (the kanban inside a sprint banner) ──────────────────── */
+/* Compact on purpose: it sits inside the banner alongside five other columns and
+   is read at a glance, not worked in all day. The banner ground is a tint wash
+   that inverts in dark mode, so every surface here is a token; only the column
+   accent is literal, and that one arrives from data (the column's own colour),
+   handed in as --status-color. */
+.sprint-view-toggle {
+  display: inline-flex;
+  border: 1px solid color-mix(in srgb, var(--tint-indigo-fg) 40%, transparent);
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.sprint-view-toggle button {
+  background: none;
+  border: none;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .12s, color .12s;
+}
+.sprint-view-toggle button + button { border-left: 1px solid var(--border); }
+.sprint-view-toggle button:hover { color: var(--text); background: var(--hover); }
+.sprint-view-toggle button.is-on {
+  background: var(--tint-indigo-fg);
+  color: var(--on-accent);
+}
+
+.sprint-board-wrap {
+  margin-top: 4px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  /* Grab-to-pan: the board is wider than the banner as soon as a project has more
+     than four or five columns. */
+  cursor: grab;
+  user-select: none;
+  overscroll-behavior-x: contain;
+}
+.sprint-board-wrap::-webkit-scrollbar { height: 6px; }
+.sprint-board-wrap::-webkit-scrollbar-track { background: transparent; }
+.sprint-board-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.sprint-board {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  min-width: max-content;
+}
+
+.sprint-col {
+  width: 198px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--status-color, var(--border));
+  border-radius: 10px;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+}
+.sprint-col--over {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.sprint-col-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--border);
+}
+.sprint-col-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sprint-col-count {
+  margin-left: auto;
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 0 6px;
+}
+.sprint-col-pts {
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--tint-violet-fg);
+  background: var(--tint-violet-bg);
+  border-radius: 10px;
+  padding: 0 6px;
+}
+
+.sprint-col-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 7px;
+  /* The whole column is the drop target, so it keeps a landing strip even when
+     the last card has just been dragged out of it. */
+  min-height: 54px;
+}
+.sprint-col-empty {
+  margin: 0;
+  padding: 8px 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  opacity: .5;
+}
+
+.sprint-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 8px;
+  cursor: grab;
+  user-select: none;
+  transition: border-color .12s, box-shadow .12s, opacity .12s, transform .12s;
+}
+.sprint-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  box-shadow: 0 3px 10px var(--overlay);
+  transform: translateY(-1px);
+}
+.sprint-card:active { cursor: grabbing; }
+.sprint-card--dragging {
+  opacity: .4;
+  border-style: dashed;
+  border-color: var(--accent);
+  box-shadow: none;
+}
+/* Readable, just not draggable: a card someone else owns still opens on click. */
+.sprint-card--locked { cursor: pointer; }
+
+.sprint-card-crumb {
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sprint-card-top {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 3px;
+}
+.sprint-card-prio {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.sprint-card-avatar {
+  width: 17px;
+  height: 17px;
+  font-size: 9px;
+}
+.sprint-card-top .sprint-card-avatar:first-of-type { margin-left: auto; }
+.sprint-card-title {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.sprint-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  align-items: center;
+  margin-top: 5px;
+}
+.sprint-card-meta .task-meta-chip { font-size: 10px; padding: 0 5px; }
+
+.sprint-card-move {
+  width: 100%;
+  margin-top: 6px;
+  padding: 2px 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sprint-card-move:hover, .sprint-card-move:focus {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+/* Sprint card editor — the modal a card click opens, in place on the sprint page.
+   Reuses .kanban-modal so the board's card editor and this one cannot drift. */
+.sprint-edit-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.sprint-edit-title-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sprint-edit-body { padding: 14px 18px 16px; }
+.sprint-edit-body .task-form { padding: 0; }
+
+.sprint-edit-read {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sprint-edit-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sprint-edit-desc--empty { color: var(--muted); font-style: italic; }
+.sprint-edit-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.sprint-edit-status .form-input { flex: 1; }
+
+.sprint-edit-full {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+.sprint-edit-full:hover { text-decoration: underline; }
+
 /* ── Responsive ────────────────────────────────────────────────────────── */
 @media (max-width: 720px) {
   .sa-toolbar,

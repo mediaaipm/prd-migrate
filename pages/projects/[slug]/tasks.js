@@ -7,6 +7,7 @@ import { apiFetch } from '../../../lib/api-fetch'
 import { enqueue, onSync } from '../../../lib/submit-queue'
 import { useOptimistic } from '../../../lib/optimistic'
 import { reshapesTree } from '../../../lib/task-reconcile'
+import { scopeUserToProject } from '../../../lib/scoped-user'
 import TaskTree from '../../../components/TaskTree'
 import KanbanBoard from '../../../components/KanbanBoard'
 import CalendarView from '../../../components/CalendarView'
@@ -225,25 +226,9 @@ export default function TasksPage({ currentUser }) {
   }, [router.isReady, slug])
 
   // The session user carries global-default perms; overlay this project's policy so
-  // the board/list only offer what the server will accept here. Superadmin is
-  // unaffected (hasPerm short-circuits on role). Admins are capped by the project's
-  // admin policy; viewers use the project's user policy + status blocklist.
-  const scopedUser = useMemo(() => {
-    if (!currentUser || !access) return currentUser
-    if (currentUser.role === 'superadmin' || (currentUser.isAdmin && !currentUser.role)) return currentUser
-    const u = { ...currentUser }
-    // `effective` is what the server computed for THIS caller in THIS project
-    // (personal + group grant, capped by the project policy).
-    const effective = Array.isArray(access.effective) ? access.effective : null
-    if (currentUser.role === 'admin') {
-      const personal = Array.isArray(currentUser.permissions) ? currentUser.permissions : []
-      u.permissions = effective || personal.filter(p => (access.admin || []).includes(p))
-    } else {
-      u.viewerPerms = effective || access.user || []
-    }
-    u.restrictedStatuses = access.userRestrictedStatuses || []
-    return u
-  }, [currentUser, access])
+  // the board/list only offer what the server will accept here. Shared with the
+  // sprints page, which scopes the same user for its sprint board.
+  const scopedUser = useMemo(() => scopeUserToProject(currentUser, access), [currentUser, access])
 
   useEffect(() => {
     if (!router.isReady) return
