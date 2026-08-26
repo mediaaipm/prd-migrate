@@ -86,6 +86,43 @@ const HEALTH_CHIP = {
   'not-started': 'sa-chip--info',
 }
 
+// The sprint lifecycle, in the order a sprint travels through it. The picker used to
+// print the raw slug next to the name ("Sprint 4 · completed"), which said nothing about
+// which sprints are live and which are history — these are the words the rest of the app
+// already uses on the Tasks page.
+const SPRINT_STATUS = {
+  active:    { label: 'Active',    group: 'Active',    chip: 'sa-chip--good' },
+  planned:   { label: 'Planned',   group: 'Planned',   chip: 'sa-chip--info' },
+  completed: { label: 'Completed', group: 'Completed', chip: '' },
+}
+const SPRINT_STATUS_ORDER = ['active', 'planned', 'completed']
+
+function statusLabel(status) {
+  return SPRINT_STATUS[status]?.label || (status ? String(status) : 'Unknown')
+}
+
+// Buckets in lifecycle order, empty ones dropped. Anything with a status this build does
+// not know about still has to be reachable, so it lands in a trailing bucket rather than
+// disappearing from the picker.
+function groupSprints(sprints) {
+  const buckets = SPRINT_STATUS_ORDER.map(key => ({ key, label: SPRINT_STATUS[key].group, items: [] }))
+  const byKey = {}
+  buckets.forEach(b => { byKey[b.key] = b })
+  const other = { key: 'other', label: 'Other', items: [] }
+  for (const s of arr(sprints)) {
+    (byKey[s?.status] || other).items.push(s)
+  }
+  return buckets.concat(other).filter(b => b.items.length)
+}
+
+// The group already names the status, so the option carries the dates instead — that is
+// what tells two "Sprint 4"s apart.
+function sprintOptionLabel(s) {
+  const name = s?.name || 'Untitled sprint'
+  if (!s?.startDate && !s?.endDate) return name
+  return `${name} · ${fmtRange(s.startDate, s.endDate)}`
+}
+
 function pctColor(pct) {
   const p = num(pct)
   if (p >= 100) return 'var(--tint-green-fg)'
@@ -827,12 +864,21 @@ export default function SprintAnalytics({ slug, currentUser, sprintId, onSprintC
           >
             {/* A ?sprint= id that no longer exists must not leave the select blank. */}
             {!sprints.some(s => s?.id === currentId) && <option value={currentId}>Select a sprint…</option>}
-            {sprints.map((s, i) => (
-              <option key={s?.id || `sprint-${i}`} value={s?.id || ''}>
-                {s?.name || 'Untitled sprint'}{s?.status ? ` · ${s.status}` : ''}
-              </option>
+            {groupSprints(sprints).map(g => (
+              <optgroup key={g.key} label={`${g.label} (${g.items.length})`}>
+                {g.items.map((s, i) => (
+                  <option key={s?.id || `${g.key}-${i}`} value={s?.id || ''}>
+                    {sprintOptionLabel(s)}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
+          {focus?.status && (
+            <span className={`sa-chip ${SPRINT_STATUS[focus.status]?.chip || ''}`}>
+              <span className="sa-chip-dot" />{statusLabel(focus.status)}
+            </span>
+          )}
           {focus && <span className="sa-chip sa-chip--info"><span className="sa-chip-dot" />{fmtRange(focus.startDate, focus.endDate)}</span>}
           {focus?.health && (
             <span className={`sa-chip ${HEALTH_CHIP[focus.health] || 'sa-chip--info'}`}>
@@ -853,6 +899,30 @@ export default function SprintAnalytics({ slug, currentUser, sprintId, onSprintC
           ))}
         </div>
       </div>
+
+      {/* The optgroup counts are only readable while the dropdown is open, so the same
+          breakdown sits in the open as a jump-list: one chip per status, selecting the
+          newest sprint in that bucket. */}
+      {sprints.length > 1 && (
+        <div className="sa-status-rail">
+          {groupSprints(sprints).map(g => {
+            const on = g.items.some(s => s?.id === currentId)
+            const target = g.items.find(s => s?.id)
+            return (
+              <button
+                key={g.key}
+                type="button"
+                className={`sa-chip sa-status-pill${on ? ' is-on' : ''} ${SPRINT_STATUS[g.key]?.chip || ''}`}
+                onClick={() => target && pickSprint(target.id)}
+                disabled={!target}
+                title={`Newest ${g.label.toLowerCase()} sprint: ${target ? sprintOptionLabel(target) : '—'}`}
+              >
+                <span className="sa-chip-dot" />{g.label} · {g.items.length}
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       {!focus ? (
         <div className="sa-empty">Pick a sprint above to see its analytics.</div>

@@ -18,6 +18,7 @@ import { withRev, bumpRev } from '../lib/config-cache'
 import { taskShareLink, copyText } from '../lib/task-link'
 import { attSrc, coverSrc } from '../lib/attachment-src'
 import { makeChecklistItem, checklistProgress, MAX_CHECKLIST_TEXT } from '../lib/task-checklist'
+import { makeAcceptanceItem, acceptanceProgress, unmetAcceptance, MAX_ACCEPTANCE_TEXT, MAX_ACCEPTANCE_ITEMS } from '../lib/task-acceptance'
 
 const PRIORITY_ORDER = ['critical', 'high', 'medium', 'low']
 const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
@@ -88,6 +89,7 @@ function toEditForm(task) {
     cover: task.cover || null,
     updates: Array.isArray(task.updates) ? task.updates : [],
     checklist: Array.isArray(task.checklist) ? task.checklist : [],
+    acceptance: Array.isArray(task.acceptance) ? task.acceptance : [],
   }
 }
 
@@ -365,6 +367,12 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   // hovering plus the edge it would land on.
   const [checkDragId, setCheckDragId] = useState(null)
   const [checkDropTarget, setCheckDropTarget] = useState(null)   // { id, pos }
+
+  // Acceptance-criteria composer in the edit modal — same shape as the checklist
+  // one, minus drag-to-reorder: criteria are a set, not a sequence of steps.
+  const [newAcText, setNewAcText] = useState('')
+  const [editingAcId, setEditingAcId] = useState(null)
+  const [acDraft, setAcDraft] = useState('')
 
   // Updates panel — reachable straight from a card, no edit rights needed.
   const [updatesFor, setUpdatesFor] = useState(null)   // task id
@@ -925,6 +933,9 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
       // Blank means unestimated, which is null in redis — '' would store as a real value.
       points: editForm.points === '' || editForm.points == null ? null : Number(editForm.points),
     }
+    // Same definition-of-done prompt a drag into Done gives.
+    if (body.status === 'done' && editingTask.status !== 'done'
+      && !confirmAcceptance({ title: editForm.title, acceptance: editForm.acceptance })) return
     enqueueUpdate(editingTask.id, body, `Save card “${editForm.title.trim()}”`)
     closeEdit()
   }
@@ -1058,6 +1069,75 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     commitChecklist(items, 'Reorder checklist')
   }
 
+  // --- Acceptance criteria ---
+  // The story's definition of done. Like the checklist it saves the moment it
+  // changes rather than waiting for Save — but the split is different: writing a
+  // criterion is a task edit, ticking one is a verification anyone who can open
+  // the card may do. The server enforces exactly that (lib/task-acceptance.js);
+  // `canEditAll` here only decides which controls are worth rendering.
+  function commitAcceptance(next, label) {
+    if (!editingTask) return
+    setEditForm(p => ({ ...p, acceptance: next }))
+    setEditingTask(t => (t ? { ...t, acceptance: next } : t))
+    enqueueUpdate(editingTask.id, { acceptance: next }, label)
+  }
+
+  function addAcItem() {
+    const text = newAcText.trim()
+    if (!text || !editingTask) return
+    const next = [...(editForm.acceptance || []), makeAcceptanceItem(text, currentUser?.name || null)]
+    setNewAcText('')
+    commitAcceptance(next, 'Add acceptance criterion')
+  }
+
+  function toggleAcItem(id) {
+    const now = new Date().toISOString()
+    const next = (editForm.acceptance || []).map(i => (
+      i.id === id
+        ? { ...i, done: !i.done, doneBy: !i.done ? (currentUser?.name || null) : null, doneAt: !i.done ? now : null }
+        : i
+    ))
+    commitAcceptance(next, 'Meet acceptance criterion')
+  }
+
+  function beginEditAc(item) {
+    if (!canEditAll) return
+    setEditingAcId(item.id)
+    setAcDraft(item.text)
+  }
+
+  function commitEditAc() {
+    const id = editingAcId
+    const text = acDraft.trim()
+    setEditingAcId(null)
+    if (!id) return
+    const current = (editForm.acceptance || []).find(i => i.id === id)
+    if (!current || !text || text === current.text) return
+    commitAcceptance(
+      (editForm.acceptance || []).map(i => (i.id === id ? { ...i, text } : i)),
+      'Reword acceptance criterion',
+    )
+  }
+
+  function removeAcItem(id) {
+    commitAcceptance((editForm.acceptance || []).filter(i => i.id !== id), 'Remove acceptance criterion')
+  }
+
+  // Closing a story with criteria outstanding is allowed — scope gets cut,
+  // criteria get obsoleted — but it should never happen by accident, so every
+  // path into `done` asks first. Returns false when the move should be dropped.
+  function confirmAcceptance(task) {
+    const unmet = unmetAcceptance(task)
+    if (!unmet.length) return true
+    const listed = unmet.slice(0, 5).map(i => '\u2022 ' + i.text).join('\n')
+    const more = unmet.length > 5 ? '\n\u2022 \u2026and ' + (unmet.length - 5) + ' more' : ''
+    return window.confirm(
+      '\u201C' + task.title + '\u201D has ' + unmet.length + ' unmet acceptance '
+      + (unmet.length === 1 ? 'criterion' : 'criteria') + ':\n\n' + listed + more
+      + '\n\nMove it to Done anyway?'
+    )
+  }
+
   // Post from the card's Updates panel. The patch carries only `updates`, so the
   // server's self-service path lets a non-admin assignee post without task edit rights.
   function postUpdate(task) {
@@ -1120,6 +1200,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
       alert('You are not allowed to move tasks to this status.')
       return
     }
+    if (newStatus === 'done' && !confirmAcceptance(task)) return
     // The wait here is the card's leave animation, not the database.
     setAnimatingOut(prev => new Set([...prev, taskId]))
     enqueueUpdate(taskId, { status: newStatus }, `Move “${task.title}” to ${newStatus}`)
@@ -1663,6 +1744,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
         statusAllowed={statusAllowedForUser}
         onSetStatus={(t, next) => {
           if (!statusAllowedForUser(next)) { alert('You are not allowed to set this status.'); return }
+          if (next === 'done' && !confirmAcceptance(t)) return
           enqueueUpdate(t.id, { status: next }, `Move “${t.title}”`)
         }}
         onOpen={t => { setCellPeek(null); openEdit(t) }}
@@ -1803,6 +1885,16 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                     {rootCol && (
                       <span className="swim-lane-status" style={{ background: rootCol.color }}>{rootCol.label}</span>
                     )}
+                    {(() => {
+                      const { met, total } = acceptanceProgress(root)
+                      if (!total) return null
+                      return (
+                        <span
+                          className={`swim-lane-ac${met === total ? ' swim-lane-ac--met' : ''}`}
+                          title={`Acceptance criteria: ${met} of ${total} met`}
+                        >✓ {met}/{total} AC</span>
+                      )
+                    })()}
                     <span
                       className="swim-lane-prog"
                       title={`${pct}% of “${root.title}” complete`}
@@ -2129,6 +2221,16 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                   className={`task-meta-chip${done === total ? ' task-check-chip--complete' : ''}`}
                   title={`Checklist: ${done} of ${total} ticked`}
                 >☑ {done}/{total}</span>
+              )
+            })()}
+            {(() => {
+              const { met, total } = acceptanceProgress(task)
+              if (!total) return null
+              return (
+                <span
+                  className={`task-meta-chip task-ac-chip${met === total ? ' task-ac-chip--met' : ''}`}
+                  title={`Acceptance criteria: ${met} of ${total} met`}
+                >✓ {met}/{total}</span>
               )
             })()}
             {task.assignees?.map(a => (
@@ -3087,6 +3189,113 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                           )
                         })}
                       </div>
+                    </div>
+                  )
+                })()}
+
+                {/* Acceptance criteria — the story's definition of done. Written by a
+                    task editor, ticked by whoever verifies; the server enforces that
+                    split, not this markup. */}
+                {(() => {
+                  const items = editForm.acceptance || []
+                  // A story is a root task — the lane on the swimlane board. Sub-tasks
+                  // are how a story gets built, not separate contracts, so the composer
+                  // only appears there. An existing list still renders anywhere: an
+                  // import or a re-parent can leave one on a task that is no longer root.
+                  const isStory = !editForm.parentId
+                  if (!isStory && !items.length) return null
+                  const met = items.filter(i => i.done).length
+                  const pct = items.length ? Math.round((met / items.length) * 100) : 0
+                  return (
+                    <div className="task-modal-section task-ac-section">
+                      <div className="task-modal-section-title">
+                        Acceptance criteria
+                        {items.length > 0 && (
+                          <>
+                            <span className={`kanban-subtask-count${met === items.length ? ' task-ac-count--met' : ''}`}>{met}/{items.length}</span>
+                            <span className="task-modal-progress" title={`${pct}% met`}>
+                              <span className="task-modal-progress-fill" style={{ width: `${pct}%` }} />
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      {items.length === 0 && (
+                        <div className="task-ac-empty">
+                          {canEditAll
+                            ? 'What has to be true before this story can be called done?'
+                            : 'No acceptance criteria on this story yet.'}
+                        </div>
+                      )}
+                      {items.length > 0 && (
+                        <div className="task-check-list">
+                          {items.map(item => (
+                            <div key={item.id} className={`task-check-row task-ac-row${item.done ? ' is-done' : ''}`}>
+                              <input
+                                type="checkbox"
+                                checked={!!item.done}
+                                onChange={() => toggleAcItem(item.id)}
+                                aria-label={item.text}
+                              />
+                              {editingAcId === item.id ? (
+                                <input
+                                  className="form-input task-check-edit"
+                                  value={acDraft}
+                                  autoFocus
+                                  onChange={e => setAcDraft(e.target.value)}
+                                  onBlur={commitEditAc}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') { e.preventDefault(); commitEditAc() }
+                                    else if (e.key === 'Escape') { e.stopPropagation(); setEditingAcId(null) }
+                                  }}
+                                />
+                              ) : canEditAll ? (
+                                <button
+                                  type="button"
+                                  className="task-check-text"
+                                  onClick={() => beginEditAc(item)}
+                                  title="Click to reword"
+                                >{item.text}</button>
+                              ) : (
+                                <span className="task-check-text task-check-text--static">{item.text}</span>
+                              )}
+                              {item.done && item.doneBy && (
+                                <span className="task-check-by" title={item.doneAt ? `Met ${new Date(item.doneAt).toLocaleString()}` : ''}>
+                                  {item.doneBy}
+                                </span>
+                              )}
+                              {canEditAll && (
+                                <button
+                                  type="button"
+                                  className="task-check-remove"
+                                  onClick={() => removeAcItem(item.id)}
+                                  title="Remove criterion"
+                                >✕</button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {canEditAll && (
+                        <div className="task-check-add">
+                          <input
+                            className="form-input"
+                            placeholder="Add an acceptance criterion…"
+                            value={newAcText}
+                            maxLength={MAX_ACCEPTANCE_TEXT}
+                            onChange={e => setNewAcText(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') { e.preventDefault(); addAcItem() }
+                              else if (e.key === 'Escape' && newAcText) { e.stopPropagation(); setNewAcText('') }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className="btn-ghost task-check-add-btn"
+                            onClick={addAcItem}
+                            disabled={!newAcText.trim() || items.length >= MAX_ACCEPTANCE_ITEMS}
+                          >Add</button>
+                        </div>
+                      )}
                     </div>
                   )
                 })()}

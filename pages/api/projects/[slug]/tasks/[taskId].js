@@ -8,9 +8,11 @@ const { getProject } = require('../../../../../lib/prd-store');
 const { getEffectiveRolePolicy, isStatusRestricted } = require('../../../../../lib/role-policy');
 const { stripTaskMedia, stripTasksMedia, mergeTaskMedia, validateAttachments, AttachmentError } = require('../../../../../lib/task-media');
 const { sanitizeChecklist, stampChecklist } = require('../../../../../lib/task-checklist');
+const { sanitizeAcceptance, stampAcceptance, acceptanceStructureIntact } = require('../../../../../lib/task-acceptance');
 
 // Fields a viewer may write on a task they can open, without task:update.
-const SHARED_FIELDS = new Set(['checklist', 'updates']);
+// `acceptance` is here for the tick only — see the structure guard below.
+const SHARED_FIELDS = new Set(['checklist', 'updates', 'acceptance']);
 
 export default async function handler(req, res) {
   try {
@@ -75,6 +77,18 @@ async function route(req, res) {
     }
     if ('checklist' in updates) {
       updates.checklist = stampChecklist(sanitizeChecklist(updates.checklist), before.checklist, actor);
+    }
+    // Acceptance criteria: authoring them is a task edit, ticking one is not.
+    // Whoever verifies a story is rarely whoever wrote its criteria, so the tick
+    // rides the shared path — but only when the items, their wording and their
+    // order are untouched. Without that check a viewer could reword the contract
+    // they are signing off. See lib/task-acceptance.js.
+    if ('acceptance' in updates) {
+      const nextAcceptance = sanitizeAcceptance(updates.acceptance);
+      if (!canEditTask && !acceptanceStructureIntact(nextAcceptance, before.acceptance)) {
+        return res.status(403).json({ error: 'Only a task editor can add, reword or remove acceptance criteria.' });
+      }
+      updates.acceptance = stampAcceptance(nextAcceptance, before.acceptance, actor);
     }
     // Per-project, superadmin-defined blocklist: regular users cannot move a task
     // into these statuses. Admins/superadmin are exempt.

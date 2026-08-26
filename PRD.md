@@ -153,7 +153,7 @@ project so the list view doesn't need an N+1 read.
 Fields: `id`, `seq`, `title`, `description`, `status`, `priority`, `assignees[]`,
 `assignedBy`, `startDate`, `dueDate`, `parentId`, `order`, `boardOrder`,
 `numberOverride`, `category`, `labelIds[]`, `attachments[]`, `cover`, `archived`,
-`updates[]` (comments), `createdAt`.
+`checklist[]`, `acceptance[]`, `updates[]` (comments), `createdAt`.
 
 - **Two id systems.** `seq` is a project-wide, never-reused integer from an atomic
   `INCR`, rendered as `{prefix}-{seq}`. `number` is a positional outline number
@@ -167,6 +167,19 @@ Fields: `id`, `seq`, `title`, `description`, `status`, `priority`, `assignees[]`
 - **Client-generated ids.** The client mints the task id so a queued create can be
   referenced by later queued writes before it reaches Redis, and so a replayed POST
   is a no-op rather than a duplicate ([task-store.js:145](lib/task-store.js#L145)).
+- **Acceptance criteria** (`acceptance[]`) are a story's definition of done, and the one
+  task field with a split write rule: *authoring* a criterion (add, reword, remove)
+  needs `task:update`; *ticking* one needs only card access, because whoever verifies a
+  story is rarely whoever wrote its criteria. The split is enforced structurally, not by
+  hiding buttons — a patch from a non-editor is accepted only when the items, their
+  wording and their order are unchanged
+  ([task-acceptance.js](lib/task-acceptance.js)). They belong to root tasks
+  (stories); sub-tasks are how a story gets built, not separate contracts. Moving a task
+  with unmet criteria into `done` **warns, never blocks**: scope gets cut and criteria
+  get obsoleted, it just should not happen by accident. Capped at 30 × 500 chars, and
+  absent from the record entirely until one is written — a project's tasks are one Redis
+  value, so an empty array on every task is real cost.
+
 
 ### 4.5 Statuses & Kanban
 Default columns: `backlog`, `todo`, `in-progress`, `in-review`, `blocked`, `done`.
@@ -411,6 +424,7 @@ Also unresolved: `CRON_SECRET` is optional — if unset, the cron endpoints are 
 **Sprint** — `{ id, name, goal, startDate, endDate, capacityPoints, taskIds[], plannedTaskIds[], status, startedAt, completedAt, createdAt, updatedAt }`
 **Holiday** — `{ id, date, name, type, recurring, source }` (org-wide, keyed by year)
 **Label** — `{ id, name, color }`
+**Acceptance criterion** — `{ id, text, done, createdBy, createdAt, doneBy, doneAt }` (max 30 per story, on `task.acceptance`)
 **User** — `{ name, username, password, role, permissions[], assignedProjects[] }`
 
 ---

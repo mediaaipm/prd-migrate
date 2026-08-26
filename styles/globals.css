@@ -2707,6 +2707,55 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .task-check-add-btn { flex-shrink: 0; font-size: 12px; padding: 6px 12px; }
 .task-check-chip--complete { color: var(--tint-green-fg); border-color: var(--tint-green-fg); background: var(--tint-green-bg); }
 
+/* Acceptance criteria — the story's definition of done.
+   Rows are the checklist's rows on purpose (same shape, same affordances); only
+   the framing differs, because the two lists sit one above the other in the card
+   and must never read as one list. The rail is the accent so the section is
+   findable at a glance, and every colour below is a token pair — a pale wash
+   with dark ink is exactly what vanishes in dark mode. */
+.task-ac-section {
+  border-left: 2px solid var(--accent);
+  padding-left: 12px;
+}
+.task-ac-row .task-check-text { cursor: text; }
+.task-check-text--static { cursor: default; }
+.task-check-text--static:hover { background: none; }
+.task-ac-empty {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+.task-ac-count--met {
+  color: var(--tint-green-fg);
+  background: var(--tint-green-bg);
+  border-radius: 8px;
+  padding: 0 6px;
+}
+/* Card chip. Neutral while criteria are outstanding, green once the contract is
+   met — the one thing worth spotting without opening the card. */
+.task-ac-chip--met {
+  color: var(--tint-green-fg);
+  border-color: var(--tint-green-fg);
+  background: var(--tint-green-bg);
+}
+/* The same readout on the swimlane bar, where the story actually lives. */
+.swim-lane-ac {
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+.swim-lane-ac--met {
+  color: var(--tint-green-fg);
+  border-color: var(--tint-green-fg);
+  background: var(--tint-green-bg);
+}
+
 /* Attachments as tiles */
 .task-attach-grid {
   display: grid;
@@ -4372,6 +4421,29 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   color: var(--tint-blue-fg);
   border-color: color-mix(in srgb, var(--tint-blue-fg) 38%, transparent);
 }
+/* Status jump-list under the toolbar. These are chips that click, so they reset the
+   button chrome and take the .sa-chip variant colours as-is. */
+.sa-status-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -4px 0 12px;
+}
+.sa-status-pill {
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color .12s, transform .12s;
+}
+.sa-status-pill:hover:not(:disabled) { border-color: currentColor; }
+.sa-status-pill:active:not(:disabled) { transform: translateY(1px); }
+.sa-status-pill:disabled { cursor: default; opacity: .55; }
+/* The bucket holding the sprint on screen. Ring rather than a fill swap, so the status
+   colour stays the thing the eye reads. */
+.sa-status-pill.is-on {
+  border-color: currentColor;
+  box-shadow: 0 0 0 1px currentColor inset;
+}
+
 /* Takes the chip's own ink, so it needs no variant of its own. */
 .sa-chip-dot {
   width: 6px;
@@ -5110,6 +5182,10 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   text-decoration: none;
   white-space: nowrap;
   transition: background .12s, border-color .12s;
+  /* Renders as a <button> when the analytics live on the same page — reset the chrome
+     a button brings so both forms sit identically in the banner's action row. */
+  font-family: inherit;
+  cursor: pointer;
 }
 .sprint-analytics-link:hover {
   background: color-mix(in srgb, var(--tint-violet-fg) 10%, var(--surface));

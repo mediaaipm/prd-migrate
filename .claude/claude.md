@@ -63,6 +63,7 @@ Visibility perms (`project:view`, `version:view`, `proposal:view`, `task:view`, 
 | `lib/kanban-columns.js` | Column layout: server is truth (`columns:{slug}`), localStorage is a first-paint cache |
 | `lib/categories.js` | Task categories (`categories:{slug}`) — the second grouping axis; same server-is-truth pattern as columns |
 | `components/CategoryManager.js` | Categories modal — superadmin edits, everyone reads |
+| `lib/task-acceptance.js` | Acceptance criteria on a story — sanitize/stamp + the author-vs-tick guard |
 | `components/TaskTree.js` | Tree list view with inline edit |
 | `components/Nav.js` | Top nav (also owns the light/dark toggle) |
 | `lib/theme.js` | Light/dark theme — `localStorage['ss_theme']`, falls back to OS preference |
@@ -78,6 +79,8 @@ Visibility perms (`project:view`, `version:view`, `proposal:view`, `task:view`, 
 - Never store a password without `hashPassword()`
 - Client fetches: always use `apiFetch`, not raw `fetch`
 - Redis keys: `project:{slug}`, `task:{slug}:{id}`, `version:{slug}:{ver}`, `sprint:{slug}:{id}`, `group:{id}`, `user-groups:{name}`, `columns:{slug}`, `categories:{slug}`
+- A **story** is a root-level task (`parentId === null`) — the lane on the swimlane board. There is no separate entity. `task.acceptance` (its acceptance criteria) belongs there; sub-tasks are how a story gets built, not separate contracts
+- Acceptance criteria have a split write rule: authoring needs `task:update`, ticking needs only card access. Enforced by `acceptanceStructureIntact()` in the task PUT routes — never by hiding the button. A new route accepting task objects must apply the same guard
 - `task.category` holds a category **id**, never a name. Read it through `effectiveCategory()` so ancestor inheritance applies — reading the raw field misses every sub-task that inherits
 - Never read `user:{name}.permissions` directly — go through `getUserAccess()` so groups and the legacy-permission upgrade are applied
 - New permissions must be added to `ALL_PERMISSIONS` **and** `PERMISSION_GROUPS`, and `PERMS_VERSION`/`POLICY_VERSION` bumped if omitting them from a stored list would revoke access

@@ -8,6 +8,14 @@ const { requireProjectAccess, hasPermission, isAssignee, assigneeStatusAllowed, 
 const { getProject } = require('../../../../../../../lib/prd-store');
 const { getEffectiveRolePolicy, isStatusRestricted } = require('../../../../../../../lib/role-policy');
 const { stripTaskMedia, stripTasksMedia, mergeTaskMedia, validateAttachments, AttachmentError } = require('../../../../../../../lib/task-media');
+const { sanitizeChecklist, stampChecklist } = require('../../../../../../../lib/task-checklist');
+const { sanitizeAcceptance, stampAcceptance, acceptanceStructureIntact } = require('../../../../../../../lib/task-acceptance');
+
+// Same shared surfaces as the root task route: a board opened on a version tab
+// writes here instead, and a tick box that works on one board and 403s on the
+// other is the same bug twice. `updates` is deliberately absent — this route has
+// no comment-integrity guard, so the thread stays task:update only.
+const SHARED_FIELDS = new Set(['checklist', 'acceptance']);
 
 export default async function handler(req, res) {
   try {
@@ -38,12 +46,30 @@ async function route(req, res) {
     // Regular users may change ONLY the status of tasks they're on (subject to the
     // project ACL). Full edits require task:update — held by subadmins/superadmin.
     const statusOnly = Object.keys(updates).length > 0 && Object.keys(updates).every(k => k === 'status');
-    let allowed = await hasPermission(req, 'task:update', slug);
+    const sharedOnly = Object.keys(updates).length > 0
+      && Object.keys(updates).every(k => SHARED_FIELDS.has(k));
+    const canEditTask = await hasPermission(req, 'task:update', slug);
+    let allowed = canEditTask;
     if (!allowed && statusOnly && isAssignee(req, before)) {
       const project = await getProject(slug);
       allowed = assigneeStatusAllowed(project?.taskAcl, updates.status);
     }
+    if (!allowed && sharedOnly) allowed = true;
     if (!allowed) return res.status(403).json({ error: 'Permission denied: task:update' });
+    const actor = getAuditUser(req)?.name || null;
+    if ('checklist' in updates) {
+      updates.checklist = stampChecklist(sanitizeChecklist(updates.checklist), before.checklist, actor);
+    }
+    // Authoring criteria is a task edit; ticking one is a verification anyone who
+    // can open the card may do — but only when the wording and order are
+    // untouched. See lib/task-acceptance.js.
+    if ('acceptance' in updates) {
+      const nextAcceptance = sanitizeAcceptance(updates.acceptance);
+      if (!canEditTask && !acceptanceStructureIntact(nextAcceptance, before.acceptance)) {
+        return res.status(403).json({ error: 'Only a task editor can add, reword or remove acceptance criteria.' });
+      }
+      updates.acceptance = stampAcceptance(nextAcceptance, before.acceptance, actor);
+    }
     // Per-project, superadmin-defined blocklist: regular users cannot move a task
     // into these statuses. Admins/superadmin are exempt.
     if ('status' in updates && !isPrivileged(req)) {

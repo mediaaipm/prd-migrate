@@ -5,6 +5,7 @@ const { requirePermission, requireProjectAccess } = require('../../../../../../.
 const { stripTasksMedia, stripTaskMedia, validateAttachments, AttachmentError } = require('../../../../../../../lib/task-media');
 const { sendJsonCached } = require('../../../../../../../lib/etag');
 const { requireLabels } = require('../../../../../../../lib/require-label');
+const { sanitizeAcceptance, stampAcceptance } = require('../../../../../../../lib/task-acceptance');
 const { withCpuLog } = require('../../../../../../../lib/cpu-log');
 
 async function handler(req, res) {
@@ -19,16 +20,19 @@ async function handler(req, res) {
   }
   if (req.method === 'POST') {
     if (!await requirePermission('task:create', slug)(req, res)) return;
-    const { id, title, description, status, priority, assignee, assignees, startDate, dueDate, parentId, numberOverride, attachments, cover, labelIds, category, points } = req.body || {};
+    const { id, title, description, status, priority, assignee, assignees, startDate, dueDate, parentId, numberOverride, attachments, cover, labelIds, category, points, acceptance } = req.body || {};
     if (!title) return res.status(400).json({ error: 'title is required' });
     if (!await requireLabels(slug, labelIds, res)) return;
     // Prefer a name the creator typed in the form; fall back to the logged-in user.
     let assignedBy = (req.body && typeof req.body.assignedBy === 'string' && req.body.assignedBy.trim()) || null;
     if (!assignedBy) assignedBy = getAuditUser(req)?.name || null;
+    // A story can be created with its acceptance criteria already written. Authorship
+    // comes from the session, never from the body — same rule as everywhere else.
+    const acceptanceList = stampAcceptance(sanitizeAcceptance(acceptance), [], getAuditUser(req)?.name || null);
     let task;
     try {
       validateAttachments(attachments);
-      task = await createTask(slug, version, { id, title, description, status, priority, assignee, assignees, assignedBy, startDate, dueDate, parentId, numberOverride, attachments, cover, labelIds, category, points });
+      task = await createTask(slug, version, { id, title, description, status, priority, assignee, assignees, assignedBy, startDate, dueDate, parentId, numberOverride, attachments, cover, labelIds, category, points, acceptance: acceptanceList });
     } catch (e) {
       if (e instanceof AttachmentError) return res.status(413).json({ error: e.message });
       if (e && e.code === 'TASK_LIST_SIZE') return res.status(507).json({ error: e.message });
