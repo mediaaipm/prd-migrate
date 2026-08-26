@@ -810,13 +810,13 @@
     "semantic_hash": ""
   },
   "components/SprintsSection.js": {
-    "mtime": 1787748098.0226128,
-    "ast_hash": "194d6eea8da947216881ffe8226b0b51",
+    "mtime": 1787752846.130255,
+    "ast_hash": "aeaca18af84b8a54fa95515abc722f64",
     "semantic_hash": ""
   },
   "components/SprintBoard.js": {
-    "mtime": 1787750661.969426,
-    "ast_hash": "ce2870c243d8fb65440b8717579bcee6",
+    "mtime": 1787752827.9979804,
+    "ast_hash": "11ce9738c763339e35632765a8ab7447",
     "semantic_hash": ""
   },
   "lib/scoped-user.js": {

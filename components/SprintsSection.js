@@ -495,6 +495,7 @@ export default function SprintsSection({ slug, tasks: allTasks, currentUser, tas
               <SprintBoard
                 slug={slug}
                 tasks={allItems}
+                allTasks={allTasks}
                 currentUser={currentUser}
                 taskAcl={taskAcl}
                 taskPrefix={taskPrefix}
@@ -555,6 +556,7 @@ export default function SprintsSection({ slug, tasks: allTasks, currentUser, tas
                       <SprintBoard
                         slug={slug}
                         tasks={allItems}
+                        allTasks={allTasks}
                         currentUser={currentUser}
                         taskAcl={taskAcl}
                         taskPrefix={taskPrefix}

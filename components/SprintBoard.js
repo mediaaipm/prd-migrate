@@ -33,7 +33,7 @@ function assigneeNames(task) {
 // Deliberately not KanbanBoard: that board owns column editing, filters, creation and
 // the full card modal, none of which belong inside a sprint banner. Moving a card is
 // the one mutation here; everything else is a click through to the task page.
-export default function SprintBoard({ slug, tasks, currentUser, taskAcl, taskPrefix }) {
+export default function SprintBoard({ slug, tasks, allTasks, currentUser, taskAcl, taskPrefix }) {
   const serverColumns = useColumns(slug)
   // A card parked in a status with no column (deleted, or set from another project's
   // layout) would otherwise be invisible — and invisible work in a sprint reads as
@@ -70,7 +70,19 @@ export default function SprintBoard({ slug, tasks, currentUser, taskAcl, taskPre
     return list.includes(status)
   }
 
+  // Sprint membership.
   const byId = useMemo(() => new Map(tasks.map(t => [t.id, t])), [tasks])
+  // Everything the page can resolve: the project's task list plus the sprint's own
+  // copies (which win — they carry the version the card was hydrated from). A story
+  // pulled into a sprint without its parent still knows what it belongs to.
+  const projectById = useMemo(() => {
+    const m = new Map((allTasks || []).map(t => [t.id, t]))
+    for (const t of tasks) m.set(t.id, t)
+    return m
+  }, [allTasks, tasks])
+
+  // Direct children *in the sprint*, whatever column they sit in — that is what the
+  // "n/m sub" chip counts.
   const kidsOf = useMemo(() => {
     const m = new Map()
     for (const t of tasks) {
@@ -81,8 +93,36 @@ export default function SprintBoard({ slug, tasks, currentUser, taskAcl, taskPre
   }, [tasks, byId])
 
   const hasPoints = tasks.some(t => Number.isFinite(Number(t.points)) && Number(t.points) > 0)
-  const colTasks = status => tasks.filter(t => (t.status || 'todo') === status)
   const pointsOf = list => list.reduce((n, t) => n + (Number(t.points) || 0), 0)
+  const sortBoard = arr => arr.slice().sort((a, b) => (a.boardOrder ?? a.order ?? 0) - (b.boardOrder ?? b.order ?? 0))
+
+  // Nearest ancestor that is itself drawn in this column — the card this one nests
+  // under. The walk climbs through ancestors that are *not* in the sprint (a
+  // grandchild can still belong under a grandparent that is), but only a sprint
+  // member sharing the column can host it. Null => it draws top-level, with a
+  // breadcrumb saying what it hangs off.
+  function nearestAncestorInCol(task, status) {
+    const seen = new Set([task.id])
+    let cur = task.parentId ? projectById.get(task.parentId) : null
+    while (cur && !seen.has(cur.id)) {
+      seen.add(cur.id)
+      if (byId.has(cur.id) && (cur.status || 'todo') === status) return cur.id
+      cur = cur.parentId ? projectById.get(cur.parentId) : null
+    }
+    return null
+  }
+
+  // One rule covers both halves of a column: a card is top-level here when nothing
+  // above it is drawn here, and a child when something is.
+  const colTasks = status => sortBoard(
+    tasks.filter(t => (t.status || 'todo') === status && nearestAncestorInCol(t, status) === null)
+  )
+  const childrenInCol = (taskId, status) => sortBoard(
+    tasks.filter(t => (t.status || 'todo') === status && nearestAncestorInCol(t, status) === taskId)
+  )
+  // Every sprint card in the column, nested or not — what the column counter and the
+  // point total have to add up.
+  const allInCol = status => tasks.filter(t => (t.status || 'todo') === status)
 
   // Tasks live one list per version; the sprint spans them all, so each card carries
   // the version it was hydrated from and writes go to that version's route.
@@ -129,7 +169,7 @@ export default function SprintBoard({ slug, tasks, currentUser, taskAcl, taskPre
   // Clicking a card edits it here. The sprint page is where the sprint is run, so
   // being thrown to the task list to change a title is a round trip out of the very
   // view you were working in.
-  const editing = editingId ? byId.get(editingId) || null : null
+  const editing = editingId ? projectById.get(editingId) || null : null
   const canEditCard = canEditAll
 
   function openCard(task) {
@@ -265,6 +305,113 @@ export default function SprintBoard({ slug, tasks, currentUser, taskAcl, taskPre
     setOverStatus(null)
   }
 
+  // One card, plus whatever nests under it in this column — the same shape the
+  // project board draws, so a story and its sub-tasks read the same on both.
+  function renderCard(task, col, depth) {
+    const d = depth || 0
+    // Shown only when the parent is not drawn above this card here: either it is in
+    // another column, or it was never added to the sprint. Either way it is the one
+    // thing about a loose sub-task you cannot guess, and it opens on click.
+    const crumbParent = d === 0 && task.parentId ? projectById.get(task.parentId) : null
+    const kids = kidsOf.get(task.id) || []
+    const doneKids = kids.filter(k => k.status === 'done').length
+    const nested = childrenInCol(task.id, col.status)
+    const ac = acceptanceProgress(task)
+    const movable = canMove(task)
+    const names = assigneeNames(task)
+    return (
+      <div key={task.id} className="sprint-card-group">
+        <div
+          className={`sprint-card${d > 0 ? ' sprint-card--child' : ''}${draggingId === task.id ? ' sprint-card--dragging' : ''}${movable ? '' : ' sprint-card--locked'}`}
+          draggable={movable}
+          role="button"
+          tabIndex={0}
+          title={movable ? 'Drag to move · click to edit' : 'Click to open — you can only move cards assigned to you'}
+          onDragStart={e => onDragStart(e, task)}
+          onDragEnd={onDragEnd}
+          onClick={() => openCard(task)}
+          onKeyDown={e => { if (e.key === 'Enter') openCard(task) }}
+        >
+          {crumbParent && (
+            <div
+              className="sprint-card-crumb"
+              role="button"
+              tabIndex={0}
+              title={`Parent: ${crumbParent.title}${byId.has(crumbParent.id) ? '' : ' (not in this sprint)'} — click to open`}
+              onClick={e => { e.stopPropagation(); openCard(crumbParent) }}
+              onKeyDown={e => { if (e.key === 'Enter') { e.stopPropagation(); openCard(crumbParent) } }}
+            >
+              ↳ {crumbParent.title}
+            </div>
+          )}
+          <div className="sprint-card-top">
+            {d > 0 && <span className="sprint-sub-badge" title="Sub-task">↳ sub</span>}
+            {(task.seq != null || task.number) && (
+              <span className="task-id-badge" style={{ fontSize: 9 }}>
+                {task.seq != null ? (taskPrefix ? `${taskPrefix}-${task.seq}` : `#${task.seq}`) : `#${task.number}`}
+              </span>
+            )}
+            {task.priority && (
+              <span
+                className="sprint-card-prio"
+                style={{ background: PRIORITY_COLOR[task.priority] }}
+                title={`${PRIORITY_LABEL[task.priority]} priority`}
+              />
+            )}
+            {names.slice(0, 3).map(a => (
+              <span key={a} className="kanban-assignee-avatar sprint-card-avatar" title={a}>
+                {a.charAt(0).toUpperCase()}
+              </span>
+            ))}
+          </div>
+          <div className="sprint-card-title">{task.title}</div>
+          <div className="sprint-card-meta">
+            {Number(task.points) > 0 && (
+              <span className="task-meta-chip" title="Story points">{Number(task.points)}p</span>
+            )}
+            {task.dueDate && (
+              <span className={`task-meta-chip${isOverdue(task.dueDate) ? ' task-due' : ''}`}>
+                {isOverdue(task.dueDate) ? '⚠ ' : ''}{formatDate(task.dueDate)}
+              </span>
+            )}
+            {kids.length > 0 && (
+              <span className="task-meta-chip" title="Sub-tasks in this sprint">{doneKids}/{kids.length} sub</span>
+            )}
+            {ac.total > 0 && (
+              <span
+                className={`task-meta-chip task-ac-chip${ac.met === ac.total ? ' task-ac-chip--met' : ''}`}
+                title={`Acceptance criteria: ${ac.met} of ${ac.total} met`}
+              >✓ {ac.met}/{ac.total}</span>
+            )}
+          </div>
+          {movable && (
+            // The keyboard and touch path to the same move — dragging is the fast
+            // gesture, not the only one.
+            <select
+              className="sprint-card-move"
+              value={task.status || 'todo'}
+              onClick={e => e.stopPropagation()}
+              onChange={e => { e.stopPropagation(); moveTask(task, e.target.value) }}
+              aria-label={`Move “${task.title}”`}
+            >
+              {columns.map(c => (
+                <option key={c.status} value={c.status} disabled={!statusAllowedForUser(c.status)}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        {nested.length > 0 && (
+          <div className="sprint-child-cards">
+            {nested.map(kid => renderCard(kid, col, d + 1))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   if (!tasks.length) return null
 
   return (
@@ -280,7 +427,8 @@ export default function SprintBoard({ slug, tasks, currentUser, taskAcl, taskPre
       <div className="sprint-board">
         {columns.map(col => {
           const cards = colTasks(col.status)
-          const pts = pointsOf(cards)
+          const inCol = allInCol(col.status)
+          const pts = pointsOf(inCol)
           return (
             <div
               key={col.status}
@@ -292,95 +440,12 @@ export default function SprintBoard({ slug, tasks, currentUser, taskAcl, taskPre
               <div className="sprint-col-head">
                 <span className="kanban-column-dot" style={{ background: col.color }} />
                 <span className="sprint-col-title">{col.label}</span>
-                <span className="sprint-col-count">{cards.length}</span>
+                <span className="sprint-col-count">{inCol.length}</span>
                 {hasPoints && pts > 0 && <span className="sprint-col-pts">{pts}p</span>}
               </div>
               <div className="sprint-col-cards">
-                {cards.length === 0 && <p className="sprint-col-empty">—</p>}
-                {cards.map(task => {
-                  const parent = task.parentId ? byId.get(task.parentId) : null
-                  const kids = kidsOf.get(task.id) || []
-                  const doneKids = kids.filter(k => k.status === 'done').length
-                  const ac = acceptanceProgress(task)
-                  const movable = canMove(task)
-                  const names = assigneeNames(task)
-                  return (
-                    <div
-                      key={task.id}
-                      className={`sprint-card${draggingId === task.id ? ' sprint-card--dragging' : ''}${movable ? '' : ' sprint-card--locked'}`}
-                      draggable={movable}
-                      role="button"
-                      tabIndex={0}
-                      title={movable ? 'Drag to move · click to edit' : 'Click to open — you can only move cards assigned to you'}
-                      onDragStart={e => onDragStart(e, task)}
-                      onDragEnd={onDragEnd}
-                      onClick={() => openCard(task)}
-                      onKeyDown={e => { if (e.key === 'Enter') openCard(task) }}
-                    >
-                      {parent && (
-                        <div className="sprint-card-crumb" title={`Sub-task of ${parent.title}`}>
-                          ↳ {parent.title}
-                        </div>
-                      )}
-                      <div className="sprint-card-top">
-                        {(task.seq != null || task.number) && (
-                          <span className="task-id-badge" style={{ fontSize: 9 }}>
-                            {task.seq != null ? (taskPrefix ? `${taskPrefix}-${task.seq}` : `#${task.seq}`) : `#${task.number}`}
-                          </span>
-                        )}
-                        {task.priority && (
-                          <span
-                            className="sprint-card-prio"
-                            style={{ background: PRIORITY_COLOR[task.priority] }}
-                            title={`${PRIORITY_LABEL[task.priority]} priority`}
-                          />
-                        )}
-                        {names.slice(0, 3).map(a => (
-                          <span key={a} className="kanban-assignee-avatar sprint-card-avatar" title={a}>
-                            {a.charAt(0).toUpperCase()}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="sprint-card-title">{task.title}</div>
-                      <div className="sprint-card-meta">
-                        {Number(task.points) > 0 && (
-                          <span className="task-meta-chip" title="Story points">{Number(task.points)}p</span>
-                        )}
-                        {task.dueDate && (
-                          <span className={`task-meta-chip${isOverdue(task.dueDate) ? ' task-due' : ''}`}>
-                            {isOverdue(task.dueDate) ? '⚠ ' : ''}{formatDate(task.dueDate)}
-                          </span>
-                        )}
-                        {kids.length > 0 && (
-                          <span className="task-meta-chip" title="Sub-tasks in this sprint">{doneKids}/{kids.length} sub</span>
-                        )}
-                        {ac.total > 0 && (
-                          <span
-                            className={`task-meta-chip task-ac-chip${ac.met === ac.total ? ' task-ac-chip--met' : ''}`}
-                            title={`Acceptance criteria: ${ac.met} of ${ac.total} met`}
-                          >✓ {ac.met}/{ac.total}</span>
-                        )}
-                      </div>
-                      {movable && (
-                        // The keyboard and touch path to the same move — dragging is
-                        // the fast gesture, not the only one.
-                        <select
-                          className="sprint-card-move"
-                          value={task.status || 'todo'}
-                          onClick={e => e.stopPropagation()}
-                          onChange={e => { e.stopPropagation(); moveTask(task, e.target.value) }}
-                          aria-label={`Move “${task.title}”`}
-                        >
-                          {columns.map(c => (
-                            <option key={c.status} value={c.status} disabled={!statusAllowedForUser(c.status)}>
-                              {c.label}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-                  )
-                })}
+                {inCol.length === 0 && <p className="sprint-col-empty">—</p>}
+                {cards.map(task => renderCard(task, col, 0))}
               </div>
             </div>
           )
