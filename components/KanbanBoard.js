@@ -13,6 +13,7 @@ import { DEFAULT_COLUMNS, COL_COLORS, useColumns, saveColumns, labelForStatus } 
 import { useCategories, categoriesWithTaskValues, categoryMap, effectiveCategory, taskIndex, railRollups, RAIL_STATE_LABEL } from '../lib/categories'
 import CategoryManager from './CategoryManager'
 import CellPeekModal from './CellPeekModal'
+import TaskMiniBoard from './TaskMiniBoard'
 import { isSuperAdmin } from '../lib/client-permissions'
 import { withRev, bumpRev } from '../lib/config-cache'
 import { taskShareLink, copyText } from '../lib/task-link'
@@ -207,6 +208,9 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   const [editingTask, setEditingTask] = useState(null)
   const [editStack, setEditStack] = useState([])   // task ids visited before the current one
   const [editForm, setEditForm] = useState(null)
+  // 'details' | 'board' — the open task's own swimlane board, where the whole
+  // team drags its part of the work across the project's stages.
+  const [editTab, setEditTab] = useState('details')
   const [assignees, setAssignees] = useState([])
   const [labels, setLabels] = useState([])
   const [animatingOut, setAnimatingOut] = useState(new Set())
@@ -867,6 +871,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     setEditStack([])
     setEditingTask(task)
     setEditForm(toEditForm(task))
+    setEditTab('details')
     setCommentText('')
     setNewCheckText('')
     setEditingCheckId(null)
@@ -885,6 +890,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     if (editingTask) setEditStack(s => [...s, editingTask.id])
     setEditingTask(task)
     setEditForm(toEditForm(task))
+    setEditTab('details')
     setCommentText('')
     setNewCheckText('')
     setEditingCheckId(null)
@@ -898,6 +904,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     setEditStack(s => s.slice(0, -1))
     setEditingTask(prev)
     setEditForm(toEditForm(prev))
+    setEditTab('details')
     setCommentText('')
     setNewCheckText('')
     setEditingCheckId(null)
@@ -907,6 +914,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     setEditStack([])
     setEditingTask(null)
     setEditForm(null)
+    setEditTab('details')
     setCommentText('')
     setNewCheckText('')
     setEditingCheckId(null)
@@ -1426,6 +1434,52 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     return boardTasks
       .filter(t => t.parentId && topAncestorId(t.id) === taskId)
       .sort((a, b) => a.order - b.order)
+  }
+
+  // Every descendant of the open task — sub-tasks and sub-sub-tasks alike —
+  // flattened into cards for its Board tab, each carrying the category it
+  // actually lands in. Read off boardTasks, not the modal's snapshot, so a drag
+  // repaints the moment the optimistic patch lands.
+  function descendantCards(taskId) {
+    return descendantsUnder(taskId).map(t => ({ task: t, category: catOf(t) || '' }))
+  }
+
+  function descendantsUnder(taskId) {
+    const out = []
+    const walk = id => {
+      for (const child of boardTasks.filter(t => t.parentId === id).sort((a, b) => a.order - b.order)) {
+        out.push(child)
+        walk(child.id)
+      }
+    }
+    walk(taskId)
+    return out
+  }
+
+  // Drop handler for the in-task board. Same rules as the main swimlane board
+  // minus the story axis — a card here is already under the open task, and a
+  // sideways drag says nothing about who it belongs to.
+  function moveOnTaskBoard(taskId, patch) {
+    const task = taskById[taskId]
+    if (!task) return
+    if ('status' in patch) {
+      if (!canChangeStatus(task)) {
+        alert('You can only move tasks you are assigned to.')
+        return
+      }
+      if (!statusAllowedForUser(patch.status)) {
+        alert('You are not allowed to move tasks to this status.')
+        return
+      }
+      if (patch.status === 'done' && !confirmAcceptance(task)) return
+    }
+    // Assignees may move their own card between stages; re-categorising it —
+    // handing it to another department — is an edit, which is admin-only.
+    if ('category' in patch && !canEditAll) {
+      alert('Only an admin can change a task’s category.')
+      return
+    }
+    enqueueUpdate(taskId, patch, `Move “${task.title}”`)
   }
 
   // Nearest ancestor that is itself drawn in this column. A grandchild nests
@@ -3134,7 +3188,36 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
               <button className="kanban-modal-close" onClick={closeEdit}>✕</button>
             </div>
 
-            <div className="task-modal-body">
+            {/* Details and Board are two views of the same open task, both kept
+                mounted: switching tabs must not throw away an unsaved edit. */}
+            {(() => {
+              const kids = descendantsUnder(editingTask.id)
+              const done = kids.filter(k => k.status === 'done').length
+              return (
+                <div className="task-modal-tabs" role="tablist">
+                  <button
+                    role="tab"
+                    aria-selected={editTab === 'details'}
+                    className={`task-modal-tab${editTab === 'details' ? ' task-modal-tab--active' : ''}`}
+                    onClick={() => setEditTab('details')}
+                  >Details</button>
+                  <button
+                    role="tab"
+                    aria-selected={editTab === 'board'}
+                    className={`task-modal-tab${editTab === 'board' ? ' task-modal-tab--active' : ''}`}
+                    onClick={() => setEditTab('board')}
+                    title="This task’s shared board — every sub-task and sub-sub-task, by department and stage"
+                  >
+                    Board
+                    {kids.length > 0 && (
+                      <span className="kanban-subtask-count">{done}/{kids.length}</span>
+                    )}
+                  </button>
+                </div>
+              )
+            })()}
+
+            <div className={`task-modal-body${editTab === 'board' ? ' task-modal-body--hidden' : ''}`}>
               {/* ── Left rail: what the task is ── */}
               <div className="task-modal-main">
                 <input
@@ -3624,6 +3707,43 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                 )}
               </aside>
             </div>
+
+            {/* ── The task's own board ── rails are departments, columns are the
+                project's stages, cards are every descendant of this task. One
+                grid the whole team works in without leaving the task. */}
+            {editTab === 'board' && (() => {
+              const cards = descendantCards(editingTask.id)
+              if (!cards.length) {
+                return (
+                  <div className="task-board-pane task-board-pane--empty">
+                    <p className="task-board-empty-title">No sub-tasks yet</p>
+                    <p className="task-board-empty-hint">
+                      Break this task into sub-tasks and they show up here as cards —
+                      one row per department, one column per stage.
+                    </p>
+                  </div>
+                )
+              }
+              return (
+                <div className="task-board-pane">
+                  <TaskMiniBoard
+                    cards={cards}
+                    columns={columns}
+                    categories={categories}
+                    taskPrefix={taskPrefix}
+                    storyTitle={editingTask.title}
+                    labelById={labelById}
+                    onOpen={navEdit}
+                    onMove={moveOnTaskBoard}
+                    canMove={canChangeStatus}
+                    statusAllowed={statusAllowedForUser}
+                    canSetCategory={canEditAll}
+                    expand
+                    showAssignees
+                  />
+                </div>
+              )
+            })()}
 
             <div className="task-modal-footer">
               <SubmitButton className="btn-ghost task-modal-archive" busyLabel="Archiving…" onClick={archiveTask} title="Archive this card">Archive</SubmitButton>

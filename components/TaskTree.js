@@ -141,6 +141,17 @@ function flattenForBoard(nodes, inherited) {
   return out
 }
 
+// A card on a story's board can be a sub-task or a sub-sub-task, so the lookup
+// has to walk, not scan one level.
+function findDescendant(node, id) {
+  for (const c of (node.children || [])) {
+    if (c.id === id) return c
+    const found = findDescendant(c, id)
+    if (found) return found
+  }
+  return null
+}
+
 function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], currentUser, dnd, taskAcl, taskPrefix, onContextMenu, columns = [], categories = [], catById = {}, inheritedCategory = '', labels = [], focusId, expandSignal }) {
   const [expanded, setExpanded] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -154,6 +165,9 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
   const [localStatus, setLocalStatus] = useState(node.status)
   const [showDetail, setShowDetail] = useState(false)
   const [detailEditing, setDetailEditing] = useState(false)
+  // 'details' | 'board' — the opened task's shared board, same one the kanban
+  // view's modal shows, so a task reads the same however it was opened.
+  const [detailTab, setDetailTab] = useState('details')
   const [showBoard, setShowBoard] = useState(false)
 
   useEffect(() => { setLocalStatus(node.status) }, [node.status])
@@ -234,6 +248,41 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
     setLocalStatus(next)
     enqueueUpdate({ status: next }, `Set “${node.title}” to ${next}`)
   }
+
+  // Same queue, a different task — the board in the detail moves descendants,
+  // not this row. `enqueueUpdate` above is bound to `node.id`, so it can't serve.
+  function enqueueUpdateFor(taskId, patch, label) {
+    enqueue({
+      url: `${apiBase}/${taskId}`,
+      method: 'PUT',
+      body: patch,
+      label,
+      optimistic: { entity: 'task', op: 'update', scope: apiBase, id: taskId, patch },
+    })
+  }
+
+  // Drop handler for the detail's Board tab. Mirrors moveOnTaskBoard in
+  // KanbanBoard: an assignee may drag their own card between stages, but handing
+  // it to another department is an edit.
+  function moveOnTaskBoard(taskId, patch) {
+    const task = findDescendant(node, taskId)
+    if (!task) return
+    if ('status' in patch) {
+      if (!cardIsMovable(task)) { alert('You can only move tasks you are assigned to.'); return }
+      if (!statusAllowed(patch.status)) { alert('You are not allowed to move tasks to this status.'); return }
+    }
+    if ('category' in patch && !canEdit) {
+      alert('Only an admin can change a task’s category.')
+      return
+    }
+    enqueueUpdateFor(taskId, patch, `Move “${task.title}”`)
+  }
+
+  const cardIsMovable = task => canEdit || (!!currentUser?.name && (Array.isArray(task.assignees) ? task.assignees : (task.assignee ? [task.assignee] : []))
+    .some(a => (typeof a === 'object' ? a?.name : a) === currentUser.name))
+
+  // Board cards carry label chips, and a card only holds label *ids*.
+  const labelById = Object.fromEntries(labels.map(l => [l.id, l]))
 
   function handleSaveEdit(form) {
     enqueueUpdate({
@@ -501,6 +550,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
             categories={categories}
             taskPrefix={taskPrefix}
             storyTitle={node.title}
+            labelById={labelById}
             onOpen={revealTask}
           />
         </div>
@@ -604,13 +654,55 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
       )}
 
       {showDetail && (
-        <div className="kanban-modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowDetail(false); setDetailEditing(false) } }}>
-          <div className="kanban-modal">
+        <div className="kanban-modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowDetail(false); setDetailEditing(false); setDetailTab('details') } }}>
+          <div className={`kanban-modal${detailTab === 'board' ? ' kanban-modal--board' : ''}`}>
             <div className="kanban-modal-header">
               <span>{detailEditing ? 'Edit Task' : `Task ${node.seq != null ? (taskPrefix ? `${taskPrefix}-${node.seq}` : `#${node.seq}`) : node.number}`}</span>
-              <button className="kanban-modal-close" onClick={() => { setShowDetail(false); setDetailEditing(false) }}>✕</button>
+              <button className="kanban-modal-close" onClick={() => { setShowDetail(false); setDetailEditing(false); setDetailTab('details') }}>✕</button>
             </div>
-            {detailEditing ? (
+
+            {/* Only a task with sub-tasks has a board worth drawing — a leaf
+                would render as one empty grid of every department. */}
+            {hasChildren && !detailEditing && (
+              <div className="task-modal-tabs" role="tablist">
+                <button
+                  role="tab"
+                  aria-selected={detailTab === 'details'}
+                  className={`task-modal-tab${detailTab === 'details' ? ' task-modal-tab--active' : ''}`}
+                  onClick={() => setDetailTab('details')}
+                >Details</button>
+                <button
+                  role="tab"
+                  aria-selected={detailTab === 'board'}
+                  className={`task-modal-tab${detailTab === 'board' ? ' task-modal-tab--active' : ''}`}
+                  onClick={() => setDetailTab('board')}
+                  title="This task’s shared board — every sub-task and sub-sub-task, by department and stage"
+                >
+                  Board
+                  {descTotal > 0 && <span className="kanban-subtask-count">{descDone}/{descTotal}</span>}
+                </button>
+              </div>
+            )}
+
+            {hasChildren && detailTab === 'board' && !detailEditing ? (
+              <div className="task-board-pane">
+                <TaskMiniBoard
+                  cards={flattenForBoard(node.children, effCategory)}
+                  columns={columns}
+                  categories={categories}
+                  taskPrefix={taskPrefix}
+                  storyTitle={node.title}
+                  labelById={labelById}
+                  onOpen={t => { setShowDetail(false); setDetailTab('details'); revealTask(t) }}
+                  onMove={moveOnTaskBoard}
+                  canMove={cardIsMovable}
+                  statusAllowed={statusAllowed}
+                  canSetCategory={canEdit}
+                  expand
+                  showAssignees
+                />
+              </div>
+            ) : detailEditing ? (
               <TaskForm
                 initial={{
                   title: node.title,

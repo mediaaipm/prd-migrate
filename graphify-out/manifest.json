@@ -35,8 +35,8 @@
     "semantic_hash": ""
   },
   "components/KanbanBoard.js": {
-    "mtime": 1787722413.3302462,
-    "ast_hash": "c1da9a2b60c3e88ac9534812e8459dfb",
+    "mtime": 1787840691.4949958,
+    "ast_hash": "e0c9e079af48acb47767690f4f06ec42",
     "semantic_hash": ""
   },
   "components/Nav.js": {
@@ -65,8 +65,8 @@
     "semantic_hash": ""
   },
   "components/TaskTree.js": {
-    "mtime": 1787663215.9519567,
-    "ast_hash": "8a2e26bded69a7961a981ec7e2f1219c",
+    "mtime": 1787840711.0924668,
+    "ast_hash": "3dfbc453aea6e52788c9dbc34813563f",
     "semantic_hash": ""
   },
   "graphify/graph.json": {
@@ -325,8 +325,8 @@
     "semantic_hash": ""
   },
   "pages/api/projects/[slug]/tasks/index.js": {
-    "mtime": 1787722315.0224195,
-    "ast_hash": "e8605719f6c6304dc42c44904206d721",
+    "mtime": 1787820566.7539935,
+    "ast_hash": "21dc03b7acc9e6277192fd0b6a1cba82",
     "semantic_hash": ""
   },
   "pages/api/projects/[slug]/versions/[version].js": {
@@ -570,8 +570,8 @@
     "semantic_hash": ""
   },
   "components/TaskMiniBoard.js": {
-    "mtime": 1786372747.0373237,
-    "ast_hash": "7fa98cae857b3e35f4a65589101fcce6",
+    "mtime": 1787840686.809411,
+    "ast_hash": "fc75ba91965abea96525bdab1417a771",
     "semantic_hash": ""
   },
   "components/UserAccessEditor.js": {
@@ -810,8 +810,8 @@
     "semantic_hash": ""
   },
   "components/SprintsSection.js": {
-    "mtime": 1787752846.130255,
-    "ast_hash": "aeaca18af84b8a54fa95515abc722f64",
+    "mtime": 1787820650.5993707,
+    "ast_hash": "08a09b7aed3a3605901e2edf9de0bc7c",
     "semantic_hash": ""
   },
   "components/SprintBoard.js": {
@@ -822,6 +822,11 @@
   "lib/scoped-user.js": {
     "mtime": 1787747852.306549,
     "ast_hash": "f4447e92a3a8a247ace6d59b3a170b2c",
+    "semantic_hash": ""
+  },
+  ".backup-tasks-3.0.0.json": {
+    "mtime": 1787829890.739143,
+    "ast_hash": "d693ca0af4a83d23c895a2e0d7f53d34",
     "semantic_hash": ""
   }
 }

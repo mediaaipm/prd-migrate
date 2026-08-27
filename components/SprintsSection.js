@@ -109,6 +109,20 @@ function formatHolidayDate(s) {
     .toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric' })
 }
 
+// Newest-first ordering for the picker's version headings. Compared segment by
+// segment as numbers so v1.0.10 sorts above v1.0.9; anything unparseable falls back
+// to a plain string compare rather than silently ordering wrong.
+function cmpVersion(a, b) {
+  const pa = String(a).split('.').map(n => parseInt(n, 10))
+  const pb = String(b).split('.').map(n => parseInt(n, 10))
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = pa[i], y = pb[i]
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return String(a).localeCompare(String(b))
+    if (x !== y) return x - y
+  }
+  return 0
+}
+
 export default function SprintsSection({ slug, tasks: allTasks, currentUser, taskAcl, taskPrefix, onSprintChange, onViewAnalytics, refreshTrigger, newSprintTrigger }) {
   const [serverSprints, setServerSprints] = useState([])
   const [loadingS, setLoadingS]           = useState(true)
@@ -125,6 +139,14 @@ export default function SprintsSection({ slug, tasks: allTasks, currentUser, tas
   const [formCapacity, setFormCapacity] = useState('')
   const [taskSearch, setTaskSearch]     = useState('')
 
+  // The picker offers every task in the project, not only the __root list this section
+  // renders from: a task created on a version tab lives in that version's list, and a
+  // sprint can hold it — the sprint API hydrates across every list. Fetched lazily on
+  // first modal open (it is the whole project) and trimmed to picker fields server-side.
+  const [pickerTasks, setPickerTasks]         = useState(null)
+  const [pickerLoading, setPickerLoading]     = useState(false)
+  const [collapsedVersions, setCollapsedVersions] = useState(() => new Set())
+
   // Working-day and holiday figures for the banner. Purely additive: a failed or
   // missing analytics endpoint leaves this null and every element it feeds is
   // skipped, so the banner falls back to exactly what it rendered before.
@@ -138,6 +160,25 @@ export default function SprintsSection({ slug, tasks: allTasks, currentUser, tas
       .then(r => r.ok ? r.json() : [])
       .then(data => { setServerSprints(Array.isArray(data) ? data : []); setLoadingS(false) })
       .catch(() => setLoadingS(false))
+  }, [slug])
+
+  const loadPickerTasks = useCallback(() => {
+    if (!slug) return
+    setPickerLoading(true)
+    apiFetch(`/api/projects/${slug}/tasks?allVersions=1&fields=picker`)
+      .then(r => (r.ok ? r.json() : null))
+      // A failed GET means "unknown", not "empty" — the __root rows still render.
+      .then(data => {
+        if (!Array.isArray(data)) return
+        setPickerTasks(data)
+        // Older version lists open collapsed: a project with a few versions runs to
+        // thousands of rows and pinning them all open makes the modal crawl. The
+        // unversioned list and the newest version stay open; a search expands the rest.
+        const versions = [...new Set(data.map(t => t.version).filter(Boolean))].sort((a, b) => cmpVersion(b, a))
+        setCollapsedVersions(new Set(versions.slice(1)))
+      })
+      .catch(() => {})
+      .finally(() => setPickerLoading(false))
   }, [slug])
 
   const loadAnalytics = useCallback(() => {
@@ -200,6 +241,7 @@ export default function SprintsSection({ slug, tasks: allTasks, currentUser, tas
     setEditingSprint(null)
     setFormName(''); setFormStart(''); setFormEnd(''); setFormTaskIds([]); setFormStatus('active')
     setFormGoal(''); setFormCapacity(''); setTaskSearch('')
+    loadPickerTasks()
     setShowModal(true)
   }
 
@@ -213,6 +255,7 @@ export default function SprintsSection({ slug, tasks: allTasks, currentUser, tas
     setFormGoal(sprint.goal || '')
     setFormCapacity(sprint.capacityPoints == null ? '' : String(sprint.capacityPoints))
     setTaskSearch('')
+    loadPickerTasks()
     setShowModal(true)
   }
 
@@ -306,8 +349,18 @@ export default function SprintsSection({ slug, tasks: allTasks, currentUser, tas
     setFormTaskIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   }
 
-  const rootTasks = (allTasks || []).filter(t => !t.parentId)
-  const subtasksByParent = (allTasks || []).reduce((acc, t) => {
+  // What the picker chooses from: the live __root list plus every version list. The
+  // live copy wins on id — it carries optimistic edits and a card created seconds ago
+  // that the picker fetch never saw.
+  const pickerSource = useMemo(() => {
+    const live = allTasks || []
+    if (!pickerTasks) return live
+    const liveIds = new Set(live.map(t => t.id))
+    return [...live, ...pickerTasks.filter(t => !liveIds.has(t.id))]
+  }, [allTasks, pickerTasks])
+
+  const rootTasks = pickerSource.filter(t => !t.parentId)
+  const subtasksByParent = pickerSource.reduce((acc, t) => {
     if (t.parentId) { acc[t.parentId] = acc[t.parentId] || []; acc[t.parentId].push(t) }
     return acc
   }, {})
@@ -320,7 +373,7 @@ export default function SprintsSection({ slug, tasks: allTasks, currentUser, tas
   const visibleTaskIds = useMemo(() => {
     if (!taskQuery) return null
     const num = taskQuery.replace(/^#/, '')
-    const list = allTasks || []
+    const list = pickerSource
     const byId = new Map(list.map(t => [t.id, t]))
     const kids = list.reduce((acc, t) => {
       if (t.parentId) { acc[t.parentId] = acc[t.parentId] || []; acc[t.parentId].push(t) }
@@ -344,9 +397,46 @@ export default function SprintsSection({ slug, tasks: allTasks, currentUser, tas
       while (p && !seen.has(p.id)) { seen.add(p.id); keep.add(p.id); p = p.parentId ? byId.get(p.parentId) : null }
     }
     return keep
-  }, [allTasks, taskQuery])
+  }, [pickerSource, taskQuery])
 
   const shownRootTasks = visibleTaskIds ? rootTasks.filter(t => visibleTaskIds.has(t.id)) : rootTasks
+
+  // Rows are grouped by the list they came from. Numbers are positional within a
+  // version, so #12 in v1.0.2 and #12 in the project list are different cards — the
+  // heading is what tells them apart.
+  const versionGroups = useMemo(() => {
+    const byVersion = new Map()
+    for (const t of shownRootTasks) {
+      const k = t.version || ''
+      if (!byVersion.has(k)) byVersion.set(k, [])
+      byVersion.get(k).push(t)
+    }
+    return [...byVersion.keys()]
+      .sort((a, b) => (a === b ? 0 : !a ? -1 : !b ? 1 : cmpVersion(b, a)))
+      .map(version => ({ version, tasks: byVersion.get(version) }))
+  }, [shownRootTasks])
+
+  // Shown on a collapsed heading, so a version whose tasks are hidden still says how
+  // many of them this sprint holds.
+  const selectedByVersion = useMemo(() => {
+    const versionById = new Map(pickerSource.map(t => [t.id, t.version || '']))
+    const counts = {}
+    for (const id of formTaskIds) {
+      const v = versionById.get(id)
+      if (v === undefined) continue
+      counts[v] = (counts[v] || 0) + 1
+    }
+    return counts
+  }, [pickerSource, formTaskIds])
+
+  function toggleVersionGroup(v) {
+    setCollapsedVersions(prev => {
+      const next = new Set(prev)
+      if (next.has(v)) next.delete(v)
+      else next.add(v)
+      return next
+    })
+  }
 
   function countDescendants(taskId) {
     const kids = subtasksByParent[taskId] || []
@@ -701,8 +791,40 @@ export default function SprintsSection({ slug, tasks: allTasks, currentUser, tas
                   {rootTasks.length > 0 && shownRootTasks.length === 0 && (
                     <p style={{ padding: '12px 14px', color: 'var(--muted)', fontSize: 13, margin: 0 }}>No tasks match &ldquo;{taskSearch.trim()}&rdquo;.</p>
                   )}
-                  {shownRootTasks.map(t => renderTaskRow(t, 0))}
+                  {versionGroups.map(g => {
+                    // A search ignores the collapse: a hit three versions back is the
+                    // whole reason someone typed, so its heading opens itself.
+                    const expanded = !!taskQuery || !collapsedVersions.has(g.version)
+                    const sel = selectedByVersion[g.version] || 0
+                    return (
+                      <div key={g.version || '__root'}>
+                        {versionGroups.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => toggleVersionGroup(g.version)}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 7, width: '100%',
+                              padding: '6px 12px', border: 'none', borderBottom: '1px solid var(--border)',
+                              background: 'var(--surface-2)', cursor: 'pointer', textAlign: 'left',
+                              fontSize: 11, fontWeight: 700, color: 'var(--muted)',
+                              textTransform: 'uppercase', letterSpacing: '.04em',
+                              position: 'sticky', top: 0, zIndex: 1,
+                            }}>
+                            <span style={{ fontSize: 9 }}>{expanded ? '▼' : '▶'}</span>
+                            <span>{g.version ? `v${g.version}` : 'Project tasks'}</span>
+                            <span style={{ marginLeft: 'auto', fontWeight: 600, textTransform: 'none', letterSpacing: 0 }}>
+                              {sel > 0 ? `${sel} selected · ` : ''}{g.tasks.length}
+                            </span>
+                          </button>
+                        )}
+                        {expanded && g.tasks.map(t => renderTaskRow(t, 0))}
+                      </div>
+                    )
+                  })}
                 </div>
+                {pickerLoading && !pickerTasks && (
+                  <p style={{ margin: '6px 0 0', fontSize: 11, color: 'var(--muted)' }}>Loading tasks from every version…</p>
+                )}
                 {visibleTaskIds && shownRootTasks.length > 0 && (
                   <p style={{ margin: '6px 0 0', fontSize: 11, color: 'var(--muted)' }}>
                     Filtered — selections you made outside the search are kept.

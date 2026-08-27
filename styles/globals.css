@@ -2583,6 +2583,78 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   transition: width .2s ease;
 }
 
+/* ── Details / Board tabs on an opened task ─────────────────────────────────
+   Two views of the same task. Both panes stay mounted behind the tab, so
+   switching to the board and back does not throw away an unsaved edit. */
+.task-modal-tabs {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 0 16px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.task-modal-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: -1px;
+  padding: 9px 12px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--muted);
+  cursor: pointer;
+}
+.task-modal-tab:hover { color: var(--text); }
+.task-modal-tab--active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.task-modal-body--hidden { display: none; }
+
+/* The board fills the modal's middle: the grid scrolls, the modal shell does not. */
+.task-board-pane {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 16px 18px;
+}
+.task-board-pane--empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  color: var(--muted);
+}
+.task-board-empty-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.task-board-empty-hint {
+  margin: 0;
+  max-width: 380px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* The list view's detail modal is narrow by default; the board needs the room,
+   and the same column shell the kanban modal already uses. */
+.kanban-modal--board {
+  max-width: 1080px;
+  height: min(88vh, 940px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 /* Right rail fields */
 .task-modal-field {
   display: flex;
@@ -3884,6 +3956,65 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 /* Read-only board: nothing here is draggable, so the cards must not offer the
    grab affordance the real board's do. */
 .mini-board .kanban-card--swim { cursor: pointer; }
+
+/* ── The live board, inside an opened task ────────────────────────────────
+   Same grid, now worked in rather than read. Every card in a cell is drawn —
+   a card hidden behind "+N more" cannot be picked up — so the cells drop the
+   fixed height the same way the full board's expanded rails do. */
+.mini-board--live { --swim-col-w: 210px; }
+.mini-board--live .swim-cell {
+  height: auto;
+  min-height: 88px;
+  overflow: visible;
+  align-content: flex-start;
+}
+.mini-board--live .swim-cell .kanban-card--swim { flex: none; }
+.mini-board--live .swim-cell .kanban-card--swim .kanban-card-title {
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+}
+/* The one-line chip row the full board needs exists because its cards are a
+   fixed height. These are not, so a card wearing four labels shows four rather
+   than hiding the rest behind a hover title. */
+.mini-board--live .kanban-card-swim-labels {
+  flex-wrap: wrap;
+  overflow: visible;
+  margin-top: 4px;
+}
+.mini-board--live .kanban-card--grab { cursor: grab; }
+.mini-board--live .kanban-card--grab:active { cursor: grabbing; }
+.mini-board--live .kanban-card--dragging { opacity: .45; }
+/* Marked only while a card is in the air: a stage this user is not allowed to
+   set. Dormant otherwise, so the board still reads as one board. */
+.mini-board--live .swim-cell--barred {
+  background: var(--hover);
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+/* Who is on the card. The whole point of the shared board is seeing which
+   department — and which person — a piece of work is sitting with. */
+.swim-card-people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+}
+.swim-card-avatar {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+.swim-card-avatar--more { background: transparent; }
 
 /* Jumped-to from an inline board card. Fades rather than sticks — it answers
    "which row?" and then gets out of the way. */

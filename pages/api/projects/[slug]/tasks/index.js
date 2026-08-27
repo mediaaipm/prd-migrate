@@ -1,4 +1,4 @@
-const { listTasks, createTask, REPLAYED } = require('../../../../../lib/task-store');
+const { listTasks, listTasksByVersion, createTask, REPLAYED } = require('../../../../../lib/task-store');
 const { logAudit, getAuditUser } = require('../../../../../lib/audit-log');
 const { recordTaskCreate } = require('../../../../../lib/task-history-store');
 const { requirePermission, requireProjectAccess } = require('../../../../../lib/require-permission');
@@ -20,6 +20,26 @@ async function handler(req, res) {
     //
     // ETag'd: this is the biggest payload the app returns, and reloads/tab switches
     // mostly ask for a list that has not changed. See lib/etag.js.
+    // `allVersions=1` — the whole project, not one version list. Sprints are
+    // project-wide (see buildTaskMap in ../sprint.js), so the sprint task picker has
+    // to offer every list; asking for the default one only ever showed __root and hid
+    // every task created on a version tab. Each list is stripped with its own version
+    // (attachment keys are version-scoped) and stamped with it, the same shape the
+    // sprint API hydrates from — `version` is what tells a caller which task route the
+    // row belongs to.
+    //
+    // `fields=picker` trims it to what a chooser needs. The merged list is every task
+    // in the project, so shipping full records (descriptions, acceptance criteria)
+    // would be megabytes for a modal that renders a title and a checkbox.
+    if (req.query.allVersions) {
+      const groups = await listTasksByVersion(slug);
+      const merged = groups.flatMap(g =>
+        stripTasksMedia(g.tasks, slug, g.version).map(t => ({ ...t, version: g.version })));
+      const slim = req.query.fields === 'picker'
+        ? merged.map(t => ({ id: t.id, number: t.number, title: t.title, parentId: t.parentId, status: t.status, points: t.points, version: t.version }))
+        : merged;
+      return sendJsonCached(req, res, slim);
+    }
     return sendJsonCached(req, res, stripTasksMedia(await listTasks(slug, v), slug, v));
   }
   if (req.method === 'POST') {
