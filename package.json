@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "vc": "vercel --global-config .vercel-cli"
   },
   "dependencies": {
     "@upstash/redis": "^1.38.0",

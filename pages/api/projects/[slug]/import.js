@@ -2,6 +2,7 @@ import { getProject, listLabels } from '../../../../lib/prd-store'
 import { createTask } from '../../../../lib/task-store'
 import { requirePermission, requireProjectAccess } from '../../../../lib/require-permission'
 import { hasLabel } from '../../../../lib/require-label'
+import { isNestingCapped } from '../../../../lib/task-nesting'
 
 // Import carries labels by id or by name, `;`-separated in CSV. Names because a
 // spreadsheet exported from anywhere else has names in it, not our ids — and
@@ -49,6 +50,13 @@ export default async function handler(req, res) {
   // bulk-create tasks in that project. Gated like POST /tasks.
   if (!await requireProjectAccess(slug, req, res)) return
   if (!await requirePermission('task:create', slug)(req, res)) return
+  // An import always builds its trees from the root down — every CSV row and every
+  // top-level JSON entry is a main task. Admins may not create those at all, so the
+  // whole import is refused rather than half of it silently dropped.
+  // See lib/task-nesting.js.
+  if (isNestingCapped(req)) {
+    return res.status(403).json({ error: 'Importing creates main tasks, which is superadmin-only. Ask a super admin to run this import.' })
+  }
 
   const project = await getProject(slug)
   if (!project) return res.status(404).json({ error: 'Project not found' })

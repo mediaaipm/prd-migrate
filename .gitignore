@@ -29,6 +29,7 @@ Thumbs.db
 .idea/
 
 .vercel
+.vercel-cli/
 .env*
 
 # Local Claude Code settings (may contain tokens)

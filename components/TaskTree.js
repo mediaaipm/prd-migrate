@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { apiFetch } from '../lib/api-fetch'
 import { enqueue } from '../lib/submit-queue'
 import { taskDraft, taskCreateBody } from '../lib/task-draft'
-import { hasPerm, isSuperAdmin } from '../lib/client-permissions'
+import { hasPerm, isSuperAdmin, canAddUnder } from '../lib/client-permissions'
 import SubmitButton from './SubmitButton'
 import TaskForm, { blankForm } from './TaskForm'
 import TaskContextMenu from './TaskContextMenu'
@@ -212,7 +212,9 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
   const isMine = !!currentUser?.name && nodeAssignees.some(a => (typeof a === 'object' ? a?.name : a) === currentUser.name)
   // Capability gates, keyed to real permissions (superadmin + subadmins).
   const canEdit = hasPerm(currentUser, 'task:update')   // full edit / assign / reorder
-  const canCreate = hasPerm(currentUser, 'task:create') // add sub-task
+  // Add sub-task. An admin is capped at sub-sub level, so the button only appears on
+  // a row that already has a parent — see lib/task-nesting.js.
+  const canCreate = hasPerm(currentUser, 'task:create') && canAddUnder(currentUser, node)
   const canDelete = isSuperAdmin(currentUser) // superadmin only, by policy
   // Regular users (assignees) may still change the status of their own tasks.
   const canChangeStatus = canEdit || isMine
@@ -1061,7 +1063,8 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
   return (
     <div className="task-tree">
       <div className="task-tree-toolbar">
-        {hasPerm(currentUser, 'task:create') && (
+        {/* A main task. Superadmin-only: an admin is capped at sub-sub level. */}
+        {hasPerm(currentUser, 'task:create') && canAddUnder(currentUser, null) && (
           <button className="btn-add-task" style={{ fontSize: 12, padding: '5px 12px' }} onClick={() => setAddingRoot(v => !v)}>
             {addingRoot ? 'Cancel' : '+ Add Task'}
           </button>

@@ -8,6 +8,7 @@ import { enqueue, onSync } from '../../../lib/submit-queue'
 import { useOptimistic } from '../../../lib/optimistic'
 import { reshapesTree } from '../../../lib/task-reconcile'
 import { scopeUserToProject } from '../../../lib/scoped-user'
+import { canAddUnder } from '../../../lib/client-permissions'
 import TaskTree from '../../../components/TaskTree'
 import KanbanBoard from '../../../components/KanbanBoard'
 import CalendarView from '../../../components/CalendarView'
@@ -393,9 +394,13 @@ export default function TasksPage({ currentUser }) {
                 </div>
               )}
             </div>
-            <button onClick={() => { setShowImport(true); setImportError(''); setImportSuccess(''); setImportFile(null) }} className="btn-ghost" style={{ fontSize: 13, padding: '6px 14px' }}>
-              Import
-            </button>
+            {/* Import builds trees from the root down, so it creates main tasks —
+                superadmin-only. See lib/task-nesting.js. */}
+            {canAddUnder(currentUser, null) && (
+              <button onClick={() => { setShowImport(true); setImportError(''); setImportSuccess(''); setImportFile(null) }} className="btn-ghost" style={{ fontSize: 13, padding: '6px 14px' }}>
+                Import
+              </button>
+            )}
             <Link href={`/projects/${slug}/dashboard`} className="btn-ghost" style={{ fontSize: 13, padding: '6px 14px', textDecoration: 'none' }}>
               Dashboard
             </Link>

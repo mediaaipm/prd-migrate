@@ -6,6 +6,7 @@ const { stripTasksMedia, stripTaskMedia, validateAttachments, AttachmentError } 
 const { sendJsonCached } = require('../../../../../../../lib/etag');
 const { requireLabels } = require('../../../../../../../lib/require-label');
 const { sanitizeAcceptance, stampAcceptance } = require('../../../../../../../lib/task-acceptance');
+const { allowCreateUnder } = require('../../../../../../../lib/task-nesting');
 const { withCpuLog } = require('../../../../../../../lib/cpu-log');
 
 async function handler(req, res) {
@@ -22,6 +23,8 @@ async function handler(req, res) {
     if (!await requirePermission('task:create', slug)(req, res)) return;
     const { id, title, description, status, priority, assignee, assignees, startDate, dueDate, parentId, numberOverride, attachments, cover, labelIds, category, points, acceptance } = req.body || {};
     if (!title) return res.status(400).json({ error: 'title is required' });
+    // Admins may only create sub-sub-tasks — see lib/task-nesting.js.
+    if (!await allowCreateUnder(req, res, slug, version, parentId)) return;
     if (!await requireLabels(slug, labelIds, res)) return;
     // Prefer a name the creator typed in the form; fall back to the logged-in user.
     let assignedBy = (req.body && typeof req.body.assignedBy === 'string' && req.body.assignedBy.trim()) || null;

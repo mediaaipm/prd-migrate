@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { enqueue } from '../lib/submit-queue'
 import { taskDraft, taskCreateBody } from '../lib/task-draft'
-import { hasPerm, isSuperAdmin } from '../lib/client-permissions'
+import { hasPerm, isSuperAdmin, canAddUnder } from '../lib/client-permissions'
 import AssigneeInput from './AssigneeInput'
 import SubmitButton from './SubmitButton'
 import TaskContextMenu from './TaskContextMenu'
@@ -352,14 +352,14 @@ export default function CalendarView({ tasks, apiBase, slug, currentUser }) {
                           <span style={{ flex: 1, fontSize: 13, textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>{t.title}</span>
                           {!coverSrc(t) && Array.isArray(t.attachments) && t.attachments.length > 0 && <span style={{ fontSize: 11 }} title={`${t.attachments.length} image(s)`}>🖼 {t.attachments.length}</span>}
                           <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 10, background: 'var(--tint-slate-bg)', color: 'var(--muted)' }}>{t.status}</span>
-                          {!isChild && canCreate && <button className="btn-ghost" style={{ fontSize: 12, padding: '3px 8px' }} title="Add sub-task" onClick={() => { setSubParent(t.id); setEditId('new') }}>+ sub</button>}
+                          {!isChild && canCreate && canAddUnder(currentUser, t) && <button className="btn-ghost" style={{ fontSize: 12, padding: '3px 8px' }} title="Add sub-task" onClick={() => { setSubParent(t.id); setEditId('new') }}>+ sub</button>}
                           {canEdit && <button className="btn-ghost" style={{ fontSize: 12, padding: '3px 10px' }} onClick={() => setEditId(t.id)}>Edit</button>}
                           {canDelete && <button className="btn-ghost" style={{ fontSize: 12, padding: '3px 8px', color: 'var(--tint-red-fg)' }} onClick={() => deleteTask(t.id)}>✕</button>}
                         </div>
                       ))}
                     </div>
                   )}
-                  {canCreate && <button className="btn-primary" style={{ fontSize: 13, padding: '7px 16px' }} onClick={() => { setSubParent(null); setEditId('new') }}>+ Add task on this day</button>}
+                  {canCreate && canAddUnder(currentUser, null) && <button className="btn-primary" style={{ fontSize: 13, padding: '7px 16px' }} onClick={() => { setSubParent(null); setEditId('new') }}>+ Add task on this day</button>}
                 </>
               )}
             </div>

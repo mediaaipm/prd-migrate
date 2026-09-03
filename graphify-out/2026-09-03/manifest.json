@@ -20,8 +20,8 @@
     "semantic_hash": ""
   },
   "components/CalendarView.js": {
-    "mtime": 1788425779.9339526,
-    "ast_hash": "072a9026e1f9d021b7a96a9d77ad6f62",
+    "mtime": 1786430780.4558387,
+    "ast_hash": "8694d5ebdc0a7e1d1892b55c7a8f80e2",
     "semantic_hash": ""
   },
   "components/DiffViewer.js": {
@@ -35,8 +35,8 @@
     "semantic_hash": ""
   },
   "components/KanbanBoard.js": {
-    "mtime": 1788425756.801736,
-    "ast_hash": "31e31ddb6a70cf20bc4f95724455d6c1",
+    "mtime": 1787840691.4949958,
+    "ast_hash": "e0c9e079af48acb47767690f4f06ec42",
     "semantic_hash": ""
   },
   "components/Nav.js": {
@@ -65,8 +65,8 @@
     "semantic_hash": ""
   },
   "components/TaskTree.js": {
-    "mtime": 1788425697.6768494,
-    "ast_hash": "6217baa044d4b695a569bc891e7bc5f8",
+    "mtime": 1787840711.0924668,
+    "ast_hash": "3dfbc453aea6e52788c9dbc34813563f",
     "semantic_hash": ""
   },
   "graphify/graph.json": {
@@ -90,8 +90,8 @@
     "semantic_hash": ""
   },
   "lib/client-permissions.js": {
-    "mtime": 1788425678.677186,
-    "ast_hash": "e9dfe43edc31b7d4fd4bbd7889e501f6",
+    "mtime": 1785161125.8666813,
+    "ast_hash": "9030dab6199a7e3854cac3758b4e308e",
     "semantic_hash": ""
   },
   "lib/notification-store.js": {
@@ -185,8 +185,8 @@
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1788269114.9934561,
-    "ast_hash": "169345b56f5dfce47bba2e41586e237e",
+    "mtime": 1782802842.1958773,
+    "ast_hash": "4face119f37af2f455be863b5dae9263",
     "semantic_hash": ""
   },
   "pages/_app.js": {
@@ -285,8 +285,8 @@
     "semantic_hash": ""
   },
   "pages/api/projects/[slug]/import.js": {
-    "mtime": 1788425671.1655412,
-    "ast_hash": "1551dc826cce5feb2c1d72bcda72a689",
+    "mtime": 1786374110.7871733,
+    "ast_hash": "ade98e2f7f1e59fd6dd9dabd71a0878d",
     "semantic_hash": ""
   },
   "pages/api/projects/[slug]/labels.js": {
@@ -315,8 +315,8 @@
     "semantic_hash": ""
   },
   "pages/api/projects/[slug]/tasks/[taskId].js": {
-    "mtime": 1788425637.0453713,
-    "ast_hash": "5521003bb3488f133c54afc032acc450",
+    "mtime": 1787722283.2469018,
+    "ast_hash": "290ee0b8f30373869023b614306620a3",
     "semantic_hash": ""
   },
   "pages/api/projects/[slug]/tasks/[taskId]/history.js": {
@@ -325,8 +325,8 @@
     "semantic_hash": ""
   },
   "pages/api/projects/[slug]/tasks/index.js": {
-    "mtime": 1788425596.6743822,
-    "ast_hash": "1871d9777fbe2121306d904b3a12bb5e",
+    "mtime": 1787820566.7539935,
+    "ast_hash": "21dc03b7acc9e6277192fd0b6a1cba82",
     "semantic_hash": ""
   },
   "pages/api/projects/[slug]/versions/[version].js": {
@@ -335,8 +335,8 @@
     "semantic_hash": ""
   },
   "pages/api/projects/[slug]/versions/[version]/tasks/[taskId].js": {
-    "mtime": 1788425660.3355508,
-    "ast_hash": "b9ab6c8ebfbc8c7d14ba5af439053e3f",
+    "mtime": 1787722301.4701877,
+    "ast_hash": "584eaaa7fe92752530f04347ba862d1e",
     "semantic_hash": ""
   },
   "pages/api/projects/[slug]/versions/[version]/tasks/[taskId]/history.js": {
@@ -345,8 +345,8 @@
     "semantic_hash": ""
   },
   "pages/api/projects/[slug]/versions/[version]/tasks/index.js": {
-    "mtime": 1788425606.2113192,
-    "ast_hash": "8b2a2e4d686792035a27bcd581cf0ce0",
+    "mtime": 1787722315.024508,
+    "ast_hash": "7473841babb979e741468ca7652b6bb9",
     "semantic_hash": ""
   },
   "pages/api/projects/[slug]/versions/index.js": {
@@ -390,8 +390,8 @@
     "semantic_hash": ""
   },
   "pages/projects/[slug]/tasks.js": {
-    "mtime": 1788425811.446621,
-    "ast_hash": "ce8b6a9f0d6a22853bda5f2016bed374",
+    "mtime": 1787747866.3379412,
+    "ast_hash": "3507bfca9ee75c38d8277e268ba07537",
     "semantic_hash": ""
   },
   "prds/aipm/meta.json": {
@@ -827,11 +827,6 @@
   ".backup-tasks-3.0.0.json": {
     "mtime": 1787829890.739143,
     "ast_hash": "d693ca0af4a83d23c895a2e0d7f53d34",
-    "semantic_hash": ""
-  },
-  "lib/task-nesting.js": {
-    "mtime": 1788425586.6978726,
-    "ast_hash": "4291dc5fa88e6d89e77f74804e5eaab6",
     "semantic_hash": ""
   }
 }

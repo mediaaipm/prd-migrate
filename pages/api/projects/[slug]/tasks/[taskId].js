@@ -1,4 +1,4 @@
-const { getTask, updateTask, deleteTask, reorderTask, moveTask, restorePositions, reorderBoard } = require('../../../../../lib/task-store');
+const { getTask, updateTask, deleteTask, reorderTask, moveTask, restorePositions, reorderBoard, listTasks } = require('../../../../../lib/task-store');
 const { logAudit, getAuditUser } = require('../../../../../lib/audit-log');
 const { recordTaskUpdate } = require('../../../../../lib/task-history-store');
 const { notifyTaskChange } = require('../../../../../lib/notification-store');
@@ -9,6 +9,7 @@ const { getEffectiveRolePolicy, isStatusRestricted } = require('../../../../../l
 const { stripTaskMedia, stripTasksMedia, mergeTaskMedia, validateAttachments, AttachmentError } = require('../../../../../lib/task-media');
 const { sanitizeChecklist, stampChecklist } = require('../../../../../lib/task-checklist');
 const { sanitizeAcceptance, stampAcceptance, acceptanceStructureIntact } = require('../../../../../lib/task-acceptance');
+const { allowReparent, moveParentId, isNestingCapped, MOVE_ERROR } = require('../../../../../lib/task-nesting');
 
 // Fields a viewer may write on a task they can open, without task:update.
 // `acceptance` is here for the tick only — see the structure guard below.
@@ -98,6 +99,10 @@ async function route(req, res) {
         return res.status(403).json({ error: `Only an admin can move a task to "${updates.status}".` });
       }
     }
+    // Re-parenting is how the swimlane board moves a card between stories, so it
+    // arrives here as an ordinary field. An admin may not use it to lift a task
+    // back up to main-task or sub-task level — see lib/task-nesting.js.
+    if ('parentId' in updates && !await allowReparent(req, res, slug, v, [{ id: taskId, parentId: updates.parentId }])) return;
     // Changing a task's display id is an admin-level action.
     if ('seq' in updates && !(await hasPermission(req, 'task:update', slug))) {
       return res.status(403).json({ error: 'Permission denied: task:update' });
@@ -146,11 +151,20 @@ async function route(req, res) {
       return res.status(200).json(stripTasksMedia(tasks, slug, v));
     }
     if (action === 'restorePositions') {
+      // The undo payload is a whole-tree snapshot, so most entries re-state the
+      // parent a task already has; only the ones that actually change it are gated.
+      if (!await allowReparent(req, res, slug, v, Array.isArray(positions) ? positions : [])) return;
       const tasks = await restorePositions(slug, v, Array.isArray(positions) ? positions : []);
       await logAudit(req, 'restore_positions', 'task', { slug, version: v, count: (positions || []).length });
       return res.status(200).json(stripTasksMedia(tasks, slug, v));
     }
     if (action === 'move') {
+      // A drag names a target and a position, not a parent. Resolve the parent the
+      // move will produce before deciding whether an admin may make it.
+      if (isNestingCapped(req)) {
+        const parentId = moveParentId(await listTasks(slug, v), targetId, position);
+        if (parentId !== undefined && !await allowReparent(req, res, slug, v, [{ id: taskId, parentId }])) return;
+      }
       const tasks = await moveTask(slug, v, taskId, targetId, position);
       if (!tasks) return res.status(404).json({ error: 'Not found' });
       await logAudit(req, 'move_task', 'task', { slug, version: v, taskId, targetId, position });

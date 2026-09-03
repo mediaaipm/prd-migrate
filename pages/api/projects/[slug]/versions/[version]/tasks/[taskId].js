@@ -1,4 +1,4 @@
-const { getTask, updateTask, deleteTask, reorderTask, moveTask, restorePositions, reorderBoard } = require('../../../../../../../lib/task-store');
+const { getTask, updateTask, deleteTask, reorderTask, moveTask, restorePositions, reorderBoard, listTasks } = require('../../../../../../../lib/task-store');
 const { logAudit, getAuditUser } = require('../../../../../../../lib/audit-log');
 const { recordTaskUpdate } = require('../../../../../../../lib/task-history-store');
 const { notifyTaskChange } = require('../../../../../../../lib/notification-store');
@@ -10,6 +10,7 @@ const { getEffectiveRolePolicy, isStatusRestricted } = require('../../../../../.
 const { stripTaskMedia, stripTasksMedia, mergeTaskMedia, validateAttachments, AttachmentError } = require('../../../../../../../lib/task-media');
 const { sanitizeChecklist, stampChecklist } = require('../../../../../../../lib/task-checklist');
 const { sanitizeAcceptance, stampAcceptance, acceptanceStructureIntact } = require('../../../../../../../lib/task-acceptance');
+const { allowReparent, moveParentId, isNestingCapped } = require('../../../../../../../lib/task-nesting');
 
 // Same shared surfaces as the root task route: a board opened on a version tab
 // writes here instead, and a tick box that works on one board and 403s on the
@@ -78,6 +79,10 @@ async function route(req, res) {
         return res.status(403).json({ error: `Only an admin can move a task to "${updates.status}".` });
       }
     }
+    // Re-parenting arrives here as an ordinary field (the swimlane board writes it
+    // when a card changes story). Admins may not use it to lift a task back up to
+    // main-task or sub-task level — see lib/task-nesting.js.
+    if ('parentId' in updates && !await allowReparent(req, res, slug, version, [{ id: taskId, parentId: updates.parentId }])) return;
     // Changing a task's display id is an admin-level action.
     if ('seq' in updates && !requireAdmin(req, res)) return;
     // Flag/unflag the task for repeated delay reminders (see /api/cron/delayed-reminders).
@@ -119,11 +124,19 @@ async function route(req, res) {
       return res.status(200).json(stripTasksMedia(tasks, slug, version));
     }
     if (action === 'restorePositions') {
+      // Whole-tree snapshot: only the entries that actually change a parent are gated.
+      if (!await allowReparent(req, res, slug, version, Array.isArray(positions) ? positions : [])) return;
       const tasks = await restorePositions(slug, version, Array.isArray(positions) ? positions : []);
       await logAudit(req, 'restore_positions', 'task', { slug, version, count: (positions || []).length });
       return res.status(200).json(stripTasksMedia(tasks, slug, version));
     }
     if (action === 'move') {
+      // A drag names a target and a position, not a parent. Resolve the parent the
+      // move will produce before deciding whether an admin may make it.
+      if (isNestingCapped(req)) {
+        const parentId = moveParentId(await listTasks(slug, version), targetId, position);
+        if (parentId !== undefined && !await allowReparent(req, res, slug, version, [{ id: taskId, parentId }])) return;
+      }
       const tasks = await moveTask(slug, version, taskId, targetId, position);
       if (!tasks) return res.status(404).json({ error: 'Not found' });
       await logAudit(req, 'move_task', 'task', { slug, version, taskId, targetId, position });

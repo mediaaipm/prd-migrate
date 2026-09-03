@@ -14,7 +14,7 @@ import { useCategories, categoriesWithTaskValues, categoryMap, effectiveCategory
 import CategoryManager from './CategoryManager'
 import CellPeekModal from './CellPeekModal'
 import TaskMiniBoard from './TaskMiniBoard'
-import { isSuperAdmin } from '../lib/client-permissions'
+import { isSuperAdmin, canAddUnder } from '../lib/client-permissions'
 import { withRev, bumpRev } from '../lib/config-cache'
 import { taskShareLink, copyText } from '../lib/task-link'
 import { attSrc, coverSrc } from '../lib/attachment-src'
@@ -117,6 +117,12 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   const isMine = task => !!currentUser?.name && (Array.isArray(task?.assignees) ? task.assignees : (task?.assignee ? [task.assignee] : []))
     .some(a => (typeof a === 'object' ? a?.name : a) === currentUser.name)
   const canChangeStatus = task => canEditAll || isMine(task)
+  // An admin is capped at sub-sub level, so every add on this board is gated by the
+  // parent it would hang the new task off — see lib/task-nesting.js. Most of the
+  // board's adds produce a main task or a lane child, both of which are superadmin
+  // work; `+ sub-task` on a card that is itself a sub-task is what an admin gets.
+  const canAddTaskUnder = parent => canEditAll && canAddUnder(currentUser, parent)
+  const canAddRootTask = canAddTaskUnder(null)
   // Global superadmin blocklist: statuses a regular user may never set (any project).
   // Admins/superadmin are exempt. Mirrors the server check in the task update route.
   const isPriv = !!currentUser?.isAdmin
@@ -1749,7 +1755,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
               )}
               {/* One click, three fields already answered. Hover-revealed: at
                   forty rails a permanent + in every cell is all anyone sees. */}
-              {canEditAll && (
+              {canAddTaskUnder(rootId === LOOSE_LANE ? null : taskById[rootId]) && (
                 <button
                   className="swim-cell-add"
                   onMouseDown={e => e.stopPropagation()}
@@ -2012,7 +2018,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                       </button>
                     )
                   })()}
-                  {canEditAll && (
+                  {canAddRootTask && (
                     <button
                       className="swim-lane-add"
                       onMouseDown={e => e.stopPropagation()}
@@ -2301,7 +2307,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
           </div>
         )}
 
-        {canEditAll && (
+        {canAddTaskUnder(task) && (
           <button
             className="kanban-add-subtask-btn kanban-add-subtask-btn--card"
             onClick={() => openSubAdd(task)}
@@ -2332,7 +2338,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
           axes and the expand/collapse pair. Everything else lives one click away in
           the Filters drawer, the same split the list view uses. */}
       <div className="kanban-filter-bar">
-        {canEditAll && (
+        {canAddRootTask && (
           <button
             className="btn-add-task"
             style={{ fontSize: 12, padding: '5px 12px', whiteSpace: 'nowrap' }}
@@ -2719,14 +2725,16 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                       {hasKbFilters ? `/${boardTasks.filter(t => t.status === col.status).length}` : ''}
                     </span>
                   </div>
-                  {canEditAll && (
+                  {(canAddRootTask || canEditColumns) && (
                     <div className="kanban-col-header-actions" onClick={e => e.stopPropagation()}>
-                      <button
-                        className="kanban-add-btn"
-                        onMouseDown={e => e.stopPropagation()}
-                        onClick={() => addingFor === col.status ? setAddingFor(null) : startAdding(col.status)}
-                        title={`Add task to ${col.label}`}
-                      >+</button>
+                      {canAddRootTask && (
+                        <button
+                          className="kanban-add-btn"
+                          onMouseDown={e => e.stopPropagation()}
+                          onClick={() => addingFor === col.status ? setAddingFor(null) : startAdding(col.status)}
+                          title={`Add task to ${col.label}`}
+                        >+</button>
+                      )}
                       {canEditColumns && (
                         <button
                           className="kanban-col-delete-btn"
@@ -2833,7 +2841,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                         <button className="btn-ghost" style={{ fontSize: 12, padding: '4px 10px' }} onClick={() => { setQuickAddFor(null); setQuickAddTitle('') }}>✕</button>
                       </div>
                     </div>
-                  ) : canEditAll ? (
+                  ) : canAddRootTask ? (
                     <button className="kanban-quick-add-btn" onClick={() => { setQuickAddFor(col.status); setQuickAddTitle('') }}>+ Add a card</button>
                   ) : null}
                 </div>
