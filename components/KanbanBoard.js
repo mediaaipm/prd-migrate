@@ -117,10 +117,11 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   const isMine = task => !!currentUser?.name && (Array.isArray(task?.assignees) ? task.assignees : (task?.assignee ? [task.assignee] : []))
     .some(a => (typeof a === 'object' ? a?.name : a) === currentUser.name)
   const canChangeStatus = task => canEditAll || isMine(task)
-  // An admin is capped at sub-sub level, so every add on this board is gated by the
-  // parent it would hang the new task off — see lib/task-nesting.js. Most of the
-  // board's adds produce a main task or a lane child, both of which are superadmin
-  // work; `+ sub-task` on a card that is itself a sub-task is what an admin gets.
+  // A regular user is capped at sub-sub level, so every add on this board is gated by
+  // the parent it would hang the new task off — see lib/task-nesting.js. Admins are
+  // uncapped and get the lot; `+ sub-task` on a card that is itself a sub-task is all
+  // a capped account gets. (canEditAll gates these on isAdmin anyway, so today the cap
+  // only bites if a board add is ever opened up to users.)
   const canAddTaskUnder = parent => canEditAll && canAddUnder(currentUser, parent)
   const canAddRootTask = canAddTaskUnder(null)
   // Global superadmin blocklist: statuses a regular user may never set (any project).

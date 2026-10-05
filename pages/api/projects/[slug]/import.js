@@ -51,11 +51,11 @@ export default async function handler(req, res) {
   if (!await requireProjectAccess(slug, req, res)) return
   if (!await requirePermission('task:create', slug)(req, res)) return
   // An import always builds its trees from the root down — every CSV row and every
-  // top-level JSON entry is a main task. Admins may not create those at all, so the
+  // top-level JSON entry is a main task. A regular user may not create those, so the
   // whole import is refused rather than half of it silently dropped.
   // See lib/task-nesting.js.
   if (isNestingCapped(req)) {
-    return res.status(403).json({ error: 'Importing creates main tasks, which is superadmin-only. Ask a super admin to run this import.' })
+    return res.status(403).json({ error: 'Importing creates main tasks, which is admin-only. Ask an admin to run this import.' })
   }
 
   const project = await getProject(slug)

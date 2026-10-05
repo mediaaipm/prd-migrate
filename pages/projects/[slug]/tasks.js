@@ -395,7 +395,7 @@ export default function TasksPage({ currentUser }) {
               )}
             </div>
             {/* Import builds trees from the root down, so it creates main tasks —
-                superadmin-only. See lib/task-nesting.js. */}
+                admin and superadmin only. See lib/task-nesting.js. */}
             {canAddUnder(currentUser, null) && (
               <button onClick={() => { setShowImport(true); setImportError(''); setImportSuccess(''); setImportFile(null) }} className="btn-ghost" style={{ fontSize: 13, padding: '6px 14px' }}>
                 Import
