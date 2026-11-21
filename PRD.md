@@ -80,16 +80,16 @@ of statuses they may move a task into). Unset ⇒ permissive.
 ## 3. Architecture
 
 ```
-Browser (Next.js pages router, React, vanilla CSS)
+Browser (Next.js App Router, React, vanilla CSS)
         ↓  apiFetch — attaches identity header
-Next.js API routes (pages/api/*) on Vercel
+Next.js route handlers (app/api/* → server/api/*) on Vercel
         ↓  requirePermission / requireSuperAdmin / requireProjectAccess
 lib/*-store.js  — the only modules that touch Redis
         ↓
 Upstash Redis (REST)          Vercel Cron → /api/cron/* (daily reminders)
 ```
 
-**Stack:** Next.js 16 (pages router), React 18, vanilla CSS in
+**Stack:** Next.js 16 (App Router), React 18, vanilla CSS in
 [styles/globals.css](styles/globals.css), Upstash Redis, `remark` for markdown,
 `diff` for version diffing. No TypeScript. No CSS framework. No ORM.
 
@@ -386,7 +386,7 @@ Per-task change history with a viewer modal. Share links deep-link to a task
 > Compounding it:
 > - Passwords are stored and compared in **plaintext** in the `user:{name}` hash.
 > - The built-in superadmin password is **hardcoded in source**
->   ([pages/api/auth/login.js](pages/api/auth/login.js)).
+>   ([server/api/auth/login.js](server/api/auth/login.js)).
 > - The audit log attributes actions to the same forgeable header, so it cannot be
 >   trusted as evidence.
 >

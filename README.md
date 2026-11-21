@@ -9,7 +9,7 @@ version. **Tasks** hang off the project (or off a specific version), nest into
 sub-tasks, and are worked through a **kanban board**, **tree list** or **calendar**,
 grouped into **sprints** with burndown and velocity analytics.
 
-Next.js (Pages Router) · React 18 · Upstash Redis · no ORM, no TypeScript, no CSS
+Next.js (App Router) · React 18 · Upstash Redis · no ORM, no TypeScript, no CSS
 modules.
 
 ---
@@ -189,14 +189,15 @@ and can be edited or cleared — a year emptied by hand stays empty, because a
 configuration (`weekendDays`, `country`) is superadmin-only and feeds every working-day
 calculation in sprint analytics.
 
-### Dashboards
+### Insights
 
-**Cross-project** (`/dashboard`) — active sprints, overdue tasks and proposals,
-upcoming deadlines, per-project completion, team workload, pending proposals, task
-velocity, unassigned items, stale projects, last activity. Rolled up only over the
-projects your account can see.
-
-**Per-project** (`/projects/{slug}/dashboard`) — the same shape scoped to one project.
+**Per-project** (`/projects/{slug}/dashboard`, the **Insights** tab), built around
+stories: stories done, the story pipeline by board column, the current sprint (work done
+vs time used, points vs capacity, carried-in stories, unowned work), a "Needs attention"
+list (overdue, due in 7 days, stories carried over twice or more — each row opens the
+task), open epics with progress and target date, workload per person (open + late), and
+sprint history with velocity from the frozen sprint summaries. Sprint cards need
+`sprint:view`, epics need `task:view`. There is no cross-project dashboard.
 
 ### Notifications & reminders
 
@@ -230,7 +231,7 @@ every project.
 Ten themes (Light, Dark, Light Neon, Dark Neon, Sunrise, Morning, Sunset, Evening,
 Chocolate, Blackhole), cycled from the nav. `<html>` carries `data-theme` (the exact id)
 and `data-mode` (`light`/`dark`, the family it inherits tokens from). An inline script in
-`pages/_document.js` stamps both before first paint, so there is no flash. The choice
+`app/layout.js` stamps both before first paint, so there is no flash. The choice
 lives in `localStorage['ss_theme']` and never touches the session or Redis.
 
 ---
@@ -355,12 +356,6 @@ sprint that silently loses or repeats a day is a burndown that never reconciles.
 Holiday lookups are individually guarded: a broken or missing holiday module degrades
 the numbers to weekends-only rather than 500-ing the dashboard.
 
-### On the cross-project dashboard
-
-The **Active Sprints** panel on `/dashboard` shows every running sprint across every
-project you can see — name, progress bar, done/total, end date and a days-left badge
-(amber at ≤2 days, red when overdue).
-
 ---
 
 ## Storage: keys, attachments, and retention
@@ -461,7 +456,7 @@ periodically to catch growth early.
 
 ## API Reference
 
-All routes live under `pages/api/`. Mutations go through `requirePermission` or
+All handlers live under `server/api/` and are served by generated App Router routes (`app/api/**/route.js`, via `lib/route-adapter.js`; regenerate with `node scripts/gen-app-routes.js`). Mutations go through `requirePermission` or
 `requireSuperAdmin`; identity comes only from `getSessionUser(req)`. Client code always
 calls through `apiFetch`, never raw `fetch`.
 
@@ -509,7 +504,6 @@ calls through `apiFetch`, never raw `fetch`.
 
 | Route | Methods |
 |---|---|
-| `/api/dashboard` | GET |
 | `/api/assignees`, `/api/assignees/{name}` | GET, POST / PUT, DELETE |
 | `/api/notifications`, `/api/notifications/{id}` | GET, POST / PATCH |
 | `/api/holidays`, `/api/holidays/config` | GET, POST, PUT, DELETE |
@@ -579,7 +573,7 @@ starter that renders a dependency graph parsed straight out of `PRD.md`. See
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 16 (Pages Router) |
+| Framework | Next.js 16 (App Router) |
 | UI | React 18, vanilla CSS in `styles/globals.css` (no CSS modules) |
 | Store | Upstash Redis (`@upstash/redis`, auto-pipelining) |
 | Auth | HMAC-signed HttpOnly cookie, scrypt password hashes |

@@ -1,8 +1,12 @@
 import { useState, useRef } from 'react'
+import PointsSelect from './PointsSelect'
+import { statusOptions, isSubtaskStatus, subtaskStatus } from '../lib/subtask-status'
 import AssigneeInput from './AssigneeInput'
 import AutoTextarea from './AutoTextarea'
 import SubmitButton from './SubmitButton'
 import { attSrc } from '../lib/attachment-src'
+import { makeAcceptanceItem, MAX_ACCEPTANCE_TEXT, MAX_ACCEPTANCE_ITEMS } from '../lib/task-acceptance'
+import { USER_STORY_PARTS, MAX_USER_STORY_TEXT, blankUserStory } from '../lib/user-story'
 
 const MAX_ATTACH_BYTES = 1024 * 1024 // 1MB cap per image (stored inline as data URL in Redis)
 
@@ -16,7 +20,7 @@ function readFileAsDataUrl(file) {
 }
 
 export function blankForm() {
-  return { title: '', description: '', status: 'todo', priority: 'medium', category: '', assignees: [], assignedBy: '', startDate: '', dueDate: '', numberOverride: '', points: '', attachments: [], cover: null, labelIds: [] }
+  return { title: '', description: '', status: 'todo', priority: 'medium', category: '', epicId: '', assignees: [], assignedBy: '', startDate: '', dueDate: '', numberOverride: '', points: '', attachments: [], cover: null, labelIds: [], userStory: blankUserStory(), acceptance: [] }
 }
 
 // The one task composer/editor. The list, the board and the board's modals all
@@ -26,14 +30,26 @@ export function blankForm() {
 // `quickAdd` collapses everything but the title behind a "More options" toggle — the
 // common case is a title and Enter. `allowAddAnother` keeps the form open and cleared
 // after a save so several sub-tasks can be typed in a row.
-export default function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreator = false, currentUser = null, quickAdd = false, allowAddAnother = false, columns = [], categories = [], inheritedCategory = '', labels = [], requireLabel = false, titlePlaceholder }) {
+// `isSubtask`: the task is (or will be) a sub-task, so status offers the three
+// sub-task states instead of the board columns (lib/subtask-status.js). `isNew`: the
+// form creates one — an off-scale status inherited from the parent is snapped onto
+// the three rather than offered as an "(old)" choice.
+export default function TaskForm({ initial, onSave, onCancel, label, assignees = [], showCreator = false, currentUser = null, quickAdd = false, allowAddAnother = false, columns = [], categories = [], inheritedCategory = '', labels = [], requireLabel = false, titlePlaceholder, epics = [], showEpic = false, isSubtask = false, isNew = false }) {
+  // Captured once: the legacy status the task arrived with, so it can stay selectable.
+  const [arrivedStatus] = useState(() => (isNew ? null : initial?.status))
   function makeInitial() {
-    const base = initial || blankForm()
+    let base = initial || blankForm()
+    // A new sub-task starts in one of its three states, whatever column it came from.
+    if (isSubtask && isNew && base.status && !isSubtaskStatus(base.status)) base = { ...base, status: subtaskStatus(base.status) }
     // Auto-attribute the creator from the logged-in user; no manual entry.
     if (showCreator && !base.assignedBy && currentUser?.name) return { ...base, assignedBy: currentUser.name }
     return base
   }
   const [form, setForm] = useState(makeInitial)
+  // What the story fields held when the form opened. An edit that leaves them alone
+  // must not send them: a stale acceptance list would undo a tick someone made since.
+  const [storyAtOpen] = useState(() => JSON.stringify([initial?.userStory || null, initial?.acceptance || []]))
+  const [newAc, setNewAc] = useState('')
   const [expanded, setExpanded] = useState(!quickAdd)
   const [addAnother, setAddAnother] = useState(false)
   const titleRef = useRef(null)
@@ -89,11 +105,19 @@ export default function TaskForm({ initial, onSave, onCancel, label, assignees =
     const cur = Array.isArray(form.assignees) ? form.assignees : []
     const assigneesFinal = pending && !cur.includes(pending) ? [...cur, pending] : cur
     const keepOpen = allowAddAnother && addAnother
-    onSave({ ...form, assignees: assigneesFinal }, { keepOpen })
+    const out = { ...form, assignees: assigneesFinal }
+    const pendingAc = newAc.trim()
+    if (!isSubtask && pendingAc) out.acceptance = [...(form.acceptance || []), makeAcceptanceItem(pendingAc, currentUser?.name || null)]
+    if (isSubtask || JSON.stringify([out.userStory || null, out.acceptance || []]) === storyAtOpen) {
+      delete out.userStory
+      delete out.acceptance
+    }
+    onSave(out, { keepOpen })
+    setNewAc('')
     if (!keepOpen) return
     // Keep the inherited defaults (status, priority, assignees, dates); clear what is
     // unique to the task just added.
-    setForm(p => ({ ...p, title: '', description: '', numberOverride: '', attachments: [], cover: null }))
+    setForm(p => ({ ...p, title: '', description: '', numberOverride: '', attachments: [], cover: null, userStory: blankUserStory(), acceptance: [] }))
     pendingAssignee.current = ''
     requestAnimationFrame(() => titleRef.current?.focus())
   }
@@ -139,15 +163,96 @@ export default function TaskForm({ initial, onSave, onCancel, label, assignees =
     </label>
   ) : null
 
+  // Stories only: the user-story statement and the acceptance criteria — what has to
+  // be true before the story is done. Sub-tasks are how a story gets built, not
+  // separate contracts, so they get neither.
+  const story = { ...blankUserStory(), ...(form.userStory || {}) }
+  const acItems = Array.isArray(form.acceptance) ? form.acceptance : []
+  function setStoryPart(key, value) {
+    setForm(p => ({ ...p, userStory: { ...blankUserStory(), ...(p.userStory || {}), [key]: value } }))
+  }
+  function addAc() {
+    const text = newAc.trim()
+    if (!text || acItems.length >= MAX_ACCEPTANCE_ITEMS) return
+    setForm(p => ({ ...p, acceptance: [...(p.acceptance || []), makeAcceptanceItem(text, currentUser?.name || null)] }))
+    setNewAc('')
+  }
+  function editAc(id, text) {
+    setForm(p => ({ ...p, acceptance: (p.acceptance || []).map(i => (i.id === id ? { ...i, text } : i)) }))
+  }
+  function removeAc(id) {
+    setForm(p => ({ ...p, acceptance: (p.acceptance || []).filter(i => i.id !== id) }))
+  }
+  const storyFields = (
+    <div className="task-form-story">
+      <div className="task-form-story-block">
+        <span className="task-form-labels-title">User story</span>
+        <div className="task-form-story-parts">
+          {USER_STORY_PARTS.map(part => (
+            <label key={part.key} className="task-form-story-part">
+              <span className="task-form-story-lead">{part.label}</span>
+              <input
+                className="form-input"
+                placeholder={part.placeholder}
+                value={story[part.key]}
+                maxLength={MAX_USER_STORY_TEXT}
+                onChange={e => setStoryPart(part.key, e.target.value)}
+              />
+            </label>
+          ))}
+        </div>
+      </div>
+      <div className="task-form-story-block">
+        <span className="task-form-labels-title">
+          Acceptance criteria{acItems.length > 0 ? ` (${acItems.length})` : ''}
+        </span>
+        {acItems.length > 0 && (
+          <ol className="task-form-ac-list">
+            {acItems.map(item => (
+              <li key={item.id} className={`task-form-ac-row${item.done ? ' is-done' : ''}`}>
+                <input
+                  className="form-input"
+                  value={item.text}
+                  maxLength={MAX_ACCEPTANCE_TEXT}
+                  onChange={e => editAc(item.id, e.target.value)}
+                  aria-label="Acceptance criterion"
+                  title={item.done ? `Met${item.doneBy ? ` by ${item.doneBy}` : ''}` : undefined}
+                />
+                <button type="button" className="task-check-remove" onClick={() => removeAc(item.id)} title="Remove criterion">✕</button>
+              </li>
+            ))}
+          </ol>
+        )}
+        <div className="task-check-add">
+          <input
+            className="form-input"
+            placeholder={acItems.length ? 'Add another criterion…' : 'Given… when… then… — one condition per line'}
+            value={newAc}
+            maxLength={MAX_ACCEPTANCE_TEXT}
+            onChange={e => setNewAc(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent?.isComposing) { e.preventDefault(); addAc() } }}
+          />
+          <button
+            type="button"
+            className="btn-ghost task-check-add-btn"
+            onClick={addAc}
+            disabled={!newAc.trim() || acItems.length >= MAX_ACCEPTANCE_ITEMS}
+          >Add</button>
+        </div>
+      </div>
+    </div>
+  )
+
   const advanced = (
     <>
       {quickAdd && (
         <input className="form-input task-num-input" placeholder="# override (e.g. 1.2.3)" value={form.numberOverride} onChange={f('numberOverride')} title="Custom number (leave blank for auto)" />
       )}
       <AutoTextarea className="form-input task-desc-input" placeholder="Description (optional)" value={form.description} onChange={f('description')} />
+      {!isSubtask && storyFields}
       <div className="task-form-row">
         <select className="form-input" value={form.status} onChange={f('status')}>
-          {columns.map(c => <option key={c.status} value={c.status}>{c.label}</option>)}
+          {statusOptions(columns, isSubtask ? { parentId: true, status: arrivedStatus } : null).map(c => <option key={c.status} value={c.status}>{c.label}</option>)}
         </select>
         <select className="form-input" value={form.priority} onChange={f('priority')}>
           <option value="low">Low priority</option>
@@ -157,14 +262,11 @@ export default function TaskForm({ initial, onSave, onCancel, label, assignees =
         </select>
         {/* Optional. Left blank the task counts as 1 in velocity and burndown, so a
             team that does not estimate loses nothing by ignoring this. */}
-        <input
+        <PointsSelect
           className="form-input task-points-input"
-          type="number"
-          min="0"
-          step="0.5"
           placeholder="Pts"
-          title="Story points (optional) — blank counts as 1"
-          value={form.points ?? ''}
+          title="Story points, Fibonacci scale (optional) — blank counts as 1"
+          value={form.points}
           onChange={f('points')}
         />
         {categories.length > 0 && (
@@ -177,6 +279,14 @@ export default function TaskForm({ initial, onSave, onCancel, label, assignees =
                 : 'No category'}
             </option>
             {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        )}
+        {/* Stories only — a sub-task is in its story's epic, so the caller passes
+            showEpic just for a root create/edit. */}
+        {showEpic && epics.length > 0 && (
+          <select className="form-input" value={form.epicId || ''} onChange={f('epicId')} title="Epic">
+            <option value="">No epic</option>
+            {epics.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
           </select>
         )}
       </div>

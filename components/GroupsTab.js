@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { assigneesUrl } from '../lib/config-cache'
 import { apiFetch } from '../lib/api-fetch'
 import PermissionGrid, { ProjectPicker } from './PermissionGrid'
 import SubmitButton from './SubmitButton'
@@ -120,7 +121,7 @@ export default function GroupsTab() {
       const [g, p, u] = await Promise.all([
         apiFetch('/api/admin/groups').then(r => r.ok ? r.json() : []),
         apiFetch('/api/projects').then(r => r.ok ? r.json() : []),
-        apiFetch('/api/assignees').then(r => r.ok ? r.json() : []),
+        apiFetch(assigneesUrl()).then(r => r.ok ? r.json() : []),
       ])
       setGroups(g || []); setProjects(p || []); setUsers(u || [])
     } finally {
@@ -136,7 +137,7 @@ export default function GroupsTab() {
   }
 
   return (
-    <section className="section-card" style={{ marginTop: 0, borderRadius: '0 6px 6px 6px' }}>
+    <section className="section-card">
       <div className="section-card-header">
         <span>Groups</span>
         {!loading && <span className="badge">{groups.length}</span>}

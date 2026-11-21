@@ -64,6 +64,7 @@ const STATUS_COLOR = {
   todo: '#3b82f6',
   'in-progress': '#f59e0b',
   'in-review': '#8b5cf6',
+  'need-rework': '#ea580c',
   blocked: '#dc2626',
   done: '#16a34a',
 }
@@ -738,12 +739,77 @@ function Overview({ focus, usesPoints, compact }) {
   )
 }
 
+// ─── story flow ───────────────────────────────────────────────────────────────
+
+// Per closed sprint: committed stories against what landed, what was added mid-sprint
+// and what rolled over. Read from the summary frozen at completion. Commitment
+// reliability (completed ÷ committed+added) is the headline — a team that keeps
+// carrying half its sprint is over-planning, whatever its velocity says.
+function StoryFlow({ rows }) {
+  const list = arr(rows)
+  if (!list.length) {
+    return (
+      <div className="sa-empty">
+        No completed sprints yet. Story flow appears once a sprint closes — committed,
+        completed and carried-over stories, sprint by sprint.
+      </div>
+    )
+  }
+  const totals = list.reduce((a, r) => ({
+    scope: a.scope + num(r.committed) + num(r.added),
+    done: a.done + num(r.completed),
+    carried: a.carried + num(r.carried),
+  }), { scope: 0, done: 0, carried: 0 })
+  const reliability = totals.scope ? Math.round((totals.done / totals.scope) * 100) : 0
+  const carryRate = totals.scope ? Math.round((totals.carried / totals.scope) * 100) : 0
+  const max = Math.max(1, ...list.map(r => num(r.committed) + num(r.added)))
+
+  return (
+    <div className="sa-card">
+      <div className="sa-card-head">
+        <span className="sa-card-title">Story flow</span>
+        <span className="sa-card-sub">{plural(list.length, 'completed sprint')}</span>
+      </div>
+      <div className="sa-card-body">
+        <div className="sf-kpis">
+          <div className="sf-kpi"><strong>{reliability}%</strong><span>commitment met</span></div>
+          <div className="sf-kpi"><strong>{carryRate}%</strong><span>carried over</span></div>
+          <div className="sf-kpi"><strong>{totals.done}</strong><span>stories completed</span></div>
+        </div>
+        <div className="sf-legend">
+          <span><i className="sf-sw sf-sw--done" />Completed</span>
+          <span><i className="sf-sw sf-sw--carried" />Carried over</span>
+          <span><i className="sf-sw sf-sw--added" />of which added mid-sprint</span>
+        </div>
+        {list.map(r => {
+          const scope = num(r.committed) + num(r.added)
+          return (
+            <div key={r.sprintId} className="sf-row">
+              <span className="sf-name" title={r.name}>{r.name}</span>
+              <div className="sf-track" style={{ width: `${(scope / max) * 100}%` }}>
+                <div className="sf-seg sf-seg--done" style={{ flexGrow: num(r.completed) }} />
+                <div className="sf-seg sf-seg--carried" style={{ flexGrow: num(r.carried) }} />
+              </div>
+              <span className="sf-nums">
+                {num(r.completed)}/{scope}
+                {num(r.added) > 0 && <span className="sf-added"> · +{num(r.added)} added</span>}
+                {num(r.carried) > 0 && <span className="sf-carried"> · {num(r.carried)} carried</span>}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ─── shell ────────────────────────────────────────────────────────────────────
 
 const TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'burndown', label: 'Burndown' },
   { key: 'velocity', label: 'Velocity' },
+  { key: 'flow', label: 'Story flow' },
   { key: 'team', label: 'Team' },
   { key: 'holidays', label: 'Holidays' },
 ]
@@ -932,6 +998,8 @@ export default function SprintAnalytics({ slug, currentUser, sprintId, onSprintC
         <Burndown focus={focus} usesPoints={usesPoints} />
       ) : tab === 'velocity' ? (
         <Velocity velocity={data.velocity} usesPoints={usesPoints} />
+      ) : tab === 'flow' ? (
+        <StoryFlow rows={data.storyFlow} />
       ) : tab === 'team' ? (
         <>
           <div className="sa-card">

@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { isLeadUser } from '../lib/roles'
 import { apiFetch } from '../lib/api-fetch'
 import { enqueue } from '../lib/submit-queue'
 import { taskDraft, taskCreateBody } from '../lib/task-draft'
 import { hasPerm, isSuperAdmin, canAddUnder } from '../lib/client-permissions'
 import SubmitButton from './SubmitButton'
 import TaskForm, { blankForm } from './TaskForm'
+import { useEpics, epicMap } from '../lib/epics'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
 import FilterSidebar, { SidebarSection, SidebarCheckList } from './FilterSidebar'
@@ -14,7 +16,9 @@ import CategoryManager from './CategoryManager'
 import TaskMiniBoard from './TaskMiniBoard'
 import { taskShareLink, copyText } from '../lib/task-link'
 import { attSrc, coverSrc } from '../lib/attachment-src'
-import { withRev } from '../lib/config-cache'
+import { withRev, assigneesUrl } from '../lib/config-cache'
+import { statusOptions } from '../lib/subtask-status'
+import MoreMenu from './MoreMenu'
 
 // Statuses come from the kanban columns, so a column added on the board shows up here
 // too. Built-in ones keep their globals.css pill class; custom ones are coloured inline.
@@ -32,7 +36,7 @@ function statusPillProps(status, color) {
 
 const PRIORITY_ORDER = ['critical', 'high', 'medium', 'low']
 const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
-const PRIORITY_LABEL = { low: 'Low', medium: 'Med', high: 'High', critical: 'Crit' }
+const PRIORITY_LABEL = { low: 'Low', medium: 'Medium', high: 'High', critical: 'Critical' }
 
 const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -43,6 +47,15 @@ function formatDate(v) {
   if (!m) return v
   const [, y, mo, d] = m
   return `${MONTH_ABBR[+mo - 1]} ${+d}, ${y}`
+}
+
+// "15 Nov" this year, "15 Nov 2027" otherwise — fits the Due column.
+function shortDate(v) {
+  if (!v) return ''
+  const d = new Date(`${String(v).slice(0, 10)}T00:00:00`)
+  if (Number.isNaN(d.getTime())) return ''
+  const sameYear = d.getFullYear() === new Date().getFullYear()
+  return d.toLocaleDateString(undefined, sameYear ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 function getInitials(name) {
@@ -152,7 +165,7 @@ function findDescendant(node, id) {
   return null
 }
 
-function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], currentUser, dnd, taskAcl, taskPrefix, onContextMenu, columns = [], categories = [], catById = {}, inheritedCategory = '', labels = [], focusId, expandSignal }) {
+function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], currentUser, dnd, taskAcl, taskPrefix, onContextMenu, columns = [], categories = [], catById = {}, inheritedCategory = '', labels = [], focusId, expandSignal, epics = [], epicById = {} }) {
   const [expanded, setExpanded] = useState(true)
   const [copied, setCopied] = useState(false)
   const rowRef = useRef(null)
@@ -212,15 +225,14 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
   const isMine = !!currentUser?.name && nodeAssignees.some(a => (typeof a === 'object' ? a?.name : a) === currentUser.name)
   // Capability gates, keyed to real permissions (superadmin + subadmins).
   const canEdit = hasPerm(currentUser, 'task:update')   // full edit / assign / reorder
-  // Add sub-task. A regular user is capped at sub-sub level, so for them the button
-  // only appears on a row that already has a parent — see lib/task-nesting.js.
+  // Add sub-task. A regular user adds children only — see lib/task-nesting.js.
   const canCreate = hasPerm(currentUser, 'task:create') && canAddUnder(currentUser, node)
   const canDelete = isSuperAdmin(currentUser) // superadmin only, by policy
   // Regular users (assignees) may still change the status of their own tasks.
   const canChangeStatus = canEdit || isMine
   // Global superadmin blocklist: statuses a regular user may never set (any project).
-  // Admins/superadmin are exempt. Mirrors the server check in the task update route.
-  const isPriv = !!currentUser?.isAdmin
+  // Leads (admin, manager, team lead) are exempt. Mirrors isPrivileged() on the server.
+  const isPriv = isLeadUser(currentUser)
   const restrictedStatuses = new Set(currentUser?.restrictedStatuses || [])
   // Project ACL: which statuses a non-admin assignee may set (task:update unrestricted).
   const statusAllowed = status => {
@@ -301,6 +313,11 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
       attachments: form.attachments || [],
       cover: form.cover || null,
       labelIds: form.labelIds || [],
+      // Stories only — a sub-task is in its story's epic (the server enforces it).
+      ...(node.parentId ? {} : { epicId: form.epicId || null }),
+      // Present only when edited (TaskForm drops unchanged story fields).
+      ...('userStory' in form ? { userStory: form.userStory } : {}),
+      ...('acceptance' in form ? { acceptance: form.acceptance } : {}),
     }, `Save “${form.title}”`)
     setEditing(false)
   }
@@ -427,6 +444,21 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
 
   const dropZone = dnd?.dropTarget?.id === node.id ? dnd.dropTarget.zone : null
 
+  // The tree number only says something the ID column doesn't for sub-tasks (1.2)
+  // and hand-set overrides; on a story it would just repeat the ID.
+  const showNumber = !!node.number && (!!node.parentId || !!node.numberOverride || node.seq == null)
+  const hasMeta = (!node.parentId && node.epicId) || effCategory || (hasChildren && descTotal > 0) || coverSrc(node)
+    || (node.attachments?.length > 0) || (node.updates?.length > 0) || Number(node.carryOver) > 0
+  const dueTone = (() => {
+    if (!node.dueDate || localStatus === 'done') return null
+    const d = new Date(); const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const due = String(node.dueDate).slice(0, 10)
+    if (due < today) return 'late'
+    const soon = new Date(d.getTime() + 2 * 86400000)
+    const soonIso = `${soon.getFullYear()}-${String(soon.getMonth() + 1).padStart(2, '0')}-${String(soon.getDate()).padStart(2, '0')}`
+    return due <= soonIso ? 'soon' : null
+  })()
+
   return (
     <div className={`task-node${node.__context ? ' task-node--context' : ''}`} style={{ '--depth': depth }} data-depth={depth} data-group={hasChildren ? 'true' : undefined}>
       <div
@@ -440,107 +472,149 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
         onDrop={dnd ? e => { e.preventDefault(); dnd.onDrop(node.id) } : undefined}
         onDragEnd={dnd ? dnd.onDragEnd : undefined}
       >
-        <div className="task-row-left">
+        <div className="tl-cell tl-cell-id">
+          {!node.parentId && node.seq != null && (
+            <span
+              className={`tl-id${canEdit ? ' tl-id--editable' : ''}`}
+              title={canEdit ? 'Click to edit task ID' : 'Task ID'}
+              onClick={canEdit ? handleEditId : undefined}
+            >{taskPrefix ? `${taskPrefix}-${node.seq}` : `#${node.seq}`}</span>
+          )}
+        </div>
+        {/* Title cell: tree controls, number, title and its context on one line. */}
+        <div className="task-row-left tl-cell-title">
           {dnd && <span className="task-drag-handle" title="Drag to reorder or nest">⠿</span>}
           <button
             className="task-expand-btn"
             onClick={() => setExpanded(v => !v)}
             style={{ visibility: hasChildren ? 'visible' : 'hidden' }}
             title={expanded ? 'Collapse' : 'Expand'}
+            aria-label={expanded ? 'Collapse' : 'Expand'}
           >
-            {expanded ? '▼' : '▶'}
+            {expanded ? '▾' : '▸'}
           </button>
-          <span className="task-number" title={node.autoNumber !== node.number ? `Auto: ${node.autoNumber}` : 'Auto-numbered'}>
-            {node.number}
-          </span>
-          <span
-            className="task-title task-title--clickable"
-            onClick={() => { setShowDetail(true); setDetailEditing(false) }}
-            title="Click for details"
-            style={{ textDecoration: localStatus === 'done' ? 'line-through' : 'none', opacity: localStatus === 'done' ? 0.55 : 1 }}
-          >
-            {node.title}
-          </span>
-          {node.__context && <span className="task-context-tag" title="Shown as parent context">parent</span>}
-          {effCategory && (
-            <span
-              className={`task-cat-chip${ownCategory ? '' : ' task-cat-chip--inherited'}${catDef ? '' : ' task-cat-chip--orphan'}`}
-              style={catDef ? (ownCategory ? { background: catDef.color } : { color: catDef.color, borderColor: catDef.color }) : undefined}
-              title={ownCategory ? 'Category' : `Inherited from a parent task`}
+          <div className="tl-title-block">
+              {showNumber && (
+                <span className="task-number" title={node.autoNumber !== node.number ? `Auto: ${node.autoNumber}` : 'Position in the tree'}>
+                  {node.number}
+                </span>
+              )}
+              <button
+                type="button"
+                className="task-title task-title--clickable tl-title"
+                onClick={() => { setShowDetail(true); setDetailEditing(false) }}
+                title="Open details"
+              >
+                {node.title}
+              </button>
+              {node.__context && <span className="task-context-tag" title="Shown as parent context">parent</span>}
+            {hasMeta && (
+              <div className="tl-meta">
+                {!node.parentId && node.epicId && (
+                  <span className="tl-epic" style={{ '--status-color': epicById[node.epicId]?.color || '#94a3b8' }} title="Epic">
+                    {epicById[node.epicId]?.name || 'Unknown epic'}
+                  </span>
+                )}
+                {effCategory && (
+                  <span
+                    className={`task-cat-chip${ownCategory ? '' : ' task-cat-chip--inherited'}${catDef ? '' : ' task-cat-chip--orphan'}`}
+                    style={catDef ? (ownCategory ? { background: catDef.color } : { color: catDef.color, borderColor: catDef.color }) : undefined}
+                    title={ownCategory ? 'Category' : `Inherited from a parent task`}
+                  >
+                    {catDef?.name || effCategory}
+                  </span>
+                )}
+                {hasChildren && descTotal > 0 && (
+                  <span className={`tl-progress${descDone === descTotal ? ' tl-progress--complete' : ''}`} title={`${descDone} of ${descTotal} sub-tasks done`}>
+                    <span className="tl-progress-bar"><span style={{ width: `${Math.round((descDone / descTotal) * 100)}%` }} /></span>
+                    {descDone}/{descTotal}
+                  </span>
+                )}
+                {coverSrc(node) && <img src={coverSrc(node)} alt="" className="task-row-cover" title="Cover image" loading="lazy" decoding="async" />}
+                {Array.isArray(node.attachments) && node.attachments.length > 0 && (
+                  <span className="tl-meta-item" title={`${node.attachments.length} attachment(s)`}>📎 {node.attachments.length}</span>
+                )}
+                {node.updates && node.updates.length > 0 && (
+                  <span className="tl-meta-item" title={`${node.updates.length} comment(s)`}>💬 {node.updates.length}</span>
+                )}
+                {Number(node.carryOver) > 0 && (
+                  <span className="tl-meta-item tl-meta-item--warn" title="Sprints this story was carried through">↻ {node.carryOver}</span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Status — changeable right here by whoever may change it. */}
+        <div className="tl-cell tl-cell-status">
+          {canChangeStatus ? (
+            <select
+              className="tl-status"
+              style={{ '--status-color': column?.color || '#94a3b8' }}
+              value={localStatus}
+              onChange={e => setStatus(e.target.value)}
+              aria-label={`Status of ${node.title}`}
             >
-              {catDef?.name || effCategory}
-            </span>
+              {statusOptions(columns, node).map(c => <option key={c.status} value={c.status} disabled={!statusAllowed(c.status)}>{c.label}</option>)}
+            </select>
+          ) : (
+            <span className="tl-status tl-status--static" style={{ '--status-color': column?.color || '#94a3b8' }}>{statusLabel}</span>
           )}
-          {coverSrc(node) && (
-            <img src={coverSrc(node)} alt="cover" className="task-row-cover" title="Cover image" loading="lazy" decoding="async" />
-          )}
-          {Array.isArray(node.attachments) && node.attachments.length > 0 && (
-            <span className="task-meta-chip task-attach-chip" title={`${node.attachments.length} image(s)`}>🖼 {node.attachments.length}</span>
-          )}
-          {node.startDate && <span className="task-meta-chip task-start" title="Start date">▶ {formatDate(node.startDate)}</span>}
-          {node.dueDate && <span className="task-meta-chip task-due" title="Due date">⏎ {formatDate(node.dueDate)}</span>}
-          {node.description && <span className="task-meta-chip task-desc" title={node.description}>{node.description.length > 40 ? node.description.slice(0, 40) + '…' : node.description}</span>}
-          {node.priority && node.priority !== 'medium' && (
-            <span className="task-priority-dot" style={{ background: PRIORITY_COLOR[node.priority] }} title={`${PRIORITY_LABEL[node.priority]} priority`} />
-          )}
-          {hasChildren && descTotal > 0 && (
-            <span className={`task-progress-chip${descDone === descTotal ? ' task-progress-chip--complete' : ''}`}>
-              {descDone}/{descTotal}
-            </span>
-          )}
-          {nodeAssignees.map((a, i) => {
-            const label = typeof a === 'object' ? a.name : a
-            const theme = nameToAvatarTheme(label)
-            return (
-              <span key={label ?? i} className="task-assignee-avatar" title={label}
-                style={{ background: theme.bg, color: theme.color, borderColor: theme.border }}>
-                {getInitials(label)}
-              </span>
-            )
-          })}
-          {node.updates && node.updates.length > 0 && (
-            <span className="task-meta-chip task-updates-badge" title={`${node.updates.length} update(s)`}>
-              {node.updates.length} update{node.updates.length !== 1 ? 's' : ''}
+        </div>
+
+        <div className="tl-cell tl-cell-priority">
+          <span className={`tl-priority tl-priority--${node.priority || 'medium'}`} title={`${PRIORITY_LABEL[node.priority || 'medium']} priority`}>
+            <span className="tl-priority-dot" style={{ background: PRIORITY_COLOR[node.priority || 'medium'] }} aria-hidden="true" />
+            {PRIORITY_LABEL[node.priority || 'medium']}
+          </span>
+        </div>
+
+        <div className="tl-cell tl-cell-points" title="Story points">
+          {node.points != null && node.points !== '' ? <span className="tl-points">{node.points}</span> : <span className="tl-empty">—</span>}
+        </div>
+
+        <div className="tl-cell tl-cell-people">
+          {nodeAssignees.length === 0 ? <span className="tl-empty" title="No one assigned">—</span> : (
+            <span className="tl-avatars" title={nodeAssignees.map(a => (typeof a === 'object' ? a.name : a)).join(', ')}>
+              {nodeAssignees.slice(0, 3).map((a, i) => {
+                const label = typeof a === 'object' ? a.name : a
+                const theme = nameToAvatarTheme(label)
+                return (
+                  <span key={label ?? i} className="task-assignee-avatar tl-avatar" style={{ background: theme.bg, color: theme.color, borderColor: theme.border }}>
+                    {getInitials(label)}
+                  </span>
+                )
+              })}
+              {nodeAssignees.length > 3 && <span className="tl-avatar tl-avatar--more">+{nodeAssignees.length - 3}</span>}
             </span>
           )}
         </div>
-        {node.seq != null && !hasChildren && (
-          <span
-            className={`task-id-badge${canEdit ? ' task-id-badge--editable' : ''}`}
-            title={canEdit ? 'Click to edit task ID' : 'Task ID'}
-            onClick={canEdit ? handleEditId : undefined}
-          >{taskPrefix ? `${taskPrefix}-${node.seq}` : `#${node.seq}`}</span>
-        )}
-        <div className="task-row-actions">
-          <button className="task-action-btn" onClick={copyLink} title="Copy link to this task">
-            {copied ? '✓' : '🔗'}
-          </button>
-          {/* Only a story has a board worth drawing — a leaf task would render as
-              one empty grid of every department. */}
-          {hasChildren && (
-            <button
-              className={`task-action-btn ${showBoard ? 'active' : ''}`}
-              onClick={() => setShowBoard(v => !v)}
-              title={showBoard ? 'Hide board' : 'Show this story’s board'}
-            >{showBoard ? 'Board ▾' : 'Board ▸'}</button>
-          )}
-          {canEdit && dnd && <>
-            <button className="task-action-btn task-action-btn--move" onClick={() => handleMove('up')} title="Move up">↑</button>
-            <button className="task-action-btn task-action-btn--move" onClick={() => handleMove('down')} title="Move down">↓</button>
-          </>}
-          {canCreate && (
-            <button className="task-action-btn" onClick={() => { setAddingChild(v => !v); setEditing(false) }} title="Add sub-task">+ sub</button>
-          )}
-          {canEdit && <>
-            <button className="task-action-btn" onClick={() => { setEditing(v => !v); setAddingChild(false); setShowUpdates(false) }} title="Edit task">Edit</button>
-            <button className={`task-action-btn ${showUpdates ? 'active' : ''}`} onClick={() => { setShowUpdates(v => !v); setEditing(false); setAddingChild(false) }} title="Updates">Updates</button>
-          </>}
-          {canEdit && (
-            <button className="task-action-btn" onClick={handleArchive} title="Archive task">📦</button>
-          )}
-          {canDelete && (
-            <button className="task-action-btn danger" onClick={handleDelete} title="Delete task">✕</button>
-          )}
+
+        <div className="tl-cell tl-cell-due">
+          {node.dueDate ? (
+            <span className={`tl-due${dueTone ? ` tl-due--${dueTone}` : ''}`} title={node.startDate ? `Start ${formatDate(node.startDate)} · Due ${formatDate(node.dueDate)}` : 'Due date'}>
+              {shortDate(node.dueDate)}
+            </span>
+          ) : <span className="tl-empty">—</span>}
+        </div>
+
+
+        <div className="task-row-actions tl-actions">
+          <MoreMenu
+            label={`More actions for ${node.title}`}
+            items={[
+              { label: 'Open details', onClick: () => { setShowDetail(true); setDetailEditing(false) } },
+              { label: 'Edit', onClick: () => { setEditing(v => !v); setAddingChild(false); setShowUpdates(false) }, hidden: !canEdit },
+              { label: 'Add sub-task', onClick: () => { setAddingChild(true); setEditing(false); setExpanded(true) }, hidden: !canCreate },
+              { label: copied ? 'Link copied' : 'Copy link', onClick: copyLink },
+              { label: showBoard ? 'Hide story board' : 'Show story board', onClick: () => setShowBoard(v => !v), hidden: !hasChildren },
+              { label: showUpdates ? 'Hide comments' : 'Comments', onClick: () => { setShowUpdates(v => !v); setEditing(false); setAddingChild(false) }, hidden: !canEdit },
+              { label: 'Move up', onClick: () => handleMove('up'), hidden: !(canEdit && dnd) },
+              { label: 'Move down', onClick: () => handleMove('down'), hidden: !(canEdit && dnd) },
+              { label: 'Archive', onClick: handleArchive, hidden: !canEdit },
+              { label: 'Delete', onClick: handleDelete, danger: true, hidden: !canDelete },
+            ]}
+          />
         </div>
       </div>
 
@@ -561,6 +635,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
       {editing && (
         <div className="task-inline-form">
           <TaskForm
+            isSubtask={!!node.parentId}
             initial={{
               title: node.title,
               description: node.description || '',
@@ -575,9 +650,14 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
               attachments: Array.isArray(node.attachments) ? node.attachments : [],
               cover: node.cover || null,
               labelIds: Array.isArray(node.labelIds) ? node.labelIds : [],
+              epicId: node.epicId || '',
+              userStory: node.userStory || null,
+              acceptance: Array.isArray(node.acceptance) ? node.acceptance : [],
             }}
             onSave={handleSaveEdit}
             onCancel={() => setEditing(false)}
+            epics={epics}
+            showEpic={!node.parentId}
             label="Update"
             assignees={assignees}
             columns={columns}
@@ -637,6 +717,8 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
       {addingChild && (
         <div className="task-inline-form task-inline-form--sub">
           <TaskForm
+            isSubtask
+            isNew
             initial={childDefaults()}
             onSave={handleAddChild}
             onCancel={() => setAddingChild(false)}
@@ -706,6 +788,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
               </div>
             ) : detailEditing ? (
               <TaskForm
+                isSubtask={!!node.parentId}
                 initial={{
                   title: node.title,
                   description: node.description || '',
@@ -718,7 +801,12 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
                   attachments: Array.isArray(node.attachments) ? node.attachments : [],
                   cover: node.cover || null,
                   labelIds: Array.isArray(node.labelIds) ? node.labelIds : [],
+                  epicId: node.epicId || '',
+                  userStory: node.userStory || null,
+                  acceptance: Array.isArray(node.acceptance) ? node.acceptance : [],
                 }}
+                epics={epics}
+                showEpic={!node.parentId}
                 onSave={async form => { await handleSaveEdit(form); setDetailEditing(false) }}
                 onCancel={() => setDetailEditing(false)}
                 label="Update"
@@ -736,7 +824,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
                     <span className="task-detail-label">Status</span>
                     {canChangeStatus ? (
                       <select className="form-input" value={localStatus} onChange={e => setStatus(e.target.value)} style={{ maxWidth: 180, fontSize: 12 }}>
-                        {columns.map(c => <option key={c.status} value={c.status} disabled={!statusAllowed(c.status)}>{c.label}</option>)}
+                        {statusOptions(columns, node).map(c => <option key={c.status} value={c.status} disabled={!statusAllowed(c.status)}>{c.label}</option>)}
                       </select>
                     ) : (
                       <span {...statusPill} className={`${statusPill.className} task-detail-static`}>{statusLabel}</span>
@@ -790,10 +878,26 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
       {expanded && hasChildren && (
         <div className="task-children">
           {node.children.map(child => (
-            <TaskNode key={child.id} node={child} apiBase={apiBase} onRefresh={onRefresh} depth={depth + 1} assignees={assignees} currentUser={currentUser} dnd={dnd} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={onContextMenu} columns={columns} categories={categories} catById={catById} inheritedCategory={effCategory} labels={labels} focusId={focusId} expandSignal={expandSignal} />
+            <TaskNode key={child.id} node={child} apiBase={apiBase} onRefresh={onRefresh} depth={depth + 1} assignees={assignees} currentUser={currentUser} dnd={dnd} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={onContextMenu} columns={columns} categories={categories} catById={catById} inheritedCategory={effCategory} labels={labels} focusId={focusId} expandSignal={expandSignal} epics={epics} epicById={epicById} />
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+// Column titles for the list. Same grid as .task-row (see .tl-* in globals.css).
+function ListHead() {
+  return (
+    <div className="tl-head" aria-hidden="true">
+      <span className="tl-cell tl-cell-id">ID</span>
+      <span className="tl-cell-title">Task</span>
+      <span className="tl-cell tl-cell-status">Status</span>
+      <span className="tl-cell tl-cell-priority">Priority</span>
+      <span className="tl-cell tl-cell-points">Pts</span>
+      <span className="tl-cell tl-cell-people">People</span>
+      <span className="tl-cell tl-cell-due">Due</span>
+      <span className="tl-actions" />
     </div>
   )
 }
@@ -821,6 +925,8 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
   }
   const savedColumns = useColumns(slug)
   const savedCategories = useCategories(slug)
+  const { epics } = useEpics(slug)
+  const epicById = useMemo(() => epicMap(epics), [epics])
   const [showCatMgr, setShowCatMgr] = useState(false)
   const [assignees, setAssignees] = useState([])
   // Labels are mandatory on every create, so the list view needs them too — it was
@@ -927,7 +1033,7 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
   }, [canReorder, apiBase, onRefresh])
 
   useEffect(() => {
-    fetch('/api/assignees').then(r => r.ok ? r.json() : []).then(setAssignees).catch(() => {})
+    fetch(assigneesUrl()).then(r => r.ok ? r.json() : []).then(setAssignees).catch(() => {})
   }, [])
 
   const liveTasks = (tasks || []).filter(t => !t.archived)
@@ -986,6 +1092,8 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
   // Board columns first (including empty ones the user just added), then any status
   // a task carries that no column covers.
   const columns = columnsWithTaskStatuses(savedColumns, liveTasks)
+  // A new story starts in the backlog — when the project still has that column.
+  const newStoryForm = { ...blankForm(), status: columns.some(c => c.status === 'backlog') ? 'backlog' : 'todo' }
   // Same rescue for categories: a task keeping the id of a deleted category still
   // gets a chip and a filter entry instead of silently reading as uncategorised.
   const categories = categoriesWithTaskValues(savedCategories, liveTasks)
@@ -1063,7 +1171,7 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
   return (
     <div className="task-tree">
       <div className="task-tree-toolbar">
-        {/* A main task. Admin and superadmin only: a user is capped at sub-sub level. */}
+        {/* A story. Admin and superadmin only: a regular user adds children only. */}
         {hasPerm(currentUser, 'task:create') && canAddUnder(currentUser, null) && (
           <button className="btn-add-task" style={{ fontSize: 12, padding: '5px 12px' }} onClick={() => setAddingRoot(v => !v)}>
             {addingRoot ? 'Cancel' : '+ Add Task'}
@@ -1251,7 +1359,7 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
 
       {addingRoot && (
         <div className="task-inline-form" style={{ marginTop: 8 }}>
-          <TaskForm onSave={handleAddRoot} onCancel={() => setAddingRoot(false)} label="Add Task" assignees={assignees} showCreator currentUser={currentUser} columns={columns} categories={categories} labels={labels} requireLabel />
+          <TaskForm initial={newStoryForm} onSave={handleAddRoot} onCancel={() => setAddingRoot(false)} label="Add Story" assignees={assignees} showCreator currentUser={currentUser} columns={columns} categories={categories} labels={labels} requireLabel epics={epics} showEpic />
         </div>
       )}
 
@@ -1260,8 +1368,9 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
           <div className="empty-state-sm" style={{ padding: '24px 16px' }}>No tasks match the current filters.</div>
         ) : (
           <div className="task-list">
+            <ListHead />
             {filteredTree.map(node => (
-              <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={canDrag ? dnd : null} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} columns={columns} categories={categories} catById={catById} labels={labels} focusId={focusTaskId} expandSignal={expandSignal} />
+              <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={canDrag ? dnd : null} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} columns={columns} categories={categories} catById={catById} labels={labels} focusId={focusTaskId} expandSignal={expandSignal} epics={epics} epicById={epicById} />
             ))}
           </div>
         )
@@ -1269,8 +1378,9 @@ export default function TaskTree({ tasks, apiBase, slug, onRefresh, currentUser,
         <div className="empty-state-sm" style={{ padding: '24px 16px' }}>No tasks yet. Click "+ Add Task" to get started.</div>
       ) : (
         <div className="task-list">
+          <ListHead />
           {tree.map(node => (
-            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={canDrag ? dnd : null} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} columns={columns} categories={categories} catById={catById} labels={labels} focusId={focusTaskId} expandSignal={expandSignal} />
+            <TaskNode key={node.id} node={node} apiBase={apiBase} onRefresh={onRefresh} depth={0} assignees={assignees} currentUser={currentUser} dnd={canDrag ? dnd : null} taskAcl={taskAcl} taskPrefix={taskPrefix} onContextMenu={handleContextMenu} columns={columns} categories={categories} catById={catById} labels={labels} focusId={focusTaskId} expandSignal={expandSignal} epics={epics} epicById={epicById} />
           ))}
         </div>
       )}

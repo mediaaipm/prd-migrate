@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { subtaskColumns, subtaskStatus } from '../lib/subtask-status'
 import { railRollups, RAIL_STATE_LABEL } from '../lib/categories'
 import CellPeekModal from './CellPeekModal'
 
@@ -10,8 +11,10 @@ const PRIORITY_LABEL = { low: 'Low', medium: 'Med', high: 'High', critical: 'Cri
 const CELL_VISIBLE = 1
 
 // The swimlane board for a single story: rails are categories (Frontend, Backend,
-// QA…), columns are the project's kanban columns, cards are every descendant of
-// the story flattened one level deep.
+// QA…), columns are the three sub-task states (Not started / In progress / Done —
+// lib/subtask-status.js), cards are every descendant of the story flattened one
+// level deep. An old sub-task still holding a board-column status sits in the state
+// it counts as.
 //
 // Two modes, one component:
 //   • read-only (no `onMove`) — inline under a story's row in the list, where the
@@ -23,9 +26,10 @@ const CELL_VISIBLE = 1
 // Deliberately reuses the `.swim-*` classes rather than a parallel set, so the
 // inline board and the full board cannot drift apart visually.
 export default function TaskMiniBoard({
-  cards, columns, categories, taskPrefix, storyTitle, onOpen, labelById = {},
+  cards, columns: projectColumns, categories, taskPrefix, storyTitle, onOpen, labelById = {},
   onMove, canMove, statusAllowed, canSetCategory = false, expand = false, showAssignees = false,
 }) {
+  const columns = subtaskColumns(projectColumns)
   const rails = buildRails(cards, categories)
   // Fixed tracks — see the note on swimGrid in KanbanBoard.
   const grid = { gridTemplateColumns: `var(--swim-rail-w) repeat(${columns.length}, var(--swim-col-w))` }
@@ -38,7 +42,7 @@ export default function TaskMiniBoard({
   const mayLand = status => !statusAllowed || statusAllowed(status)
 
   const cellOf = (railId, status) =>
-    cards.filter(c => c.category === railId && (c.task.status || 'todo') === status)
+    cards.filter(c => c.category === railId && subtaskStatus(c.task.status) === status)
 
   const peekCol = peek ? columns.find(c => c.status === peek.status) : null
   const cellKey = (railId, status) => `${railId}|${status}`
