@@ -1,0 +1,57 @@
+/* Stylesheet entry (imported once, by app/layout.js).
+
+   Two systems, one cascade:
+     globals.css  — every app class. Lives in the `base` layer.
+     Tailwind     — utilities, used ONLY inside components/ui/ (the shadcn
+                    primitives). `source(none)` + the single @source below keep
+                    Tailwind from scanning views/ and turning app class names like
+                    `hidden` or `border` into utilities.
+   Layer order puts utilities last, so a shadcn component's classes beat the
+   app's element rules (`button { padding … }`). No preflight: globals.css keeps
+   its own reset. */
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "./globals.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@import "tw-animate-css";
+
+/* Every file that writes Tailwind classes is listed here. */
+@source "../components/ui";
+@source "../components/Nav.js";
+@source "../components/MoreMenu.js";
+
+@custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
+
+/* shadcn's colour names, mapped onto the app's tokens — so every theme variant in
+   globals.css (Neon, Sunset, Blackhole…) re-skins the shadcn components too.
+   Note the two name clashes this avoids: the app's --accent is the brand colour
+   (shadcn: --primary) and its --muted is muted *text* (shadcn: --muted-foreground). */
+@theme inline {
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--card);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--text);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--on-accent);
+  --color-secondary: var(--surface-2);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--surface-2);
+  --color-muted-foreground: var(--muted);
+  --color-accent: var(--hover);
+  --color-accent-foreground: var(--text);
+  --color-destructive: var(--danger);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--accent);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}

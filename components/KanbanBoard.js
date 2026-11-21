@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { isLeadUser } from '../lib/roles'
 import { enqueue, onSync } from '../lib/submit-queue'
 import { taskDraft, taskCreateBody } from '../lib/task-draft'
 import AssigneeInput from './AssigneeInput'
@@ -11,15 +12,21 @@ import TaskHistoryModal from './TaskHistoryModal'
 import FilterSidebar, { SidebarSection, SidebarCheckList } from './FilterSidebar'
 import { DEFAULT_COLUMNS, COL_COLORS, useColumns, saveColumns, labelForStatus } from '../lib/kanban-columns'
 import { useCategories, categoriesWithTaskValues, categoryMap, effectiveCategory, taskIndex, railRollups, RAIL_STATE_LABEL } from '../lib/categories'
+import { useEpics } from '../lib/epics'
 import CategoryManager from './CategoryManager'
 import CellPeekModal from './CellPeekModal'
 import TaskMiniBoard from './TaskMiniBoard'
-import { isSuperAdmin, canAddUnder } from '../lib/client-permissions'
-import { withRev, bumpRev } from '../lib/config-cache'
+import { isSuperAdmin, canAddUnder, hasPerm } from '../lib/client-permissions'
+import { withRev, bumpRev, assigneesUrl } from '../lib/config-cache'
+import { statusOptimistic } from '../lib/task-cascade'
+import PointsSelect from './PointsSelect'
+import SubtaskList from './SubtaskList'
+import { statusOptions } from '../lib/subtask-status'
 import { taskShareLink, copyText } from '../lib/task-link'
 import { attSrc, coverSrc } from '../lib/attachment-src'
 import { makeChecklistItem, checklistProgress, MAX_CHECKLIST_TEXT } from '../lib/task-checklist'
 import { makeAcceptanceItem, acceptanceProgress, unmetAcceptance, MAX_ACCEPTANCE_TEXT, MAX_ACCEPTANCE_ITEMS } from '../lib/task-acceptance'
+import { USER_STORY_PARTS, MAX_USER_STORY_TEXT, blankUserStory } from '../lib/user-story'
 
 const PRIORITY_ORDER = ['critical', 'high', 'medium', 'low']
 const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
@@ -73,6 +80,26 @@ function readFileAsDataUrl(file) {
   })
 }
 
+// "18 Nov, 14:05" — short enough for the side rail.
+function fmtWhen(iso) {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+}
+
+// A one-line note under the due date: late, due soon, or nothing.
+function dueState(due, status) {
+  if (!due || status === 'done') return null
+  const day = String(due).slice(0, 10)
+  const today = new Date(); const t = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  const diff = Math.round((Date.parse(`${day}T00:00:00`) - Date.parse(`${t}T00:00:00`)) / 86400000)
+  if (Number.isNaN(diff)) return null
+  if (diff < 0) return { tone: 'late', text: `Overdue by ${-diff} day${diff === -1 ? '' : 's'}` }
+  if (diff === 0) return { tone: 'soon', text: 'Due today' }
+  if (diff <= 2) return { tone: 'soon', text: `Due in ${diff} day${diff === 1 ? '' : 's'}` }
+  return null
+}
+
 function toEditForm(task) {
   return {
     title: task.title || '',
@@ -83,6 +110,8 @@ function toEditForm(task) {
     startDate: task.startDate ? task.startDate.slice(0, 10) : '',
     dueDate: task.dueDate ? task.dueDate.slice(0, 10) : '',
     category: task.category || '',
+    // Stories only. '' reads as "no epic"; the PUT turns it back into null.
+    epicId: task.epicId || '',
     // Empty string, not null: this is an <input> value, and the PUT normalises it back.
     points: task.points == null ? '' : String(task.points),
     labelIds: Array.isArray(task.labelIds) ? task.labelIds : [],
@@ -91,6 +120,8 @@ function toEditForm(task) {
     updates: Array.isArray(task.updates) ? task.updates : [],
     checklist: Array.isArray(task.checklist) ? task.checklist : [],
     acceptance: Array.isArray(task.acceptance) ? task.acceptance : [],
+    // Stories only. All three blank = none; the PUT stores that as null.
+    userStory: { ...blankUserStory(), ...(task.userStory || {}) },
   }
 }
 
@@ -112,21 +143,20 @@ function slugify(label, existingStatuses) {
 }
 
 export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl, onAclChange, taskPrefix, onPrefixChange, taskSeqStart, onSeqStartChange, focusTaskId }) {
-  // Full edit for admins; assignees may only change status of their own tasks.
-  const canEditAll = !!currentUser?.isAdmin
+  // Full edit for admins and leads holding task:update (lib/roles.js); everyone else
+  // may only change the status of their own tasks.
+  const canEditAll = !!currentUser?.isAdmin || (isLeadUser(currentUser) && hasPerm(currentUser, 'task:update'))
   const isMine = task => !!currentUser?.name && (Array.isArray(task?.assignees) ? task.assignees : (task?.assignee ? [task.assignee] : []))
     .some(a => (typeof a === 'object' ? a?.name : a) === currentUser.name)
   const canChangeStatus = task => canEditAll || isMine(task)
-  // A regular user is capped at sub-sub level, so every add on this board is gated by
-  // the parent it would hang the new task off — see lib/task-nesting.js. Admins are
-  // uncapped and get the lot; `+ sub-task` on a card that is itself a sub-task is all
-  // a capped account gets. (canEditAll gates these on isAdmin anyway, so today the cap
-  // only bites if a board add is ever opened up to users.)
-  const canAddTaskUnder = parent => canEditAll && canAddUnder(currentUser, parent)
+  // A regular user adds children only, so every add on this board is gated by the
+  // parent it would hang the new task off — see lib/task-nesting.js. Admins are
+  // uncapped; a user with task:create gets `+ sub-task` on cards, never a new story.
+  const canAddTaskUnder = parent => hasPerm(currentUser, 'task:create') && canAddUnder(currentUser, parent)
   const canAddRootTask = canAddTaskUnder(null)
   // Global superadmin blocklist: statuses a regular user may never set (any project).
-  // Admins/superadmin are exempt. Mirrors the server check in the task update route.
-  const isPriv = !!currentUser?.isAdmin
+  // Leads (admin, manager, team lead) are exempt. Mirrors isPrivileged() on the server.
+  const isPriv = isLeadUser(currentUser)
   const restrictedStatuses = new Set(currentUser?.restrictedStatuses || [])
   // Project ACL: which statuses a non-admin assignee may set (admins unrestricted).
   const statusAllowedForUser = status => {
@@ -145,6 +175,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   // Categories are the board's second axis (rails, once the swimlane view lands);
   // here they are read for the card chip, the edit form and the filter.
   const savedCategories = useCategories(slug)
+  const { epics } = useEpics(slug)
   const [showCatMgr, setShowCatMgr] = useState(false)
   // Rescue any category id a task still carries after its definition was deleted,
   // exactly as the column reconciliation below does for a stray status.
@@ -425,10 +456,13 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     function walk(task, col, depth) {
       const id = taskLabel(task) || `#${task.number}`
       lines.push(`${'  '.repeat(depth)}- [${id} · ${task.title}](${taskShareLink(task.id)})`)
-      for (const kid of getChildrenInCol(task.id, col.status)) walk(kid, col, depth + 1)
+      if (depth === 0) for (const { task: sub, depth: d } of storySubtasks(task.id)) {
+        const subId = taskLabel(sub) || `#${sub.number}`
+        lines.push(`${'  '.repeat(d + 1)}- [${subId} · ${sub.title}](${taskShareLink(sub.id)})`)
+      }
     }
     for (const col of columns) {
-      const cards = [...getColTasks(col.status), ...getOrphanSubsInCol(col.status)]
+      const cards = getColTasks(col.status)
       if (!cards.length) continue
       lines.push(`\n### ${col.label}`)
       for (const card of cards) walk(card, col, 0)
@@ -557,11 +591,10 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     (kbDueDates.length ? 1 : 0) +
     (kbDate ? 1 : 0) +
     (kbPerson ? 1 : 0)
-  // Strict match: show ONLY the cards that themselves match. A matched sub-task whose
-  // parent did not match renders as an orphan card with a parent breadcrumb (via
-  // getOrphanSubsInCol) — the non-matching parent is not drawn as its own card. So
-  // searching a person surfaces exactly the tasks that person is on (assignee/@mention),
-  // never the parent as a bare context card.
+  // Strict match on what is listed: a story that matches shows with all its sub-tasks;
+  // a story that only has matching sub-tasks shows dimmed, as their context, listing
+  // just those. Sub-tasks are never cards of their own (lib/subtask-status.js), so
+  // their story is the only place a matched one can appear.
   const matchIds = new Set(boardTasks.filter(matchesFilters).map(t => t.id))
   function isVisible(t) {
     if (!hasKbFilters) return true
@@ -569,6 +602,8 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   }
   const visibleTasks = boardTasks.filter(isVisible)
   const visibleIds = new Set(visibleTasks.map(t => t.id))
+  // Stories drawn only because a sub-task under them matches the filters.
+  const contextRootIds = new Set(visibleTasks.filter(t => t.parentId).map(t => topAncestorId(t.id)).filter(id => !visibleIds.has(id)))
 
   // Grab-to-pan, on both boards. Anything that is itself draggable or clickable is
   // excluded — the preventDefault below would otherwise swallow the card's own
@@ -611,7 +646,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
   }
 
   useEffect(() => {
-    fetch('/api/assignees')
+    fetch(assigneesUrl())
       .then(r => r.ok ? r.json() : [])
       .then(setAssignees)
       .catch(() => {})
@@ -917,6 +952,26 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     setEditingCheckId(null)
   }
 
+  // Deep link to the open task, as the tasks page reads it (?version=&task=).
+  const [linkCopied, setLinkCopied] = useState(false)
+  function copyTaskLink(task) {
+    const v = (apiBase.match(/\/versions\/([^/]+)\/tasks/) || [])[1]
+    const url = `${window.location.origin}/projects/${slug}/tasks?${v ? `version=${v}&` : ''}task=${encodeURIComponent(task.id)}`
+    const done = () => { setLinkCopied(true); setTimeout(() => setLinkCopied(false), 1500) }
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(url).then(done, () => window.prompt('Copy this link:', url))
+    else window.prompt('Copy this link:', url)
+  }
+
+  // ⌘/Ctrl+Enter saves the open card from anywhere in it.
+  useEffect(() => {
+    if (!editingTask) return
+    const onKey = e => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && editTab === 'details') { e.preventDefault(); saveEdit() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
   function closeEdit() {
     setEditStack([])
     setEditingTask(null)
@@ -929,12 +984,16 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
 
   // Queue a partial update to a task on this board.
   function enqueueUpdate(taskId, patch, label) {
+    const prev = tasks.find(t => t.id === taskId)
     enqueue({
       url: `${apiBase}/${taskId}`,
       method: 'PUT',
       body: patch,
       label,
-      optimistic: { entity: 'task', op: 'update', scope: apiBase, id: taskId, patch },
+      // A status change carries the sub-tasks along (lib/task-cascade.js).
+      optimistic: prev
+        ? statusOptimistic(tasks, prev, patch, apiBase, canEditAll)
+        : { entity: 'task', op: 'update', scope: apiBase, id: taskId, patch },
     })
   }
 
@@ -1237,6 +1296,8 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
 
   // Task drag
   function onDragStart(e, taskId) {
+    // Only stories travel the board; a sub-task's status is set from its row.
+    if (taskById[taskId]?.parentId) { e.preventDefault(); return }
     dragTypeRef.current = 'task'
     setDraggingId(taskId)
     e.dataTransfer.effectAllowed = 'move'
@@ -1400,8 +1461,10 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     return arr.sort((a, b) => (a.boardOrder ?? a.order) - (b.boardOrder ?? b.order))
   }
 
+  // Stories in this column: those that match, plus those shown as context for a
+  // matching sub-task.
   function getColTasks(status) {
-    return sortBoard(visibleTasks.filter(t => !t.parentId && t.status === status))
+    return sortBoard(boardTasks.filter(t => !t.parentId && t.status === status && (visibleIds.has(t.id) || contextRootIds.has(t.id))))
   }
 
   // Walk parentId chain to the top-level card. Grandchildren (sub-of-sub) must
@@ -1429,6 +1492,25 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
       cur = cur.parentId ? taskById[cur.parentId] : null
     }
     return out
+  }
+
+  // Every sub-task under a story, in tree order with its depth — the rows drawn under
+  // the story card. A matched story lists them all; a context story only the matches.
+  function storySubtasks(rootId) {
+    const showAll = visibleIds.has(rootId)
+    const out = []
+    const walk = (id, depth) => {
+      for (const child of boardTasks.filter(t => t.parentId === id).sort((a, b) => a.order - b.order)) {
+        if (showAll || visibleIds.has(child.id)) out.push({ task: child, depth })
+        walk(child.id, depth + 1)
+      }
+    }
+    walk(rootId, 0)
+    return out
+  }
+
+  function setSubtaskStatus(task, status) {
+    updateStatus(task.id, status)
   }
 
   function directChildren(taskId) {
@@ -1487,33 +1569,6 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
       return
     }
     enqueueUpdate(taskId, patch, `Move “${task.title}”`)
-  }
-
-  // Nearest ancestor that is itself drawn in this column. A grandchild nests
-  // under its parent when the parent shares the column, otherwise it climbs to
-  // whichever ancestor does. Null => nothing above it is here, so it renders
-  // top-level with a parent breadcrumb.
-  function nearestAncestorInCol(task, colStatus) {
-    const seen = new Set([task.id])
-    let cur = task.parentId ? taskById[task.parentId] : null
-    while (cur && !seen.has(cur.id)) {
-      seen.add(cur.id)
-      if (cur.status === colStatus && visibleIds.has(cur.id)) return cur.id
-      cur = cur.parentId ? taskById[cur.parentId] : null
-    }
-    return null
-  }
-
-  function getChildrenInCol(taskId, colStatus) {
-    return visibleTasks
-      .filter(t => t.parentId && t.status === colStatus && nearestAncestorInCol(t, colStatus) === taskId)
-      .sort((a, b) => a.order - b.order)
-  }
-
-  function getOrphanSubsInCol(colStatus) {
-    return visibleTasks
-      .filter(t => t.parentId && t.status === colStatus && nearestAncestorInCol(t, colStatus) === null)
-      .sort((a, b) => a.order - b.order)
   }
 
   // --- Swimlanes ---
@@ -2099,7 +2154,9 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
     // is its column, so reordering inside it is the same gesture as reordering a
     // top-level card in the plain board.
     const dropClass = (!isChild || swim) && dragOverCard?.id === task.id ? ` kanban-card--drop-${dragOverCard.pos}` : ''
-    const kids = flat ? [] : getChildrenInCol(task.id, col.status)
+    // Sub-tasks ride under their story as rows, never as cards of their own.
+    const subs = flat || swim || task.parentId ? [] : storySubtasks(task.id)
+    const isContext = !task.parentId && contextRootIds.has(task.id)
     const groupClass = [
       'kanban-card-group',
       isChild && !orphan ? 'kanban-card-group--child' : '',
@@ -2127,7 +2184,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
           <div
             ref={task.id === focusTaskId ? focusCardRef : undefined}
             className={`kanban-card kanban-card--swim${swimLabels.length ? ' kanban-card--swim-labelled' : ''}${draggingId === task.id ? ' kanban-card--dragging' : ''}${dropClass}${task.id === focusTaskId ? ' kanban-card--focused' : ''}`}
-            draggable
+            draggable={!task.parentId}
             role="button"
             tabIndex={0}
             title={hover}
@@ -2181,8 +2238,9 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
       <div key={task.id} className={groupClass}>
         <div
           ref={task.id === focusTaskId ? focusCardRef : undefined}
-          className={`kanban-card${isChild ? ' kanban-card--child' : ''}${draggingId === task.id ? ' kanban-card--dragging' : ''}${dropClass}${task.id === focusTaskId ? ' kanban-card--focused' : ''}`}
-          draggable
+          className={`kanban-card${isChild ? ' kanban-card--child' : ''}${isContext ? ' kanban-card--context' : ''}${draggingId === task.id ? ' kanban-card--dragging' : ''}${dropClass}${task.id === focusTaskId ? ' kanban-card--focused' : ''}`}
+          draggable={!task.parentId}
+          title={isContext ? 'Shown for its matching sub-tasks' : undefined}
           role="button"
           tabIndex={0}
           onClick={() => openEdit(task)}
@@ -2216,9 +2274,9 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
           {renderCardLabels(task)}
           <div className="kanban-card-header">
             {renderCardCategory(task)}
-            {isChild && <span className="kanban-sub-badge" title="Sub-task">↳ sub</span>}
+            {/* One identifier per card: the task ID, or the tree number when there is
+                no ID. A child card's "↳ parent" crumb already says it is a sub-task. */}
             {(task.seq != null || task.number) && <span className="task-id-badge" style={{ fontSize: 10 }}>{task.seq != null ? (taskPrefix ? `${taskPrefix}-${task.seq}` : `#${task.seq}`) : `#${task.number}`}</span>}
-            {task.number && <span className="task-number" style={{ fontSize: 10 }}>{task.number}</span>}
             <button
               className="kanban-card-edit-btn"
               onClick={e => openUpdates(e, task)}
@@ -2239,7 +2297,8 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
           </div>
           <div className="kanban-card-title">{task.title}</div>
           <div className="kanban-card-meta">
-            {task.priority && (
+            {/* Medium is the default — a chip on every card says nothing. */}
+            {task.priority && task.priority !== 'medium' && (
               <span
                 className="task-meta-chip"
                 style={{
@@ -2302,11 +2361,13 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
           </div>
         </div>
 
-        {kids.length > 0 && (
-          <div className="kanban-child-cards">
-            {kids.map(kid => renderTaskCard(kid, col, { depth: depth + 1 }))}
-          </div>
-        )}
+        <SubtaskList
+          items={subs}
+          onOpen={openEdit}
+          onSetStatus={setSubtaskStatus}
+          canSet={canChangeStatus}
+          label={t => (t.seq != null ? (taskPrefix ? `${taskPrefix}-${t.seq}` : `#${t.seq}`) : '')}
+        />
 
         {canAddTaskUnder(task) && (
           <button
@@ -2722,8 +2783,9 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                       >{col.label}</span>
                     )}
                     <span className="kanban-column-count">
-                      {visibleTasks.filter(t => t.status === col.status).length}
-                      {hasKbFilters ? `/${boardTasks.filter(t => t.status === col.status).length}` : ''}
+                      {/* Stories only — sub-tasks are counted on their story's card. */}
+                      {colTasks.length}
+                      {hasKbFilters ? `/${boardTasks.filter(t => !t.parentId && t.status === col.status).length}` : ''}
                     </span>
                   </div>
                   {(canAddRootTask || canEditColumns) && (
@@ -2773,6 +2835,8 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                     <TaskForm
                       initial={addForm.initial}
                       onSave={saveNew}
+                      epics={epics}
+                      showEpic
                       onCancel={() => { setAddingFor(null); setAddForm(null) }}
                       label="Add"
                       titlePlaceholder="Task title *"
@@ -2797,9 +2861,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                 <div className="kanban-cards">
                   {colTasks.map(task => renderTaskCard(task, col))}
 
-                  {getOrphanSubsInCol(col.status).map(sub => renderTaskCard(sub, col, { orphan: true }))}
-
-                  {visibleTasks.filter(t => t.status === col.status).length === 0 && addingFor !== col.status && quickAddFor !== col.status && (
+                  {colTasks.length === 0 && addingFor !== col.status && quickAddFor !== col.status && (
                     <div className="kanban-empty">No tasks</div>
                   )}
 
@@ -3052,7 +3114,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                       onChange={e => setSubAddFor(e.target.value)}
                       title="Which story this task belongs to"
                     >
-                      <option value={LOOSE_LANE}>No story</option>
+                      {canAddRootTask && <option value={LOOSE_LANE}>No story</option>}
                       {boardTasks.filter(t => !t.parentId).map(r => (
                         <option key={r.id} value={r.id}>{r.title}</option>
                       ))}
@@ -3068,6 +3130,8 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                     the only thing the board adds is the story picker above. */}
                 <TaskForm
                   initial={subAddForm}
+                  isSubtask={!!parent}
+                  isNew
                   onSave={(form, opts) => addSubtask(parent, form, opts)}
                   onCancel={closeSubAdd}
                   label={parent ? 'Add Sub-task' : 'Add Task'}
@@ -3081,6 +3145,8 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                   inheritedCategory={parent ? (catOf(parent) || '') : ''}
                   labels={labels}
                   requireLabel
+                  epics={epics}
+                  showEpic={!parent}
                 />
               </div>
             </div>
@@ -3188,13 +3254,24 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                       <div className="kanban-modal-title">
                         {chain.length > 0 && <span className="kanban-modal-title-arrow" aria-hidden="true">↳</span>}
                         {taskLabel(editingTask) && <span className="task-id-badge" style={{ fontSize: 10 }}>{taskLabel(editingTask)}</span>}
-                        <span className="kanban-modal-title-text">{chain.length ? editingTask.title : 'Edit Task'}</span>
+                        <span className={`task-kind task-kind--${editingTask.parentId ? 'sub' : 'story'}`}>{editingTask.parentId ? 'Sub-task' : 'Story'}</span>
+                        <span className="kanban-modal-title-text">{editForm.title.trim() || editingTask.title || 'Untitled'}</span>
                       </div>
                     </div>
                   )
                 })()}
               </div>
-              <button className="kanban-modal-close" onClick={closeEdit}>✕</button>
+              <div className="task-modal-head-actions">
+                <button type="button" className="task-modal-icon-btn" onClick={() => copyTaskLink(editingTask)} title="Copy a link to this task" aria-label="Copy a link to this task">
+                  <span aria-hidden="true">{linkCopied ? '✓' : '🔗'}</span>
+                  <span className="task-modal-icon-label">{linkCopied ? 'Copied' : 'Copy link'}</span>
+                </button>
+                <button type="button" className="task-modal-icon-btn" onClick={() => setHistoryTask(editingTask)} title="Everything that changed on this task" aria-label="History">
+                  <span aria-hidden="true">🕑</span>
+                  <span className="task-modal-icon-label">History</span>
+                </button>
+                <button className="kanban-modal-close" onClick={closeEdit} aria-label="Close">✕</button>
+              </div>
             </div>
 
             {/* Details and Board are two views of the same open task, both kept
@@ -3229,6 +3306,24 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
             <div className={`task-modal-body${editTab === 'board' ? ' task-modal-body--hidden' : ''}`}>
               {/* ── Left rail: what the task is ── */}
               <div className="task-modal-main">
+                {/* Where the story stands with QA (lib/qa-store.js) — the reason it came
+                    back is the first thing a dev needs when they reopen it. */}
+                {!editingTask.parentId && editingTask.status === 'need-rework' && editingTask.qa?.note && (
+                  <div className="task-qa-banner task-qa-banner--rework" role="status">
+                    <strong>Sent back from QA{editingTask.qa.rounds > 1 ? ` (round ${editingTask.qa.rounds})` : ''}</strong>
+                    <span>{editingTask.qa.note}</span>
+                    <span className="task-qa-banner-meta">{editingTask.qa.by} · {fmtWhen(editingTask.qa.at)} · fix it, then move it to QA Review again</span>
+                  </div>
+                )}
+                {!editingTask.parentId && editingTask.status === 'in-review' && (
+                  <div className="task-qa-banner task-qa-banner--review" role="status">
+                    <strong>Waiting for QA review</strong>
+                    <span className="task-qa-banner-meta">
+                      {editingTask.qa?.submittedAt ? `Handed over ${fmtWhen(editingTask.qa.submittedAt)}${editingTask.qa.submittedBy ? ` by ${editingTask.qa.submittedBy}` : ''}` : 'On the QA board'}
+                      {' · '}<a href={`/projects/${slug}/qa`}>Open QA board</a>
+                    </span>
+                  </div>
+                )}
                 <input
                   className="form-input task-modal-title-input"
                   placeholder="Title *"
@@ -3247,40 +3342,38 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                   />
                 </div>
 
-                {/* Sub-tasks: click through to edit one */}
+                {/* User story — "As a… I want… so that…". Stories only; a task
+                    editor writes it, everyone else reads it. Saved with the card. */}
                 {(() => {
-                  const kids = directChildren(editingTask.id)
-                  if (!kids.length) return null
-                  const doneCount = kids.filter(k => k.status === 'done').length
-                  const pct = Math.round((doneCount / kids.length) * 100)
+                  if (editingTask.parentId) return null
+                  const us = editForm.userStory || blankUserStory()
+                  const written = USER_STORY_PARTS.some(p => us[p.key])
+                  if (!canEditAll && !written) return null
                   return (
-                    <div className="task-modal-section">
-                      <div className="task-modal-section-title">
-                        Sub-tasks
-                        <span className="kanban-subtask-count">{doneCount}/{kids.length}</span>
-                        <span className="task-modal-progress" title={`${pct}% done`}>
-                          <span className="task-modal-progress-fill" style={{ width: `${pct}%` }} />
-                        </span>
-                      </div>
-                      <div className="kanban-subtask-list">
-                        {kids.map(child => {
-                          const done = child.status === 'done'
-                          return (
-                            <div key={child.id} className={`kanban-subtask-row${done ? ' kanban-subtask-row--done' : ''}`}>
-                              <button
-                                type="button"
-                                className="kanban-subtask-open"
-                                onClick={() => navEdit(child)}
-                                title={`Open ${child.title}`}
-                              >
-                                {taskLabel(child) && <span className="task-id-badge" style={{ fontSize: 9 }}>{taskLabel(child)}</span>}
-                                <span className="kanban-subtask-title">{child.title}</span>
-                                <span className="kanban-subtask-chevron" aria-hidden="true">›</span>
-                              </button>
-                            </div>
-                          )
-                        })}
-                      </div>
+                    <div className="task-modal-section task-us-section">
+                      <div className="task-modal-section-title">User story</div>
+                      {canEditAll ? (
+                        <div className="task-form-story-parts">
+                          {USER_STORY_PARTS.map(part => (
+                            <label key={part.key} className="task-form-story-part">
+                              <span className="task-form-story-lead">{part.label}</span>
+                              <input
+                                className="form-input"
+                                placeholder={part.placeholder}
+                                value={us[part.key]}
+                                maxLength={MAX_USER_STORY_TEXT}
+                                onChange={e => setEditForm(p => ({ ...p, userStory: { ...blankUserStory(), ...(p.userStory || {}), [part.key]: e.target.value } }))}
+                              />
+                            </label>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="task-us-text">
+                          {USER_STORY_PARTS.filter(p => us[p.key]).map((p, i) => (
+                            <span key={p.key}>{i > 0 ? ', ' : ''}<strong>{p.label}</strong> {us[p.key]}</span>
+                          ))}
+                        </p>
+                      )}
                     </div>
                   )
                 })()}
@@ -3294,7 +3387,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                   // are how a story gets built, not separate contracts, so the composer
                   // only appears there. An existing list still renders anywhere: an
                   // import or a re-parent can leave one on a task that is no longer root.
-                  const isStory = !editForm.parentId
+                  const isStory = !editingTask.parentId
                   if (!isStory && !items.length) return null
                   const met = items.filter(i => i.done).length
                   const pct = items.length ? Math.round((met / items.length) * 100) : 0
@@ -3388,6 +3481,44 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                           >Add</button>
                         </div>
                       )}
+                    </div>
+                  )
+                })()}
+
+                {/* Sub-tasks: click through to edit one */}
+                {(() => {
+                  const kids = directChildren(editingTask.id)
+                  if (!kids.length) return null
+                  const doneCount = kids.filter(k => k.status === 'done').length
+                  const pct = Math.round((doneCount / kids.length) * 100)
+                  return (
+                    <div className="task-modal-section">
+                      <div className="task-modal-section-title">
+                        Sub-tasks
+                        <span className="kanban-subtask-count">{doneCount}/{kids.length}</span>
+                        <span className="task-modal-progress" title={`${pct}% done`}>
+                          <span className="task-modal-progress-fill" style={{ width: `${pct}%` }} />
+                        </span>
+                      </div>
+                      <div className="kanban-subtask-list">
+                        {kids.map(child => {
+                          const done = child.status === 'done'
+                          return (
+                            <div key={child.id} className={`kanban-subtask-row${done ? ' kanban-subtask-row--done' : ''}`}>
+                              <button
+                                type="button"
+                                className="kanban-subtask-open"
+                                onClick={() => navEdit(child)}
+                                title={`Open ${child.title}`}
+                              >
+                                {taskLabel(child) && <span className="task-id-badge" style={{ fontSize: 9 }}>{taskLabel(child)}</span>}
+                                <span className="kanban-subtask-title">{child.title}</span>
+                                <span className="kanban-subtask-chevron" aria-hidden="true">›</span>
+                              </button>
+                            </div>
+                          )
+                        })}
+                      </div>
                     </div>
                   )
                 })()}
@@ -3593,7 +3724,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                 <div className="task-modal-field">
                   <span className="task-modal-field-label">Status</span>
                   <select className="form-input" value={editForm.status} onChange={e => setEditForm(p => ({ ...p, status: e.target.value }))}>
-                    {columns.map(c => (
+                    {statusOptions(columns, { parentId: editingTask.parentId, status: editingTask.status }).map(c => (
                       <option key={c.status} value={c.status}>{c.label}</option>
                     ))}
                   </select>
@@ -3610,18 +3741,14 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                 </div>
 
                 <div className="task-modal-field">
-                  <span className="task-modal-field-label">Story points</span>
-                  <input
-                    className="form-input"
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    placeholder="Unestimated"
-                    value={editForm.points ?? ''}
+                  <span className="task-modal-field-label" title="Fibonacci scale — bigger than 21 means split the story. Drives sprint velocity and the burndown; blank counts as 1.">Story points</span>
+                  <PointsSelect
+                    value={editForm.points}
                     onChange={e => setEditForm(p => ({ ...p, points: e.target.value }))}
                   />
-                  <span className="task-modal-field-hint">Drives sprint velocity and the burndown. Blank counts as 1.</span>
                 </div>
+
+                {(categories.length > 0 || (!editingTask.parentId && epics.length > 0)) && <div className="task-side-heading">Planning</div>}
 
                 {categories.length > 0 && (() => {
                   // Blank means "inherit from the nearest ancestor", not "none" —
@@ -3659,6 +3786,22 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                   )
                 })()}
 
+                {!editingTask.parentId && epics.length > 0 && (
+                  <div className="task-modal-field">
+                    <span className="task-modal-field-label">Epic</span>
+                    <select
+                      className="form-input"
+                      value={editForm.epicId || ''}
+                      onChange={e => setEditForm(p => ({ ...p, epicId: e.target.value }))}
+                      title="Epic"
+                    >
+                      <option value="">No epic</option>
+                      {epics.map(ep => <option key={ep.id} value={ep.id}>{ep.name}</option>)}
+                    </select>
+                  </div>
+                )}
+
+                <div className="task-side-heading">People</div>
                 <div className="task-modal-field">
                   <span className="task-modal-field-label">Assignees</span>
                   <AssigneeInput
@@ -3673,6 +3816,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                   <span className="task-modal-field-static">{editingTask.assignedBy || '—'}</span>
                 </div>
 
+                <div className="task-side-heading">Dates</div>
                 <div className="task-modal-field-pair">
                   <div className="task-modal-field">
                     <span className="task-modal-field-label">Start date</span>
@@ -3695,6 +3839,10 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                     />
                   </div>
                 </div>
+                {(() => {
+                  const due = dueState(editForm.dueDate, editForm.status)
+                  return due ? <div className={`task-due-note task-due-note--${due.tone}`}>{due.text}</div> : null
+                })()}
 
                 {labels.length > 0 && (
                   <div className="task-modal-field">
@@ -3714,6 +3862,16 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                     </div>
                   </div>
                 )}
+
+                {/* Read-only facts about the task. */}
+                <div className="task-side-heading">About</div>
+                <dl className="task-side-facts">
+                  <dt>Created</dt><dd>{editingTask.createdAt ? fmtWhen(editingTask.createdAt) : '—'}</dd>
+                  {editingTask.completedAt && <><dt>Completed</dt><dd>{fmtWhen(editingTask.completedAt)}</dd></>}
+                  {Number(editingTask.carryOver) > 0 && <><dt>Carried over</dt><dd>{editingTask.carryOver}× between sprints</dd></>}
+                  {editingTask.qa?.log?.length > 0 && <><dt>QA</dt><dd>{editingTask.qa.state === 'passed' ? 'Passed' : editingTask.qa.state === 'rework' ? 'Sent back' : 'In review'}{editingTask.qa.rounds ? ` · ${editingTask.qa.rounds} rework round${editingTask.qa.rounds === 1 ? '' : 's'}` : ''}</dd></>}
+                  <dt>Sub-tasks</dt><dd>{(() => { const k = descendantsUnder(editingTask.id); return k.length ? `${k.filter(x => x.status === 'done').length} of ${k.length} done` : 'None' })()}</dd>
+                </dl>
               </aside>
             </div>
 
@@ -3756,6 +3914,10 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
 
             <div className="task-modal-footer">
               <SubmitButton className="btn-ghost task-modal-archive" busyLabel="Archiving…" onClick={archiveTask} title="Archive this card">Archive</SubmitButton>
+              <span className="task-modal-footer-status" aria-live="polite">
+                {isEditDirty() ? <><span className="task-dirty-dot" aria-hidden="true" />Unsaved changes</> : 'All changes saved'}
+                <kbd className="task-kbd">{typeof navigator !== 'undefined' && /Mac/.test(navigator.platform) ? '⌘' : 'Ctrl'} + Enter</kbd> to save
+              </span>
               <div className="task-modal-footer-actions">
                 <button className="btn-ghost" onClick={closeEdit}>Cancel</button>
                 <SubmitButton

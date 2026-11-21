@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { assigneesUrl } from '../lib/config-cache'
 import { enqueue } from '../lib/submit-queue'
 import { taskDraft, taskCreateBody } from '../lib/task-draft'
 import { hasPerm, isSuperAdmin, canAddUnder } from '../lib/client-permissions'
@@ -144,7 +145,7 @@ export default function CalendarView({ tasks, apiBase, slug, currentUser }) {
   const [assignees, setAssignees] = useState([])
 
   useEffect(() => {
-    fetch('/api/assignees').then(r => r.ok ? r.json() : []).then(setAssignees).catch(() => {})
+    fetch(assigneesUrl()).then(r => r.ok ? r.json() : []).then(setAssignees).catch(() => {})
   }, [])
 
   const boardTasks = (tasks || []).filter(t => !t.archived)

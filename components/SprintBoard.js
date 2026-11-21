@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { isLeadUser } from '../lib/roles'
+import { hasPerm } from '../lib/client-permissions'
+import { assigneesUrl } from '../lib/config-cache'
 import Link from 'next/link'
 import TaskForm from './TaskForm'
 import { apiFetch } from '../lib/api-fetch'
 import { enqueue } from '../lib/submit-queue'
+import { statusOptimistic } from '../lib/task-cascade'
+import { statusOptions } from '../lib/subtask-status'
+import SubtaskList from './SubtaskList'
 import { useColumns, columnsWithTaskStatuses } from '../lib/kanban-columns'
 import { useCategories, categoriesWithTaskValues } from '../lib/categories'
 import { unmetAcceptance, acceptanceProgress } from '../lib/task-acceptance'
@@ -39,6 +45,13 @@ export default function SprintBoard({ slug, tasks, allTasks, currentUser, taskAc
   // layout) would otherwise be invisible — and invisible work in a sprint reads as
   // work that does not exist.
   const columns = useMemo(() => columnsWithTaskStatuses(serverColumns, tasks), [serverColumns, tasks])
+  // Planned work is never in Backlog (planning promotes it to To Do), so the sprint
+  // board drops that column. It comes back only while a sprint story actually sits
+  // there — hiding it then would hide the story. Status pickers keep every column.
+  const boardColumns = useMemo(
+    () => columns.filter(c => c.status !== 'backlog' || (tasks || []).some(t => !t.parentId && t.status === 'backlog')),
+    [columns, tasks],
+  )
 
   const [draggingId, setDraggingId] = useState(null)
   const [overStatus, setOverStatus] = useState(null)
@@ -57,12 +70,12 @@ export default function SprintBoard({ slug, tasks, allTasks, currentUser, taskAc
   // Same rules the project board applies, and the same ones the task PUT enforces:
   // admins edit anything, an assignee may move only their own card, and only into a
   // status the project ACL and the superadmin blocklist both allow.
-  const canEditAll = !!currentUser?.isAdmin
+  const canEditAll = !!currentUser?.isAdmin || (isLeadUser(currentUser) && hasPerm(currentUser, 'task:update'))
   const isMine = task => !!currentUser?.name && assigneeNames(task).includes(currentUser.name)
   const canMove = task => canEditAll || isMine(task)
   const restrictedStatuses = new Set(currentUser?.restrictedStatuses || [])
   const statusAllowedForUser = status => {
-    if (!currentUser?.isAdmin && restrictedStatuses.has(status)) return false
+    if (!isLeadUser(currentUser) && restrictedStatuses.has(status)) return false
     if (canEditAll) return true
     if (taskAcl?.assigneeCanChangeStatus === false) return false
     const list = taskAcl?.assigneeStatuses
@@ -96,36 +109,41 @@ export default function SprintBoard({ slug, tasks, allTasks, currentUser, taskAc
   const pointsOf = list => list.reduce((n, t) => n + (Number(t.points) || 0), 0)
   const sortBoard = arr => arr.slice().sort((a, b) => (a.boardOrder ?? a.order ?? 0) - (b.boardOrder ?? b.order ?? 0))
 
-  // Nearest ancestor that is itself drawn in this column — the card this one nests
-  // under. The walk climbs through ancestors that are *not* in the sprint (a
-  // grandchild can still belong under a grandparent that is), but only a sprint
-  // member sharing the column can host it. Null => it draws top-level, with a
-  // breadcrumb saying what it hangs off.
-  function nearestAncestorInCol(task, status) {
+  // Only stories are cards: a sub-task is listed under the nearest sprint ancestor's
+  // card (lib/subtask-status.js). A sub-task whose story is not in the sprint at all
+  // still needs somewhere to be seen, so it keeps a card of its own — unmovable.
+  function hostInSprint(task) {
     const seen = new Set([task.id])
     let cur = task.parentId ? projectById.get(task.parentId) : null
     while (cur && !seen.has(cur.id)) {
       seen.add(cur.id)
-      if (byId.has(cur.id) && (cur.status || 'todo') === status) return cur.id
+      if (byId.has(cur.id)) return cur.id
       cur = cur.parentId ? projectById.get(cur.parentId) : null
     }
     return null
   }
-
-  // One rule covers both halves of a column: a card is top-level here when nothing
-  // above it is drawn here, and a child when something is.
-  const colTasks = status => sortBoard(
-    tasks.filter(t => (t.status || 'todo') === status && nearestAncestorInCol(t, status) === null)
-  )
-  const childrenInCol = (taskId, status) => sortBoard(
-    tasks.filter(t => (t.status || 'todo') === status && nearestAncestorInCol(t, status) === taskId)
-  )
-  // Every sprint card in the column, nested or not — what the column counter and the
-  // point total have to add up.
-  const allInCol = status => tasks.filter(t => (t.status || 'todo') === status)
+  const colTasks = status => sortBoard(tasks.filter(t => (t.status || 'todo') === status && hostInSprint(t) === null))
+  // The sprint members under a card, in tree order with depth.
+  function sprintSubtasks(rootId) {
+    const out = []
+    const walk = (id, depth) => {
+      for (const t of sortBoard(tasks.filter(x => hostInSprint(x) === id))) {
+        out.push({ task: t, depth })
+        walk(t.id, depth + 1)
+      }
+    }
+    walk(rootId, 0)
+    return out
+  }
 
   // Tasks live one list per version; the sprint spans them all, so each card carries
   // the version it was hydrated from and writes go to that version's route.
+  // The task's own version list — the cascade rule walks parent → children there.
+  function versionTasks(task) {
+    const v = task.version || null
+    return [...projectById.values()].filter(t => (t.version || null) === v)
+  }
+
   function apiBaseFor(task) {
     return task.version
       ? `/api/projects/${slug}/versions/${task.version}/tasks`
@@ -162,7 +180,7 @@ export default function SprintBoard({ slug, tasks, allTasks, currentUser, taskAc
       label: `Move “${task.title}” to ${status}`,
       // Same scope string the Tasks page uses, so a card moved here is already moved
       // when the user walks over to the board.
-      optimistic: { entity: 'task', op: 'update', scope: base, id: task.id, patch: { status } },
+      optimistic: statusOptimistic(versionTasks(task), task, { status }, base, canEditAll),
     })
   }
 
@@ -176,7 +194,7 @@ export default function SprintBoard({ slug, tasks, allTasks, currentUser, taskAc
     setEditingId(task.id)
     if (optionsLoaded.current) return
     optionsLoaded.current = true
-    apiFetch('/api/assignees').then(r => (r.ok ? r.json() : [])).then(d => setAssignees(Array.isArray(d) ? d : [])).catch(() => {})
+    apiFetch(assigneesUrl()).then(r => (r.ok ? r.json() : [])).then(d => setAssignees(Array.isArray(d) ? d : [])).catch(() => {})
     apiFetch(`/api/projects/${slug}/labels`).then(r => (r.ok ? r.json() : [])).then(d => setLabels(Array.isArray(d) ? d : [])).catch(() => {})
   }
 
@@ -207,6 +225,8 @@ export default function SprintBoard({ slug, tasks, allTasks, currentUser, taskAc
       attachments: Array.isArray(task.attachments) ? task.attachments : [],
       cover: task.cover || null,
       labelIds: Array.isArray(task.labelIds) ? task.labelIds : [],
+      userStory: task.userStory || null,
+      acceptance: Array.isArray(task.acceptance) ? task.acceptance : [],
     }
   }
 
@@ -229,7 +249,7 @@ export default function SprintBoard({ slug, tasks, allTasks, currentUser, taskAc
       method: 'PUT',
       body,
       label: `Save card “${form.title.trim()}”`,
-      optimistic: { entity: 'task', op: 'update', scope: base, id: editing.id, patch: body },
+      optimistic: statusOptimistic(versionTasks(editing), editing, body, base, canEditAll),
     })
     setEditingId(null)
   }
@@ -278,7 +298,7 @@ export default function SprintBoard({ slug, tasks, allTasks, currentUser, taskAc
   }
 
   function onDragStart(e, task) {
-    if (!canMove(task)) { e.preventDefault(); return }
+    if (!canMove(task) || task.parentId) { e.preventDefault(); return } // only stories drag
     setDraggingId(task.id)
     e.dataTransfer.effectAllowed = 'move'
     // Firefox refuses to start a drag without payload.
@@ -315,18 +335,21 @@ export default function SprintBoard({ slug, tasks, allTasks, currentUser, taskAc
     const crumbParent = d === 0 && task.parentId ? projectById.get(task.parentId) : null
     const kids = kidsOf.get(task.id) || []
     const doneKids = kids.filter(k => k.status === 'done').length
-    const nested = childrenInCol(task.id, col.status)
+    const subs = sprintSubtasks(task.id)
     const ac = acceptanceProgress(task)
+    // Stories drag; a loose sub-task (story not in the sprint) only changes status
+    // through its own select.
     const movable = canMove(task)
+    const draggableCard = movable && !task.parentId
     const names = assigneeNames(task)
     return (
       <div key={task.id} className="sprint-card-group">
         <div
           className={`sprint-card${d > 0 ? ' sprint-card--child' : ''}${draggingId === task.id ? ' sprint-card--dragging' : ''}${movable ? '' : ' sprint-card--locked'}`}
-          draggable={movable}
+          draggable={draggableCard}
           role="button"
           tabIndex={0}
-          title={movable ? 'Drag to move · click to edit' : 'Click to open — you can only move cards assigned to you'}
+          title={draggableCard ? 'Drag to move · click to edit' : movable ? 'Click to open — set its status below' : 'Click to open — you can only move cards assigned to you'}
           onDragStart={e => onDragStart(e, task)}
           onDragEnd={onDragEnd}
           onClick={() => openCard(task)}
@@ -366,6 +389,9 @@ export default function SprintBoard({ slug, tasks, allTasks, currentUser, taskAc
           </div>
           <div className="sprint-card-title">{task.title}</div>
           <div className="sprint-card-meta">
+            {Number(task.carryOver) > 0 && (
+              <span className={`carry-badge${Number(task.carryOver) > 1 ? ' carry-badge--hot' : ''}`} title={`Carried over from ${task.carryOver} earlier sprint${task.carryOver > 1 ? 's' : ''}`}>↻ {task.carryOver}</span>
+            )}
             {Number(task.points) > 0 && (
               <span className="task-meta-chip" title="Story points">{Number(task.points)}p</span>
             )}
@@ -394,7 +420,7 @@ export default function SprintBoard({ slug, tasks, allTasks, currentUser, taskAc
               onChange={e => { e.stopPropagation(); moveTask(task, e.target.value) }}
               aria-label={`Move “${task.title}”`}
             >
-              {columns.map(c => (
+              {statusOptions(columns, task).map(c => (
                 <option key={c.status} value={c.status} disabled={!statusAllowedForUser(c.status)}>
                   {c.label}
                 </option>
@@ -403,10 +429,14 @@ export default function SprintBoard({ slug, tasks, allTasks, currentUser, taskAc
           )}
         </div>
 
-        {nested.length > 0 && (
-          <div className="sprint-child-cards">
-            {nested.map(kid => renderCard(kid, col, d + 1))}
-          </div>
+        {subs.length > 0 && (
+          <SubtaskList
+            items={subs}
+            onOpen={openCard}
+            onSetStatus={(t, status) => moveTask(t, status)}
+            canSet={canMove}
+            label={t => (t.seq != null ? (taskPrefix ? `${taskPrefix}-${t.seq}` : `#${t.seq}`) : '')}
+          />
         )}
       </div>
     )
@@ -425,10 +455,10 @@ export default function SprintBoard({ slug, tasks, allTasks, currentUser, taskAc
       onMouseLeave={onPanEnd}
     >
       <div className="sprint-board">
-        {columns.map(col => {
+        {boardColumns.map(col => {
           const cards = colTasks(col.status)
-          const inCol = allInCol(col.status)
-          const pts = pointsOf(inCol)
+          // A story's points include the sub-tasks riding on it.
+          const pts = pointsOf([...cards, ...cards.flatMap(c => sprintSubtasks(c.id).map(i => i.task))])
           return (
             <div
               key={col.status}
@@ -440,11 +470,11 @@ export default function SprintBoard({ slug, tasks, allTasks, currentUser, taskAc
               <div className="sprint-col-head">
                 <span className="kanban-column-dot" style={{ background: col.color }} />
                 <span className="sprint-col-title">{col.label}</span>
-                <span className="sprint-col-count">{inCol.length}</span>
+                <span className="sprint-col-count">{cards.length}</span>
                 {hasPoints && pts > 0 && <span className="sprint-col-pts">{pts}p</span>}
               </div>
               <div className="sprint-col-cards">
-                {inCol.length === 0 && <p className="sprint-col-empty">—</p>}
+                {cards.length === 0 && <p className="sprint-col-empty">—</p>}
                 {cards.map(task => renderCard(task, col, 0))}
               </div>
             </div>
@@ -479,6 +509,7 @@ export default function SprintBoard({ slug, tasks, allTasks, currentUser, taskAc
               <TaskForm
                 key={editing.id}
                 initial={toEditForm(editing)}
+                isSubtask={!!editing.parentId}
                 columns={columns}
                 categories={categories}
                 assignees={assignees}
@@ -502,7 +533,7 @@ export default function SprintBoard({ slug, tasks, allTasks, currentUser, taskAc
                       value={editing.status || 'todo'}
                       onChange={e => moveTask(editing, e.target.value)}
                     >
-                      {columns.map(c => (
+                      {statusOptions(columns, editing).map(c => (
                         <option key={c.status} value={c.status} disabled={!statusAllowedForUser(c.status)}>
                           {c.label}
                         </option>

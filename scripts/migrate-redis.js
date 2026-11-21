@@ -1,17 +1,16 @@
 // One-time migration: Upstash (old) -> Upstash (new)
-// Usage: node scripts/migrate-redis.js
+// Usage: OLD_REDIS_URL=… OLD_REDIS_TOKEN=… NEW_REDIS_URL=… NEW_REDIS_TOKEN=… node scripts/migrate-redis.js
 
 const { Redis } = require('@upstash/redis');
 
-const OLD = new Redis({
-  url: 'https://inspired-asp-130273.upstash.io',
-  token: 'gQAAAAAAAfzhAAIgcDE3NjhlYmE2Y2U4ZjA0NDgyOGE2YWVmOTg5MGYzNmRkZg',
-});
-
-const NEW = new Redis({
-  url: 'https://new-lamprey-118407.upstash.io',
-  token: 'gQAAAAAAAc6HAAIgcDJmOWJkOGU5Y2EzMTA0NzhiODE0YzFjMDVhYTYzNWE2MQ',
-});
+// Credentials come from the environment — never commit them:
+//   OLD_REDIS_URL / OLD_REDIS_TOKEN  → source
+//   NEW_REDIS_URL / NEW_REDIS_TOKEN  → target
+for (const k of ['OLD_REDIS_URL', 'OLD_REDIS_TOKEN', 'NEW_REDIS_URL', 'NEW_REDIS_TOKEN']) {
+  if (!process.env[k]) { console.error(`Set ${k}.`); process.exit(1); }
+}
+const OLD = new Redis({ url: process.env.OLD_REDIS_URL, token: process.env.OLD_REDIS_TOKEN });
+const NEW = new Redis({ url: process.env.NEW_REDIS_URL, token: process.env.NEW_REDIS_TOKEN });
 
 async function migrate() {
   let cursor = 0;

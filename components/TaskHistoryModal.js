@@ -8,6 +8,8 @@ const ACTION_META = {
   comment_removed:{ icon: '🗑', verb: 'removed a comment' },
   archived:       { icon: '📦', verb: 'archived this task' },
   restored:       { icon: '♻️', verb: 'restored this task' },
+  qa_passed:      { icon: '✅', verb: 'passed QA review' },
+  qa_rework:      { icon: '↩️', verb: 'sent it back for rework' },
 }
 
 function actorName(actor) {
@@ -54,6 +56,9 @@ function HistoryEntry({ entry }) {
               </li>
             ))}
           </ul>
+        )}
+        {(entry.action === 'qa_rework' || entry.action === 'qa_passed') && entry.meta?.note && (
+          <div className="thist-comment">“{entry.meta.note}”</div>
         )}
         {entry.action === 'commented' && entry.meta?.text && (
           <div className="thist-comment">“{entry.meta.text}”</div>

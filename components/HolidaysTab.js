@@ -323,7 +323,7 @@ export default function HolidaysTab({ currentUser }) {
   const months = groupByMonth(holidays)
 
   return (
-    <section className="section-card holiday-admin" style={{ marginTop: 0, borderRadius: '0 6px 6px 6px' }}>
+    <section className="section-card holiday-admin">
       <div className="section-card-header">
         <span>Holidays</span>
         {!loading && <span className="badge">{holidays.length}</span>}

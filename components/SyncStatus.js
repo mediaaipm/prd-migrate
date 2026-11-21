@@ -1,7 +1,7 @@
 import { discardParked, retryParked } from '../lib/submit-queue'
 import { useQueueState, useUnloadGuard } from '../lib/use-submit-queue'
 
-// Mounted once, in _app. Owns the unload guard and is the only place a failed write
+// Mounted once, in components/AppShell.js. Owns the unload guard and is the only place a failed write
 // is surfaced — the call sites stay unaware that their submit was queued.
 export default function SyncStatus() {
   const { pending, parked } = useQueueState()
