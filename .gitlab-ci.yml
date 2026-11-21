@@ -4,9 +4,21 @@
 stages:
   - build
 
+# Run for merge requests and for branch pushes — but not both for the same commit.
+# Without rules a job is branch-only, so a merge request pipeline had 0 jobs and
+# GitLab reported it as "yaml invalid".
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
 build:
   stage: build
   image: node:20
+  rules:
+    - when: on_success
   cache:
     key:
       files:
