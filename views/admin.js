@@ -3,6 +3,7 @@ import { assigneesUrl } from '../lib/config-cache'
 import { useRouter } from '../lib/router-compat'
 import Nav from '../components/Nav'
 import PageHeader from '../components/PageHeader'
+import PersonLink from '../components/PersonLink'
 import MoreMenu from '../components/MoreMenu'
 import { apiFetch } from '../lib/api-fetch'
 import { ALL_PERMISSIONS, PERMISSION_LABELS } from '../lib/permissions'
@@ -217,7 +218,7 @@ function AuditLog() {
                   <td className="admin-who">
                     {log.user ? (
                       <>
-                        <span className="admin-who-name">{log.user.name}</span>
+                        <PersonLink name={log.user.name} className="admin-who-name" />
                         {log.user.username && <span className="admin-muted"> @{log.user.username}</span>}
                       </>
                     ) : <span className="admin-muted">unknown</span>}
@@ -727,7 +728,7 @@ function UserRow({ user, leads, reports, onRemove, onSaved, isSuperAdmin, curren
           <span className="admin-avatar" aria-hidden="true">{user.name.charAt(0).toUpperCase()}</span>
           <div className="admin-user-text">
             <span className="admin-user-name">
-              {user.name}
+              <PersonLink name={user.name} />
               {isMe && <span className="admin-you">you</span>}
             </span>
             <span className="admin-user-sub">

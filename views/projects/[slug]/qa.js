@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from '../../../lib/router-compat'
 import Nav from '../../../components/Nav'
+import PersonLink from '../../../components/PersonLink'
 import PageHeader from '../../../components/PageHeader'
 import { apiFetch } from '../../../lib/api-fetch'
 import { onSync } from '../../../lib/submit-queue'
@@ -99,7 +100,7 @@ function QaCardModal({ item, slug, id, cardHref, tab, actions, error, onClose, o
             {item.points != null && <span className="qa-chip">{item.points} pts</span>}
             {item.priority && <span className={`qa-chip qa-chip--${item.priority}`}>{item.priority}</span>}
             {item.sprint && <span className="qa-chip qa-chip--sprint">{item.sprint.name}</span>}
-            <span className="qa-modal-people">{item.assignees.length ? item.assignees.join(', ') : 'Unassigned'}</span>
+            <span className="qa-modal-people">{item.assignees.length ? item.assignees.map((n, i) => <span key={n}>{i > 0 && ', '}<PersonLink name={n} /></span>) : 'Unassigned'}</span>
           </div>
 
           <section className="qa-modal-sec">
@@ -169,7 +170,7 @@ function QaCardModal({ item, slug, id, cardHref, tab, actions, error, onClose, o
               <ul className="qa-modal-log">
                 {comments.slice(-10).map(c => (
                   <li key={c.id}>
-                    <div className="qa-modal-log-head"><strong>{c.author || 'Someone'}</strong> · {ago(c.createdAt)}</div>
+                    <div className="qa-modal-log-head"><strong>{c.author ? <PersonLink name={c.author} /> : 'Someone'}</strong> · {ago(c.createdAt)}</div>
                     <div className="qa-modal-log-text">{c.text}</div>
                   </li>
                 ))}
@@ -185,7 +186,7 @@ function QaCardModal({ item, slug, id, cardHref, tab, actions, error, onClose, o
                   <li key={i}>
                     <div className="qa-modal-log-head">
                       <span className={`qa-modal-verdict qa-modal-verdict--${l.verdict}`}>{l.verdict === 'pass' ? 'Passed' : 'Sent back'}</span>
-                      {' '}by <strong>{l.by}</strong> · {ago(l.at)}
+                      {' '}by <strong><PersonLink name={l.by} /></strong> · {ago(l.at)}
                     </div>
                     {l.note && <div className="qa-modal-log-text">{l.note}</div>}
                   </li>
@@ -299,9 +300,9 @@ function QaCard({ item, slug, tab, prefix, canReview, currentUser, onDone, onCha
       </header>
 
       <div className="qa-card-meta">
-        <span>{item.assignees.length ? item.assignees.join(', ') : 'Unassigned'}</span>
-        {tab === 'review' && item.qa?.submittedAt && <span>· handed over {ago(item.qa.submittedAt)}{item.qa.submittedBy ? ` by ${item.qa.submittedBy}` : ''}</span>}
-        {tab !== 'review' && item.qa?.at && <span>· {tab === 'passed' ? 'passed' : 'sent back'} {ago(item.qa.at)} by {item.qa.by}</span>}
+        <span>{item.assignees.length ? item.assignees.map((n, i) => <span key={n}>{i > 0 && ', '}<PersonLink name={n} /></span>) : 'Unassigned'}</span>
+        {tab === 'review' && item.qa?.submittedAt && <span>· handed over {ago(item.qa.submittedAt)}{item.qa.submittedBy ? <> by <PersonLink name={item.qa.submittedBy} /></> : ''}</span>}
+        {tab !== 'review' && item.qa?.at && <span>· {tab === 'passed' ? 'passed' : 'sent back'} {ago(item.qa.at)} by <PersonLink name={item.qa.by} /></span>}
         <span>· sub-tasks {item.subtasks.done}/{item.subtasks.total}</span>
       </div>
 

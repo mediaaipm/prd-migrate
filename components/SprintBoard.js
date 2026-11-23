@@ -12,6 +12,7 @@ import SubtaskList from './SubtaskList'
 import { useColumns, columnsWithTaskStatuses } from '../lib/kanban-columns'
 import { useCategories, categoriesWithTaskValues } from '../lib/categories'
 import { unmetAcceptance, acceptanceProgress } from '../lib/task-acceptance'
+import PersonLink from './PersonLink'
 
 const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
 const PRIORITY_LABEL = { low: 'Low', medium: 'Med', high: 'High', critical: 'Crit' }
@@ -382,9 +383,9 @@ export default function SprintBoard({ slug, tasks, allTasks, currentUser, taskAc
               />
             )}
             {names.slice(0, 3).map(a => (
-              <span key={a} className="kanban-assignee-avatar sprint-card-avatar" title={a}>
+              <PersonLink key={a} name={a} title={a} className="kanban-assignee-avatar sprint-card-avatar">
                 {a.charAt(0).toUpperCase()}
-              </span>
+              </PersonLink>
             ))}
           </div>
           <div className="sprint-card-title">{task.title}</div>

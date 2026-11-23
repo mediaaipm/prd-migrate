@@ -8,9 +8,10 @@ import { isSuperAdmin, canView, hasPerm } from '../lib/client-permissions'
 import { useTheme, THEMES } from '../lib/theme'
 import { enqueue } from '../lib/submit-queue'
 import { useQueueState, LEAVE_WARNING } from '../lib/use-submit-queue'
-import { Bell, BookOpen, Check, ChevronDown, LogOut, Monitor, Palette } from 'lucide-react'
+import { Bell, BookOpen, Check, ChevronDown, LogOut, Monitor, Palette, Gauge } from 'lucide-react'
 import { Button } from './ui/button'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from './ui/dropdown-menu'
+import { profileHref } from './PersonLink'
 
 const CHIME_URL = 'https://cdn.pixabay.com/download/audio/2025/05/06/audio_2fd68b9a9a.mp3?filename=alexis_gaming_cam-bell-notification-337658.mp3'
 
@@ -207,7 +208,7 @@ export default function Nav({ projectName }) {
       {currentUser && (
         <Link href="/my-tasks" className={`nav-link${pathname === '/my-tasks' ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>My tasks</Link>
       )}
-      {(currentUser?.role === 'manager' || currentUser?.role === 'teamlead') && (
+      {(['manager', 'teamlead', 'admin', 'superadmin'].includes(currentUser?.role) || currentUser?.isAdmin) && (
         <Link href="/teams" className={`nav-link${pathname === '/teams' ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>Teams</Link>
       )}
     </>
@@ -326,7 +327,10 @@ export default function Nav({ projectName }) {
                   <span className="truncate">{displayName}</span>
                   <span className="text-xs font-normal text-muted-foreground">{roleLabel}</span>
                 </DropdownMenuLabel>
-                {(isAdminUser || isSuperAdmin(currentUser)) && <DropdownMenuSeparator />}
+                <DropdownMenuSeparator />
+                {currentUser?.name && (
+                  <DropdownMenuItem asChild><Link href={profileHref(currentUser.name)}><Gauge />My performance</Link></DropdownMenuItem>
+                )}
                 {isAdminUser && (
                   <DropdownMenuItem asChild><Link href="/admin">Admin</Link></DropdownMenuItem>
                 )}
@@ -382,6 +386,9 @@ export default function Nav({ projectName }) {
           <Link href="/guide" className={`nav-link${pathname === '/guide' ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>Guide</Link>
         )}
         {globalLinks}
+        {currentUser?.name && (
+          <Link href={profileHref(currentUser.name)} className={`nav-link${pathname === profileHref(currentUser.name) ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>My performance</Link>
+        )}
         {adminLinks}
         <button onClick={handleSignOut} className="nav-link nav-signout">Sign out</button>
       </div>

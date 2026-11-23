@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { subtaskColumns, subtaskStatus } from '../lib/subtask-status'
 import { railRollups, RAIL_STATE_LABEL } from '../lib/categories'
 import CellPeekModal from './CellPeekModal'
+import PersonLink from './PersonLink'
 
 const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
 const PRIORITY_LABEL = { low: 'Low', medium: 'Med', high: 'High', critical: 'Crit' }
@@ -190,7 +191,7 @@ export default function TaskMiniBoard({
                       {showAssignees && assigneeNames(task).length > 0 && (
                         <div className="swim-card-people">
                           {assigneeNames(task).slice(0, 3).map(name => (
-                            <span key={name} className="swim-card-avatar" title={name}>{initials(name)}</span>
+                            <PersonLink key={name} name={name} title={name} className="swim-card-avatar">{initials(name)}</PersonLink>
                           ))}
                           {assigneeNames(task).length > 3 && (
                             <span className="swim-card-avatar swim-card-avatar--more">

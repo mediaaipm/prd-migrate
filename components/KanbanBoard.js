@@ -27,6 +27,7 @@ import { attSrc, coverSrc } from '../lib/attachment-src'
 import { makeChecklistItem, checklistProgress, MAX_CHECKLIST_TEXT } from '../lib/task-checklist'
 import { makeAcceptanceItem, acceptanceProgress, unmetAcceptance, MAX_ACCEPTANCE_TEXT, MAX_ACCEPTANCE_ITEMS } from '../lib/task-acceptance'
 import { USER_STORY_PARTS, MAX_USER_STORY_TEXT, blankUserStory } from '../lib/user-story'
+import PersonLink from './PersonLink'
 
 const PRIORITY_ORDER = ['critical', 'high', 'medium', 'low']
 const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
@@ -2021,9 +2022,9 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                       {done} / {cards.length} done
                     </span>
                     {root.assignees?.map(a => (
-                      <span key={a} className="kanban-assignee-avatar swim-lane-avatar" title={a}>
+                      <PersonLink key={a} name={a} title={a} className="kanban-assignee-avatar swim-lane-avatar">
                         {a.charAt(0).toUpperCase()}
-                      </span>
+                      </PersonLink>
                     ))}
                     <button
                       className={`swim-lane-expand${expanded ? ' swim-lane-expand--on' : ''}`}
@@ -2354,9 +2355,9 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
               )
             })()}
             {task.assignees?.map(a => (
-              <span key={a} className="kanban-assignee-avatar" title={a}>
+              <PersonLink key={a} name={a} title={a} className="kanban-assignee-avatar">
                 {a.charAt(0).toUpperCase()}
-              </span>
+              </PersonLink>
             ))}
           </div>
         </div>
@@ -3180,7 +3181,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                     [...list].reverse().map(u => (
                       <div key={u.id} className="task-update-item">
                         <div className="task-update-meta">
-                          {u.author && <span className="task-update-author">{u.author}</span>}
+                          {u.author && <PersonLink name={u.author} className="task-update-author" />}
                           <span className="task-update-time">{new Date(u.createdAt).toLocaleString()}</span>
                         </div>
                         <div className="task-update-text">{u.text}</div>
@@ -3707,7 +3708,7 @@ export default function KanbanBoard({ tasks, apiBase, slug, currentUser, taskAcl
                           </span>
                           <div className="task-modal-comment-body">
                             <div className="task-update-meta">
-                              {u.author && <span className="task-update-author">{u.author}</span>}
+                              {u.author && <PersonLink name={u.author} className="task-update-author" />}
                               <span className="task-update-time">{new Date(u.createdAt).toLocaleString()}</span>
                             </div>
                             <div className="task-update-text">{u.text}</div>

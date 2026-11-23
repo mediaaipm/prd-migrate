@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useRouter } from '../lib/router-compat'
 import Nav from '../components/Nav'
 import PageHeader from '../components/PageHeader'
+import PersonLink from '../components/PersonLink'
 import { apiFetch } from '../lib/api-fetch'
 import { onSync } from '../lib/submit-queue'
 import { DEFAULT_COLUMNS, labelForStatus } from '../lib/kanban-columns'
@@ -49,11 +50,11 @@ function shortDate(v) {
   return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', ...(sameYear ? {} : { year: 'numeric' }) })
 }
 
-function taskHref(item) {
+export function taskHref(item) {
   return `/projects/${item.project}/tasks?${item.version ? `version=${encodeURIComponent(item.version)}&` : ''}task=${encodeURIComponent(item.id)}`
 }
 
-function Row({ item, project, today }) {
+export function Row({ item, project, today }) {
   const cols = project?.columns || DEFAULT_COLUMNS
   const col = cols.find(c => c.status === item.status)
   const id = item.seq != null ? (project?.prefix ? `${project.prefix}-${item.seq}` : `#${item.seq}`) : ''
@@ -243,8 +244,8 @@ export default function MyTasks({ currentUser }) {
             {g.member ? (
               <h2 className="my-group-head my-person-head">
                 <span className="my-person-avatar" aria-hidden="true">{g.member.name.charAt(0).toUpperCase()}</span>
-                <span className="my-person-name">{g.member.name}</span>
-                <span className="my-person-role">{roleLabel(g.member.role)}{!g.member.direct && g.member.lead ? ` · reports to ${g.member.lead}` : ''}</span>
+                <PersonLink name={g.member.name} className="my-person-name" />
+                <span className="my-person-role">{roleLabel(g.member.role)}{!g.member.direct && g.member.lead ? <> · reports to <PersonLink name={g.member.lead} /></> : ''}</span>
                 <span className="my-group-count">{g.items.length} {tab === 'done' ? 'done' : 'open'}</span>
                 {g.overdue > 0 && <span className="my-person-late">{g.overdue} overdue</span>}
               </h2>
