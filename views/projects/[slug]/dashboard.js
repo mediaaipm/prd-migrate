@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from '../../../lib/router-compat'
 import Link from 'next/link'
 import Nav from '../../../components/Nav'
+import PersonLink from '../../../components/PersonLink'
 import PageHeader from '../../../components/PageHeader'
 import { apiFetch } from '../../../lib/api-fetch'
 import { useColumns, labelForStatus } from '../../../lib/kanban-columns'
@@ -402,7 +403,7 @@ export default function ProjectInsights() {
                     limit={8}
                     render={w => (
                       <div key={w.assignee} className="ins-load" title={`${w.assignee}: ${w.open} open, ${w.overdue} late`}>
-                        <span className="ins-load-name">{w.assignee}</span>
+                        <PersonLink name={w.assignee} className="ins-load-name" />
                         <div className="ins-load-track">
                           <div className="ins-load-bar" style={{ width: `${(w.open / loadMax) * 100}%` }}>
                             {w.open - w.overdue > 0 && <span className="ins-load-seg ins-load-seg--ok" style={{ flexGrow: w.open - w.overdue }} />}

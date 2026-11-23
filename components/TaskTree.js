@@ -9,6 +9,7 @@ import TaskForm, { blankForm } from './TaskForm'
 import { useEpics, epicMap } from '../lib/epics'
 import TaskContextMenu from './TaskContextMenu'
 import TaskHistoryModal from './TaskHistoryModal'
+import PersonLink from './PersonLink'
 import FilterSidebar, { SidebarSection, SidebarCheckList } from './FilterSidebar'
 import { useColumns, columnsWithTaskStatuses, labelForStatus } from '../lib/kanban-columns'
 import { useCategories, categoriesWithTaskValues, categoryMap, effectiveCategory, taskIndex } from '../lib/categories'
@@ -580,9 +581,9 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
                 const label = typeof a === 'object' ? a.name : a
                 const theme = nameToAvatarTheme(label)
                 return (
-                  <span key={label ?? i} className="task-assignee-avatar tl-avatar" style={{ background: theme.bg, color: theme.color, borderColor: theme.border }}>
+                  <PersonLink key={label ?? i} name={label} title={label} className="task-assignee-avatar tl-avatar" style={{ background: theme.bg, color: theme.color, borderColor: theme.border }}>
                     {getInitials(label)}
-                  </span>
+                  </PersonLink>
                 )
               })}
               {nodeAssignees.length > 3 && <span className="tl-avatar tl-avatar--more">+{nodeAssignees.length - 3}</span>}
@@ -677,7 +678,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
               [...node.updates].reverse().map(u => (
                 <div key={u.id} className="task-update-item">
                   <div className="task-update-meta">
-                    {u.author && <span className="task-update-author">{u.author}</span>}
+                    {u.author && <PersonLink name={u.author} className="task-update-author" />}
                     <span className="task-update-time">{new Date(u.createdAt).toLocaleString()}</span>
                   </div>
                   <div className="task-update-text">{u.text}</div>
@@ -842,7 +843,7 @@ function TaskNode({ node, apiBase, onRefresh, depth = 0, assignees = [], current
                 </div>
                 <div className="task-detail-field">
                   <span className="task-detail-label">Assignees</span>
-                  <span>{nodeAssignees.length ? nodeAssignees.map(a => typeof a === 'object' ? a.name : a).join(', ') : '—'}</span>
+                  <span>{nodeAssignees.length ? nodeAssignees.map(a => typeof a === 'object' ? a.name : a).map((n, i) => <span key={n}>{i > 0 && ', '}<PersonLink name={n} /></span>) : '—'}</span>
                 </div>
                 <div className="task-detail-field">
                   <span className="task-detail-label">Assigned by</span>

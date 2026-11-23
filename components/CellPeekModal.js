@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import PersonLink from './PersonLink'
 
 const PRIORITY_COLOR = { low: '#64748b', medium: '#f59e0b', high: '#dc2626', critical: '#9f1239' }
 const PRIORITY_LABEL = { low: 'Low', medium: 'Med', high: 'High', critical: 'Crit' }
@@ -110,9 +111,9 @@ export default function CellPeekModal({
                     {assignees.map(a => {
                       const name = typeof a === 'object' ? a?.name : a
                       return (
-                        <span key={name} className="kanban-assignee-avatar cell-peek-avatar" title={name}>
+                        <PersonLink key={name} name={name} title={name} className="kanban-assignee-avatar cell-peek-avatar">
                           {String(name || '?').charAt(0).toUpperCase()}
-                        </span>
+                        </PersonLink>
                       )
                     })}
                     {t.dueDate && (

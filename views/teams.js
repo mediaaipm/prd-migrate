@@ -3,14 +3,15 @@ import Link from 'next/link'
 import { useRouter } from '../lib/router-compat'
 import Nav from '../components/Nav'
 import PageHeader from '../components/PageHeader'
+import PersonLink from '../components/PersonLink'
 import { apiFetch } from '../lib/api-fetch'
 import { onSync } from '../lib/submit-queue'
 import { DEFAULT_COLUMNS, labelForStatus } from '../lib/kanban-columns'
 import { roleLabel } from '../lib/roles'
 import { Sparkline, StackBar, WeeklyBars } from '../components/InsightsCharts'
 
-// Teams — who is on each team and how it is doing (GET /api/teams). Managers see every
-// team; a team lead sees their own (and any lead's under them). Numbers cover only the
+// Teams — who is on each team and how it is doing (GET /api/teams). Managers and admins
+// see every team; a team lead sees their own (and any lead's under them). Numbers cover only the
 // projects the viewer can see. `?team=<lead>` opens one team; with several teams and
 // none picked, the overview compares them.
 
@@ -43,6 +44,72 @@ function Card({ title, sub, action, children }) {
 }
 
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : null)
+const fmtPct = v => (v == null ? '—' : `${v}%`)
+const fmtDays = v => (v == null ? '—' : v < 1 ? '<1d' : `${v}d`)
+const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
+
+// Every member side by side, last 30 days unless it says open. Click a header to sort.
+const PERF_COLS = [
+  { key: 'open', label: 'Open', get: s => s.open },
+  { key: 'overdue', label: 'Overdue', get: s => s.overdue, late: true },
+  { key: 'done30', label: 'Done', get: s => s.done30 },
+  { key: 'points30', label: 'Points', get: s => s.points30 },
+  { key: 'onTime', label: 'On time', get: s => pct(s.onTime30, s.dueDone30), fmt: fmtPct },
+  { key: 'firstPass', label: 'QA first pass', get: s => pct(s.firstPass30, s.passed30), fmt: fmtPct },
+  { key: 'sentBack30', label: 'Sent back', get: s => s.sentBack30, warn: true },
+  { key: 'cycle', label: 'Typical time', get: s => s.cycleDaysMedian, fmt: fmtDays, asc: true },
+]
+
+function MemberPerformance({ members }) {
+  const [sort, setSort] = useState({ key: 'done30', dir: -1 })
+  const col = PERF_COLS.find(c => c.key === sort.key) || PERF_COLS[2]
+  const rows = [...members].sort((a, b) => {
+    const x = col.get(a.stats); const y = col.get(b.stats)
+    if (x == null && y == null) return a.name.localeCompare(b.name)
+    if (x == null) return 1
+    if (y == null) return -1
+    return (x - y) * sort.dir || a.name.localeCompare(b.name)
+  })
+  const pick = c => setSort(prev => (prev.key === c.key ? { key: c.key, dir: -prev.dir } : { key: c.key, dir: c.asc ? 1 : -1 }))
+  return (
+    <div className="person-table-wrap">
+      <table className="team-table team-perf">
+        <thead>
+          <tr>
+            <th>Person</th>
+            {PERF_COLS.map(c => (
+              <th key={c.key} aria-sort={sort.key === c.key ? (sort.dir > 0 ? 'ascending' : 'descending') : 'none'}>
+                <button type="button" className={`team-sort${sort.key === c.key ? ' is-on' : ''}`} onClick={() => pick(c)}>
+                  {c.label}{sort.key === c.key ? (sort.dir > 0 ? ' ↑' : ' ↓') : ''}
+                </button>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(m => (
+            <tr key={m.name}>
+              <td>
+                <span className="team-cell-name">
+                  <PersonLink name={m.name} className="my-person-avatar">{m.name.charAt(0).toUpperCase()}</PersonLink>
+                  <span>
+                    <PersonLink name={m.name} className="team-person-name" />
+                    <span className="team-cell-sub">{m.isLead ? 'Lead' : roleLabel(m.role)}</span>
+                  </span>
+                </span>
+              </td>
+              {PERF_COLS.map(c => {
+                const v = c.get(m.stats)
+                const tone = c.late && v ? 'team-num--late' : c.warn && v ? 'team-num--warn' : ''
+                return <td key={c.key} className={tone}>{c.fmt ? c.fmt(v) : v}</td>
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
 const teamName = lead => `${lead}'s team`
 const tasksHref = (lead, person) => `/my-tasks?view=team&lead=${encodeURIComponent(lead)}${person ? `&person=${encodeURIComponent(person)}` : ''}`
 
@@ -52,7 +119,7 @@ function Overview({ teams, open }) {
       <table className="team-table">
         <thead>
           <tr>
-            <th>Team</th><th>People</th><th>Open</th><th>Overdue</th><th>Rework</th><th>Done (30d)</th><th>Points (30d)</th><th>QA first pass</th>
+            <th>Team</th><th>People</th><th>Open</th><th>Overdue</th><th>Rework</th><th>Done (30d)</th><th>Points (30d)</th><th>On time</th><th>QA first pass</th>
           </tr>
         </thead>
         <tbody>
@@ -63,7 +130,7 @@ function Overview({ teams, open }) {
               <tr key={t.lead} onClick={() => open(t.lead)} tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') open(t.lead) }}>
                 <td>
                   <span className="team-cell-name">
-                    <span className="my-person-avatar" aria-hidden="true">{t.lead.charAt(0).toUpperCase()}</span>
+                    <PersonLink name={t.lead} className="my-person-avatar">{t.lead.charAt(0).toUpperCase()}</PersonLink>
                     <span>
                       <strong>{teamName(t.lead)}</strong>
                       <span className="team-cell-sub">{roleLabel(t.leadRole)}{t.leadOf ? ` · reports to ${t.leadOf}` : ''}</span>
@@ -78,6 +145,7 @@ function Overview({ teams, open }) {
                   <span className="team-cell-trend">{s.done30}<Sparkline values={s.weekly} label={`Done per week, ${teamName(t.lead)}`} /></span>
                 </td>
                 <td>{s.points30}</td>
+                <td>{fmtPct(pct(s.onTime30, s.dueDone30))}</td>
                 <td>{fp == null ? '—' : `${fp}%`}</td>
               </tr>
             )
@@ -104,11 +172,11 @@ function TeamDetail({ team, weeks }) {
     <>
       <div className="ins-top team-top">
         <section className="ins-hero">
-          <div className="ins-stat-label">{roleLabel(team.leadRole)}{team.leadOf ? ` · reports to ${team.leadOf}` : ''}</div>
-          <div className="team-hero-name">{teamName(team.lead)}</div>
+          <div className="ins-stat-label">{roleLabel(team.leadRole)}{team.leadOf ? <> · reports to <PersonLink name={team.leadOf} /></> : ''}</div>
+          <div className="team-hero-name"><PersonLink name={team.lead}>{teamName(team.lead)}</PersonLink></div>
           <div className="team-avatars" aria-label={`${team.members.length} people`}>
             {team.members.slice(0, 8).map(m => (
-              <span key={m.name} className="my-person-avatar" title={`${m.name} · ${roleLabel(m.role)}`}>{m.name.charAt(0).toUpperCase()}</span>
+              <PersonLink key={m.name} name={m.name} className="my-person-avatar" title={`${m.name} · ${roleLabel(m.role)}`}>{m.name.charAt(0).toUpperCase()}</PersonLink>
             ))}
             <span className="ins-stat-sub">{team.members.length} {team.members.length === 1 ? 'person' : 'people'} · {s.projects} project{s.projects === 1 ? '' : 's'}</span>
           </div>
@@ -123,6 +191,16 @@ function TeamDetail({ team, weeks }) {
         <div className="ins-col">
           <Card title="Throughput" sub={`tasks done per week, last ${weeks} weeks`}>
             <WeeklyBars values={s.weekly} label={`Tasks done per week by ${teamName(team.lead)}`} />
+          </Card>
+          <Card title="Team performance" sub="last 30 days">
+            <dl className="person-facts">
+              <div><dt>On time</dt><dd>{fmtPct(pct(s.onTime30, s.dueDone30))}<span>{s.dueDone30 ? `${s.onTime30} of ${plural(s.dueDone30, 'task')} with a due date` : 'Nothing with a due date finished'}</span></dd></div>
+              <div><dt>Typical time to finish</dt><dd>{fmtDays(s.cycleDaysMedian)}<span>median, start (or creation) to done</span></dd></div>
+              <div><dt>Finished</dt><dd>{s.done30}<span>{plural(s.storiesDone30, 'story', 'stories')} · {plural(s.subtasksDone30, 'sub-task')}</span></dd></div>
+              <div><dt>Sent back by QA</dt><dd>{s.sentBack30}<span>{s.rework ? `${s.rework} in Rework now` : 'Nothing in Rework now'}</span></dd></div>
+              <div><dt>Carried over</dt><dd>{s.carryOver}<span>sprint carry-overs on open stories</span></dd></div>
+              <div><dt>Blocked</dt><dd>{s.blocked}<span>{s.review ? `${s.review} waiting for QA` : 'Nothing waiting for QA'}</span></dd></div>
+            </dl>
           </Card>
           <Card title="Open work" sub="by status">
             {s.open === 0 ? <div className="empty-state-sm">Nothing open.</div> : (
@@ -147,7 +225,7 @@ function TeamDetail({ team, weeks }) {
                     <span className="my-person-avatar" aria-hidden="true">{m.name.charAt(0).toUpperCase()}</span>
                     <div className="team-person-main">
                       <div className="team-person-top">
-                        <Link href={tasksHref(team.lead, m.name)} className="team-person-name">{m.name}</Link>
+                        <PersonLink name={m.name} className="team-person-name" />
                         <span className="team-person-role">{m.isLead ? 'Lead' : roleLabel(m.role)}</span>
                         <span className="team-person-nums">
                           {ms.open} open{ms.overdue > 0 && <span className="team-num--late"> · {ms.overdue} late</span>}{ms.rework > 0 && <span className="team-num--warn"> · {ms.rework} rework</span>}
@@ -159,7 +237,10 @@ function TeamDetail({ team, weeks }) {
                           {ms.overdue > 0 && <span className="ins-load-seg ins-load-seg--late" style={{ flexGrow: ms.overdue }} />}
                         </div>
                       </div>
-                      <div className="team-person-sub">{ms.done30} done · {ms.points30} pts in 30 days{ms.review ? ` · ${ms.review} in QA` : ''}</div>
+                      <div className="team-person-sub">
+                        {ms.done30} done · {ms.points30} pts in 30 days{ms.review ? ` · ${ms.review} in QA` : ''}
+                        {' · '}<Link href={tasksHref(team.lead, m.name)} className="ins-link">Tasks</Link>
+                      </div>
                     </div>
                   </li>
                 )
@@ -168,6 +249,13 @@ function TeamDetail({ team, weeks }) {
           </Card>
         </div>
       </div>
+
+      <section className="ins-card team-perf-card">
+        <div className="ins-card-head">
+          <span className="ins-card-title">Member performance<span className="ins-card-sub">last 30 days · open work as of now</span></span>
+        </div>
+        <div className="ins-card-body"><MemberPerformance members={team.members} /></div>
+      </section>
     </>
   )
 }
@@ -194,7 +282,7 @@ export default function Teams({ currentUser }) {
   const picked = typeof router.query.team === 'string' ? router.query.team : ''
   const team = useMemo(() => teams.find(t => t.lead === picked) || (teams.length === 1 ? teams[0] : null), [teams, picked])
   const open = lead => router.push(lead ? `/teams?team=${encodeURIComponent(lead)}` : '/teams')
-  const isManager = currentUser?.role === 'manager'
+  const seesAll = ['manager', 'admin', 'superadmin'].includes(currentUser?.role) || !!currentUser?.isAdmin
 
   return (
     <>
@@ -202,7 +290,7 @@ export default function Teams({ currentUser }) {
       <main className="page page--full ins-page">
         <PageHeader
           title={team ? teamName(team.lead) : 'Teams'}
-          subtitle={isManager ? 'Every team: who is on it and how it is doing, in the projects you can see.' : 'Your team: who is on it and how it is doing, in the projects you can see.'}
+          subtitle={seesAll ? 'Every team: who is on it and how it is doing, in the projects you can see.' : 'Your team: who is on it and how it is doing, in the projects you can see.'}
         />
 
         {teams.length > 1 && (
@@ -222,7 +310,7 @@ export default function Teams({ currentUser }) {
         )}
         {data && teams.length === 0 && (
           <div className="section-card epic-empty">
-            {isManager ? 'No teams are set up yet.' : 'Nobody reports to you yet.'} An admin or manager sets each person's team lead under Admin → Users → Reports to.
+            {seesAll ? 'No teams are set up yet.' : 'Nobody reports to you yet.'} An admin or manager sets each person's team lead under Admin → Users → Reports to.
           </div>
         )}
         {data && !team && teams.length > 1 && <Overview teams={teams} open={open} />}

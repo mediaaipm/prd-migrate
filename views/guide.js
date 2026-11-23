@@ -184,12 +184,22 @@ export default function Guide({ currentUser }) {
               <p>Someone can report to only one lead, and the lead must be above them: <strong>Dev / QA → Team lead → Manager</strong>. Devs and QA report to a team lead or manager, team leads report to a manager, and a manager can report only to another manager. <em>Reports to</em> only offers people who fit. Changing someone's role clears any link that no longer fits (you're told which), as does making someone an admin. Loops (A reports to B, B reports to A) are refused. Deleting a lead leaves their people with no lead; renaming one carries over.</p>
               <h3>The Teams page</h3>
               <ul>
-                <li><strong>Managers</strong> see every team, with an <em>Overview</em> comparing them: people, open, overdue, rework, done and points in the last 30 days, and how often QA passed work first time. <strong>Team leads</strong> see their own team.</li>
+                <li><strong>Managers and admins</strong> see every team, with an <em>Overview</em> comparing them: people, open, overdue, rework, done and points in the last 30 days, the share done on time, and how often QA passed work first time. <strong>Team leads</strong> see their own team.</li>
                 <li>A team's page shows its lead and members, open and overdue work, what was done in the last 30 days, a weekly throughput chart, open work by status, and each person's workload with the late part in red.</li>
-                <li>Click a person to see their tasks, or <em>All tasks</em> for the whole team (<em>My tasks → My team</em>).</li>
+                <li><em>Team performance</em> (last 30 days): work done on time, typical time to finish, stories and sub-tasks finished, how often QA sent work back, sprint carry-overs and blocked work.</li>
+                <li><em>Member performance</em> puts everyone on the team side by side — open, overdue, done, points, on time, QA first pass, sent back, typical time. Click a column header to sort.</li>
+                <li>Click a person's name for their performance page, <em>Tasks</em> under it for their task list, or <em>All tasks</em> for the whole team (<em>My tasks → My team</em>).</li>
                 <li>Numbers only cover projects you can open yourself. A task shared by two members counts once in the team total.</li>
               </ul>
               <Tip>Older tasks don't record when they were finished, so “done in the last 30 days” uses their last change for those.</Tip>
+              <h3>Performance pages</h3>
+              <p>Every person has a performance page. Click a name or avatar anywhere — task list, board, sprint board, QA board, Insights workload, Teams, Admin, comments — or pick <em>My performance</em> from your account menu.</p>
+              <ul>
+                <li>Open and overdue work, what was done in the last 30 days (and how much of it on time), a 12-week throughput chart, and open work by status.</li>
+                <li><em>Quality &amp; flow</em>: how often QA passed their stories first time, how often work was sent back, the typical time from start to done, sprint carry-overs, comments written and — for QA — reviews given.</li>
+                <li>Their open and recently finished tasks, and a per-project breakdown. Use the project picker at the top to look at one project.</li>
+              </ul>
+              <Tip>Who can open whose page: everyone sees their own; team leads see the people under them; managers and admins see everyone. A name you can't open shows as plain text. Numbers only cover projects you can open yourself.</Tip>
             </Section>
 
             <Section s={sec('stories')} hidden={hidden}>
@@ -307,8 +317,11 @@ export default function Guide({ currentUser }) {
                     <Row what="Add stories" r="tmas" />
                     <Row what="Plan sprints, manage epics" r="tmas" />
                     <Row what="Move stories into gated statuses (Done, Rework, Backlog, Blocked)" r="tmas" />
-                    <Row what="See your team's tasks and insights (My team, Teams)" r="tm" />
-                    <Row what="See every team" r="m" />
+                    <Row what="See your team's tasks and performance (My team, Teams)" r="tmas" />
+                    <Row what="See your own performance page" r="dqtmas" />
+                    <Row what="See the performance of people under you" r="tm" />
+                    <Row what="See everyone's performance" r="mas" />
+                    <Row what="See every team" r="mas" />
                     <Row what="Manage team members, their roles and who they report to" r="mas" />
                     <Row what="Admin pages: users, groups, holidays, snapshots, audit" r="as" />
                     <Row what="Delete tasks, edit board columns and categories" r="s" />
@@ -339,7 +352,7 @@ export default function Guide({ currentUser }) {
               <Faq q="Why is the Complete sprint button missing?">It appears on the sprint's last day. Until then the sprint shows the date it can be completed on.</Faq>
               <Faq q="A story keeps moving to the next sprint.">It was unfinished when the sprint closed. The ↻ number on the card is how many sprints it has been carried through — a good sign it needs splitting or a decision.</Faq>
               <Faq q="How do I put people on a team?">Admin → Users: make the lead a Team lead (or Manager), then set <em>Reports to</em> on each member's row.</Faq>
-              <Faq q={'Why don’t I see the Teams link?'}>It is for managers and team leads. A team lead with nobody reporting to them sees an empty page until an admin or manager sets up their team.</Faq>
+              <Faq q={'Why don’t I see the Teams link?'}>It is for managers, admins and team leads. A team lead with nobody reporting to them sees an empty page until an admin or manager sets up their team.</Faq>
               <Faq q={'I don’t see a project or a section.'}>Access is set per project. Ask an admin to add you to the project or grant the section.</Faq>
             </Section>
 

@@ -7463,3 +7463,37 @@ button.qa-card-name { background: none; border: none; padding: 0; text-align: le
 .qa-modal-foot .sprint-edit-full { margin: 0; }
 .qa-modal-foot > .qa-card-actions, .qa-modal-foot > .qa-card-rework { flex: 1; margin-top: 0; }
 .qa-modal-foot > .qa-card-rework { flex-basis: 100%; order: -1; }
+
+/* ─── People: performance page (views/people/[name].js) + PersonLink ─────────── */
+.person-link { color: inherit; text-decoration: none; cursor: pointer; }
+.person-link:hover { text-decoration: underline; text-underline-offset: 2px; }
+.person-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+/* Avatars that link: no underline, a ring on hover instead. */
+.person-link.kanban-assignee-avatar:hover, .person-link.tl-avatar:hover, .person-link.swim-card-avatar:hover,
+.person-link.my-person-avatar:hover, .person-link.sa-avatar:hover { text-decoration: none; box-shadow: 0 0 0 2px var(--accent); }
+.person-inline { font-weight: 600; color: var(--text); }
+.person-hero { display: flex; flex-direction: column; gap: 12px; }
+.person-hero-top { display: flex; align-items: center; gap: 12px; }
+.person-avatar { width: 44px; height: 44px; font-size: 18px; flex-shrink: 0; }
+.person-reports { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.person-chip { font-size: 12px; font-weight: 500; padding: 2px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); }
+.person-note { color: var(--tint-amber-fg); }
+.person-project { width: auto; min-width: 180px; font-size: 13px; }
+.person-tabs { margin: 0 0 8px; }
+.person-list { margin: 0; }
+.person-more { margin-top: 8px; }
+.person-facts { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.person-facts > div { padding: 10px 12px; background: var(--surface-2); border-radius: calc(var(--radius) - 4px); min-width: 0; }
+.person-facts dt { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.person-facts dd { margin: 4px 0 0; font-size: 20px; font-weight: 600; color: var(--text); display: flex; flex-direction: column; gap: 2px; }
+.person-facts dd span { font-size: 12px; font-weight: 400; color: var(--muted); }
+.person-projects { width: 100%; }
+@media (max-width: 480px) { .person-facts { grid-template-columns: minmax(0, 1fr); } }
+.person-table-wrap { overflow-x: auto; margin: 0 -4px; }
+.person-projects th, .person-projects td { white-space: nowrap; }
+.team-perf-card { margin-top: 14px; }
+.team-perf th, .team-perf td { white-space: nowrap; }
+.team-perf td:not(:first-child), .team-perf th:not(:first-child) { text-align: right; }
+.team-sort { background: none; border: none; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.team-sort:hover, .team-sort.is-on { color: var(--text); }
+.team-sort:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }

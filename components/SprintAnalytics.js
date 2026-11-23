@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { apiFetch } from '../lib/api-fetch'
 import { hasPerm, isSuperAdmin } from '../lib/client-permissions'
+import PersonLink from './PersonLink'
 
 // ─── guards ───────────────────────────────────────────────────────────────────
 // The API is built by another surface and can legitimately answer with a partly
@@ -510,7 +511,7 @@ function TeamTable({ rows, usesPoints, showSprints }) {
               <td>
                 <span className="sa-member">
                   <span className="sa-avatar">{initials(m?.name)}</span>
-                  <span className="sa-member-name">{m?.name || 'Unknown'}</span>
+                  {m?.name ? <PersonLink name={m.name} className="sa-member-name" /> : <span className="sa-member-name">Unknown</span>}
                 </span>
               </td>
               <td className="sa-table-num">{num(m?.assignedTasks)}</td>
