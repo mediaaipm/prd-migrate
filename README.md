@@ -5,12 +5,14 @@ work that comes out of them, in one place.
 
 A **project** holds a stack of semver-tagged markdown **versions** of its PRD. Anyone
 can draft a **proposal** — a suggested rewrite — which an admin **promotes** into a new
-version. **Tasks** hang off the project (or off a specific version), nest into
-sub-tasks, and are worked through a **kanban board**, **tree list** or **calendar**,
-grouped into **sprints** with burndown and velocity analytics.
+version. **Stories** (root tasks) and their **sub-tasks** hang off the project (or off a
+specific version) and are worked through a **kanban board**, **tree list** or
+**calendar**. Stories are planned into **sprints** that run on a cadence, grouped under
+**epics**, checked on a **QA board**, and measured on **Insights**, **Teams** and
+per-person **performance** pages.
 
-Next.js (App Router) · React 18 · Upstash Redis · no ORM, no TypeScript, no CSS
-modules.
+Next.js 16 (App Router) · React 18 · Upstash Redis · plain JS (no TypeScript) · vanilla
+CSS plus a few shadcn/ui components.
 
 ---
 
@@ -20,12 +22,14 @@ modules.
 - [Concepts](#concepts)
 - [Features](#features)
 - [Access Control](#access-control)
+- [Teams & performance](#teams--performance)
 - [Sprints — Full Guide](#sprints--full-guide)
 - [Storage: keys, attachments, and retention](#storage-keys-attachments-and-retention)
 - [API Reference](#api-reference)
 - [Scripts](#scripts)
 - [Graphify (code knowledge graph)](#graphify-code-knowledge-graph)
 - [Tech Stack](#tech-stack)
+- [Deploying](#deploying)
 - [Docs Map](#docs-map)
 
 ---
@@ -59,7 +63,8 @@ Optional:
 | Var | Purpose |
 |---|---|
 | `SUPERADMIN_USERNAME` | Defaults to `admin` |
-| `CRON_SECRET` | Bearer token the reminder cron routes require |
+| `CRON_SECRET` | Bearer token the cron routes require. Without it the sprint-rollover cron refuses every call |
+| `SPRINT_TZ` | Time zone that decides when a sprint day starts and ends. Defaults to `Asia/Kolkata` |
 | `ALLOW_HEADER_AUTH=1` | Dev only — accept the legacy `X-User` header instead of a session cookie. Ignored when `NODE_ENV=production`. |
 | `CPU_LOG=1` | Log per-route CPU to the function logs (Vercel Fluid Active CPU diagnosis). Off unless set to exactly `1`; when off the instrumentation is not wired up at all. |
 
@@ -107,17 +112,25 @@ task and a story are the same record with different framing.
 | **Version** | `version:{slug}:{ver}` | Markdown PRD content, one per semver tag. |
 | **Proposal** | `proposal:{slug}:{id}` | Suggested rewrite of a version. Status `pending \| promoted \| rejected`. |
 | **Task** | inside `tasks:{slug}:{version\|__root}` | Flat in Redis; `buildTree()` reconstructs hierarchy client-side from `parentId`/`order`. |
-| **Sprint** | `sprint:{slug}` (array) | Status `planned \| active \| completed`. Many per project; one focused at a time. |
+| **Sprint** | `sprint:{slug}:{id}` + `sprints:{slug}` (index) | Plans **stories**. Status `planned \| active \| completed`; one active per project, a story in at most one open sprint. Cadence in `sprint-config:{slug}`. |
+| **Epic** | `epic:{slug}:{id}` + `epics:{slug}` | Groups stories across versions. Epic › story › sub-task. |
 | **Label** | `labels:{slug}` | Mandatory on task creation once a project has any. |
 | **Category** | `categories:{slug}` | The board's second axis. A *field* on a task, not a task. |
 | **Column** | `columns:{slug}` | The project's status set. Global per project, superadmin-only edit. |
 | **Group** | `group:{id}` | A named bundle of permissions + project visibility. Superadmin-only. |
+| **User** | `user:{name}` (hash) + `assignees` (set) | `role`, `lead` (who they report to), credentials, personal grant. |
 
 **Task record** — `id`, `seq`, `title`, `description`, `status`, `priority`
 (`low | medium | high | critical`), `assignees[]`, `assignedBy`, `startDate`,
 `dueDate`, `parentId`, `order`, `boardOrder`, `number`/`numberOverride`, `category`,
 `labelIds[]`, `attachments[]`, `cover`, `points`, `checklist[]`, `acceptance[]`,
-`updates[]`, `completedAt`, `archived`, `createdAt`.
+`updates[]`, `completedAt`, `archived`, `createdAt`. Stories only: `userStory`
+(`{ role, goal, benefit }`), `epicId`, `qa` (server-owned QA state and history),
+`carryOver` (times rolled into a later sprint).
+
+Redis has no schema: a field appears on a record the first time it is written, and
+readers treat a missing field as its default (no role = Dev, no `lead` = not on a team,
+no `acceptance` = none). New fields need no migration.
 
 `task.category` holds a category **id**, never a name, and is read through
 `effectiveCategory()` so ancestor inheritance applies.
@@ -144,10 +157,21 @@ an optional per-project task ACL.
 
 ### Tasks
 
-- **Hierarchy** — parent tasks with unlimited sub-tasks, auto-numbered (`1`, `1.1`, `1.2.3`)
-- **Statuses** — from the project's column set. Defaults: Backlog, To Do, In Progress, In Review, Blocked, Done
+- **Stories and sub-tasks** — a story is a root task; sub-tasks nest under it without
+  limit, auto-numbered (`1`, `1.1`, `1.2.3`). Only stories are cards that move between
+  board columns; sub-tasks are rows under their story
+- **Story statuses** — the project's column set. Defaults: Backlog, To Do, In Progress,
+  Rework (`need-rework`), QA Review (`in-review`), Blocked, Done. A new story starts in
+  Backlog; planning it into a sprint moves it to To Do
+- **Sub-task statuses** — Not started / In progress / Done only (`lib/subtask-status.js`).
+  A sub-task still on an old board status shows it with "(old)" until changed. Moving a
+  story to Done closes its open sub-tasks
+- **Who adds what** — Devs and QA add sub-tasks only; team leads, managers and admins
+  also add stories (`MIN_ADMIN_DEPTH`, enforced on the server)
+- **User story** — "As a… I want… so that…" on a story (`lib/user-story.js`)
 - **Priority** — Low, Medium, High, Critical
-- **Assignees, dates, story points**
+- **Assignees, dates, story points** — points are Fibonacci (1, 2, 3, 5, 8, 13, 21);
+  blank means not estimated
 - **Labels** — mandatory on create once a project has labels configured (enforced server-side, so import and scripts cannot skip it)
 - **Categories** — the second grouping axis, independent of status
 - **Checklists** — up to 50 items × 500 chars. Editable by anyone who can open the card
@@ -174,12 +198,41 @@ task context menu.
 
 ### Sprints & analytics
 
-Per project, at `/projects/{slug}/sprints`: burndown against the ideal line, velocity
+Per project, at `/projects/{slug}/sprints`: plan stories into sprints that open, close
+and roll over on the project's cadence, run the current sprint on its own board, and read
+the metrics — burndown against the ideal line, velocity
 across completed sprints, per-person throughput, capacity vs. delivered, scope change
 against the baseline stamped when the sprint went active, and forecast. Working-day
 maths honours the org-wide holiday calendar and weekend configuration.
 
 See the [full guide](#sprints--full-guide).
+
+### Epics & backlog
+
+**Epics** (`/projects/{slug}/epics`) group stories across versions, with progress, owner
+and target date. Create/edit needs `project:update`; deleting an epic (superadmin)
+unlinks its stories, never deletes them. **Backlog** (`/projects/{slug}/backlog`) lists
+the stories still in Backlog, grouped by epic.
+
+### QA review
+
+The **QA Review** tab (`/projects/{slug}/qa`) has three lists: *Waiting for QA*, *Sent
+back*, *Passed* (last 14 days).
+
+- A story moved to **QA Review** enters the queue and QA accounts are notified.
+- **Pass** moves it to Done (its open sub-tasks close with it; unmet acceptance criteria
+  ask first). **Send back** needs a note, moves it to **Rework** in the current sprint,
+  posts the note as a comment and notifies the people on it.
+- Verdicts need `qa:review` (QA, team lead, manager, admin by default) and go only through
+  `POST /api/projects/{slug}/qa`. A QA assigned to a story cannot pass it.
+- **Open card** opens the story in place: user story, description, acceptance criteria
+  (tickable), sub-tasks, attachments, comments and QA history, with the verdict buttons.
+
+### My tasks
+
+`/my-tasks` — everything assigned to you across the projects you can see, grouped
+Overdue / Due today / Next 7 days / Later / No due date, plus Done (last 30 days).
+**My team** (shown when people report to you) lists your team's tasks per person.
 
 ### Holidays & the working week
 
@@ -201,23 +254,27 @@ sprint history with velocity from the frozen sprint summaries. Sprint cards need
 
 ### Notifications & reminders
 
-An in-app bell fed by `notifications:{name}` (capped at 100 per user). Two Vercel cron
-jobs write to it:
+An in-app bell fed by `notifications:{name}` (capped at 100 per user): @mentions, QA
+hand-overs and verdicts, sprint events, and the reminder crons:
 
-| Route | Schedule | What it does |
+| Route | Schedule (UTC) | What it does |
 |---|---|---|
 | `/api/cron/due-reminders` | `0 8 * * *` | Notifies assignees of tasks overdue or due within 24h |
 | `/api/cron/delayed-reminders` | `0 12 * * *` | Re-notifies assignees of still-open tasks whose due date was pushed back |
+| `/api/cron/sprint-rollover` | `35 18 * * *` | Closes ended sprints (carrying unfinished stories) and starts due ones, for projects nobody opened that day |
 
-Both authenticate with `CRON_SECRET` and read via `loadTasks` rather than `listTasks`
-(no numbering pass, no write-on-read seq backfill) because they touch every task in
-every project.
+All authenticate with `CRON_SECRET`. The reminder crons read via `loadTasks` rather than
+`listTasks` (no numbering pass, no write-on-read seq backfill) because they touch every
+task in every project.
 
 ### Admin panel
 
 `/admin`, tabbed:
 
-- **Users** — accounts, credentials, per-user permissions and project assignment
+- **Users** — one row per person: role (Manager, Team lead, Dev, QA — only admins make
+  Managers) and **Reports to**. Sign-in, projects & permissions, rename and remove are in
+  the row's ⋯ menu. Filter by role or *Can't sign in*. Each tab has its own URL
+  (`/admin?tab=audit`)
 - **Admins** — superadmin only
 - **Groups** — superadmin only; permission + project bundles with membership
 - **Holidays** — requires `holiday:manage`
@@ -228,8 +285,11 @@ every project.
 
 ### Themes
 
-Ten themes (Light, Dark, Light Neon, Dark Neon, Sunrise, Morning, Sunset, Evening,
-Chocolate, Blackhole), cycled from the nav. `<html>` carries `data-theme` (the exact id)
+Ten themes — light: Light, Morning, Sunrise, Light Neon; dark: Dark, Evening, Sunset,
+Chocolate, Dark Neon, Blackhole — picked from the 🎨 menu in the top bar, or **Match
+system** to follow the OS. Every theme passes WCAG AA contrast for text, muted text,
+accent and status chips; re-check when adding one. The list lives in
+`lib/theme-registry.js`, tokens per theme in `globals.css` (`html[data-theme=…]`). `<html>` carries `data-theme` (the exact id)
 and `data-mode` (`light`/`dark`, the family it inherits tokens from). An inline script in
 `app/layout.js` stamps both before first paint, so there is no flash. The choice
 lives in `localStorage['ss_theme']` and never touches the session or Redis.
@@ -238,15 +298,17 @@ lives in `localStorage['ss_theme']` and never touches the session or Redis.
 
 ## Access Control
 
-Identity is an HMAC-signed, HttpOnly `prd_session` cookie. The payload carries the user
-object plus `exp` and is stateless (no Redis round-trip per request); sessions last 12h.
+Identity is an HMAC-signed, HttpOnly `prd_session` cookie; sessions last 12h. On every
+API request `lib/session-live.js` re-checks it against `user:{name}`: the role is read
+live, and deleting an account or changing its password revokes its sessions.
 Passwords are scrypt hashes. Login is throttled per username **and** per client IP in a
 fixed 15-minute window.
 
 Three layers, all enforced server-side:
 
 1. **Role policy** — `role-policy` (global) / `role-policy:{slug}` (per-project override).
-   The ceiling for the `user` and `admin` roles, plus the viewer status blocklist.
+   The ceiling per role bucket (`admin`, `manager`, `teamlead`, `user` = Dev, `qa`), plus the
+   status blocklist. Pick a bucket with `ceilingFor(policy, role)`.
 2. **Personal grant** on `user:{name}` — `permissions`, `assignedProjects`.
 3. **Groups** the user belongs to — unioned into the personal grant.
 
@@ -260,11 +322,19 @@ and the legacy-permission upgrade are applied.
 
 ### Roles
 
+Stored on `user:{name}.role` (`lib/roles.js`); a missing role reads as Dev.
+
 | Role | Can |
 |---|---|
-| **superAdmin** | Everything, including all deletion (projects, versions, proposals, tasks, snapshots) and every config surface (columns, categories, groups, role policy, working week) |
-| **admin** | Any subset of the granular permissions, optionally scoped to specific projects. Cannot delete. |
-| **user** (viewer) | Read everything but the audit log. Update tasks. Cannot create or delete. |
+| **Super admin** | Everything, including all deletion (projects, versions, proposals, tasks, snapshots) and every config surface (columns, categories, groups, role policy, working week) |
+| **Admin** | Any subset of the granular permissions, optionally scoped to projects. Manages users and roles; sees every team and everyone's performance. Cannot delete. |
+| **Manager** | Lead powers (add stories, plan sprints, epics, QA verdicts, gated statuses); sees every team and everyone's performance; manages team members |
+| **Team lead** | Lead powers; sees their own team's tasks and performance |
+| **Dev** | Works tasks, adds sub-tasks, moves stories through non-gated statuses; sees their own performance |
+| **QA** | As Dev, plus Pass / Send back on the QA board |
+
+Role changes go through `PUT /api/assignees/{name} { role }` (team roles only, never your
+own, Manager only by an admin). Admins and super admins are managed under Admin → Admins.
 
 ### Permissions
 
@@ -272,8 +342,8 @@ and the legacy-permission upgrade are applied.
 `task:view`, `sprint:view`, `dashboard:view`, `audit:view`
 
 **Actions** — `project:create`, `project:update`, `proposal:create`, `proposal:update`,
-`proposal:delete`, `proposal:promote`, `task:create`, `task:update`, `assignee:manage`,
-`holiday:manage`, `snapshot:manage`
+`proposal:delete`, `proposal:promote`, `task:create`, `task:update`, `qa:review`,
+`assignee:manage`, `holiday:manage`, `snapshot:manage`
 
 `holiday:manage` is global, not project-scoped — the holiday calendar is org-wide.
 
@@ -297,43 +367,83 @@ silently revoke access.
 
 ---
 
+## Teams & performance
+
+**Teams** come from one field: `user:{name}.lead`, the person's team lead (Admin → Users
+→ *Reports to*, `PUT /api/assignees/{name} { lead }`, needs `assignee:manage`).
+
+- The lead must sit above the person: **Dev / QA → Team lead → Manager** (a Manager may
+  report to another Manager). `canLead()` in `lib/roles.js`, `leadError()` in
+  `lib/team.js`; loops are refused. Changing someone's role, or making them an admin,
+  clears links that no longer fit (`brokenLinks()`). Deleting a lead clears their
+  people's `lead`; renaming carries over.
+- A team is a lead plus their direct reports; a lead's tree includes people under leads
+  who report to them.
+
+**Who sees what** (server-side; numbers only ever come from projects the *viewer* can
+open):
+
+| | Teams page, My team | Person pages |
+|---|---|---|
+| Admin, super admin, manager | every team (`seesAllTeams()`) | everyone |
+| Team lead | their team and leads under them | the people under them |
+| Dev, QA | — | their own |
+
+**Teams** (`/teams`): an overview comparing teams, and per team — open/overdue, done
+in 30 days, QA first pass, throughput, open work by status, workload per person, *Team
+performance* (on time, typical time to finish, sent back by QA, carry-over, blocked) and
+a sortable *Member performance* table.
+
+**Person pages** (`/people/{name}`): one person's open and overdue work, done in 30 days,
+on-time rate, 12-week throughput, QA first pass, times sent back, typical time to
+finish, carry-over, comments, QA reviews given, a per-project breakdown and their
+open/done tasks. Every person name or avatar in the app renders through
+`components/PersonLink.js` and links here when the viewer may open it; *My performance*
+is in the account menu. Stats for both pages come from `lib/person-stats.js`.
+
+---
+
 ## Sprints — Full Guide
 
 ### What a sprint is
 
-A short, focused work cycle scoped to one project. You pick a subset of tasks, give the
-sprint a name, goal, time window and optional capacity, and the sprint surfaces at the
-top of the Tasks page so the team knows what is in scope.
+A short work cycle in one project. A sprint plans **stories** (`storyIds`); their
+sub-tasks ride along, so a sub-task added mid-sprint is in the sprint without
+re-planning (`taskIds` is that derived expansion). One sprint is active per project, and a
+story is in at most one open (planned or active) sprint.
 
-A project can hold **many** sprints — planned, active and completed. Analytics focus on
-the active one, falling back to the most recent when nothing is active, so an archive of
-finished sprints still opens on something rather than an empty state.
+The Sprints page (`/projects/{slug}/sprints`) has four tabs: **Current**, **Plan**, **All
+sprints**, **Metrics**.
 
-### Lifecycle
+### Lifecycle and cadence
 
-`planned → active → completed`. Three stamps are derived from the status transition and
-never taken from the request body:
+`planned → active → completed`. Completing a sprint **freezes** its result (`frozen`,
+`summary`) and carries every unfinished story into the next sprint (`task.carryOver` +1),
+creating that sprint on the cadence if none is planned. Metrics for a closed sprint must
+read `sprintTasks()` (the frozen view), never live task status.
 
-| Stamp | Set when | Notes |
-|---|---|---|
-| `startedAt` | first time the sprint goes `active` | never overwritten |
-| `plannedTaskIds` | the same moment | the scope baseline. A sprint that went active with nothing in it snapshots an empty baseline, so everything added afterwards reports honestly as scope added rather than silently re-baselining |
-| `completedAt` | first time it goes `completed` | cleared if the sprint is reopened |
+Cadence lives in `sprint-config:{slug}` (Sprints → **Cadence**) and is applied by
+`applyCadence()` on every sprint GET and by the daily `/api/cron/sprint-rollover`:
 
-### Starting one
+| Setting | Default |
+|---|---|
+| Length, start → end day | 2 weeks, Monday → Friday |
+| `autoRollover` | on — closes at the end of the last day, unfinished stories carried |
+| `autoStart` | on — the next sprint starts itself on its start day |
+| `alwaysCreateNext` | on — a next sprint is opened even when nothing carries over |
+| `earlyComplete` | off — manual *Complete sprint* only from the last day (enforced in `completeSprintLocked`) |
 
-1. Go to a project's **Tasks** page (`/projects/{slug}/tasks`) or its **Sprints** page.
-2. Click **+ Start Sprint**.
-3. Fill in name (required), goal, start/end date, capacity, and check the tasks to
-   include. Only root-level tasks are listed; sub-tasks are implicitly in scope.
-4. **Start Sprint**.
+Sprint writes need `project:update`; deleting a completed sprint needs superadmin.
 
-Sprints span versions: task membership is resolved across every version's task list, so
-a sprint whose tasks were picked on a version tab does not render as empty.
+**Storage migration.** Older data kept all of a project's sprints in one array at
+`sprint:{slug}`. The first sprint read for a project splits it into per-sprint keys and
+sets `sprints-migrated:{slug}`. The old array is never written or deleted, so code from
+before the split still reads it if you roll back (changes made after the split are not in
+it).
 
 ### Analytics
 
-`/projects/{slug}/sprints`, three tabs:
+The **Metrics** tab:
 
 - **Burndown** — remaining work per day against the ideal line, in points when the
   sprint uses them and weighted items when it does not. Every calendar day in the
@@ -374,10 +484,14 @@ Everything lives in one Upstash Redis store. There is no blob storage.
 | `taskatt:{slug}:{version}:{taskId}:{attId}` | one attachment's bytes | 1 MB/file, 20/task | task delete |
 | `taskseq:{slug}` | monotonic task sequence counter | — | project delete |
 | `taskhistory:{slug}:{ver}:{taskId}` | per-task activity | 500 entries (`ltrim`) | **nothing — see below** |
-| `sprint:{slug}` | array of sprints + task ids | — | sprint delete |
+| `sprint:{slug}:{id}`, `sprints:{slug}` | one sprint per key + index set | — | sprint delete |
+| `sprint-config:{slug}` | sprint cadence | — | manual |
+| `sprints-migrated:{slug}` | marks the one-time split of the legacy array | — | — |
+| `sprint:{slug}` | **legacy** array of sprints, read once by the migration | — | never (kept as a backup) |
+| `epic:{slug}:{id}`, `epics:{slug}` | epics + index set | — | epic delete |
 | `columns:{slug}`, `categories:{slug}`, `labels:{slug}` | board config | — | project delete |
 | `holidays:{year}`, `holidays-seeded:{year}`, `holiday-config` | org calendar + working week | — | manual |
-| `user:{name}`, `assignees` | accounts | — | user delete |
+| `user:{name}`, `assignees` | accounts: role, `lead`, credentials, grant | — | user delete |
 | `groups`, `group:{id}`, `user-groups:{name}` | access bundles | — | group delete |
 | `role-policy`, `role-policy:{slug}` | the per-role ceiling | — | manual |
 | `notifications:{name}` | per-user feed | 100 entries | user delete |
@@ -482,8 +596,11 @@ calls through `apiFetch`, never raw `fetch`.
 | `/api/projects/{slug}/export` | GET (`?format=json\|csv`, `?version=`, `?media=`) |
 | `/api/projects/{slug}/import` | POST |
 | `/api/projects/{slug}/dashboard` | GET |
-| `/api/projects/{slug}/sprint` | GET, POST, PUT, DELETE |
+| `/api/projects/{slug}/sprint` | GET, POST, PUT, PATCH (`?id=`, `{ action: start \| complete \| addStories \| removeStories }`), DELETE |
+| `/api/projects/{slug}/sprint-config` | GET, PUT |
 | `/api/projects/{slug}/sprint-analytics` | GET (`?sprintId=`) |
+| `/api/projects/{slug}/epics`, `/api/projects/{slug}/epics/{id}` | GET, POST / GET, PUT, DELETE |
+| `/api/projects/{slug}/qa` | GET (queues), POST (verdict: `{ taskId, version, verdict: pass \| rework, note }`) |
 
 ### Versions, proposals, tasks
 
@@ -508,6 +625,9 @@ calls through `apiFetch`, never raw `fetch`.
 | `/api/notifications`, `/api/notifications/{id}` | GET, POST / PATCH |
 | `/api/holidays`, `/api/holidays/config` | GET, POST, PUT, DELETE |
 | `/api/audit` | GET, DELETE |
+| `/api/my-tasks` | GET (`?view=team`) |
+| `/api/teams` | GET |
+| `/api/people/{name}` | GET (`?project=`) |
 
 ### Admin
 
@@ -526,6 +646,7 @@ calls through `apiFetch`, never raw `fetch`.
 |---|---|
 | `/api/cron/due-reminders` | `0 8 * * *` |
 | `/api/cron/delayed-reminders` | `0 12 * * *` |
+| `/api/cron/sprint-rollover` | `35 18 * * *` |
 
 ---
 
@@ -537,7 +658,9 @@ node scripts/hash-passwords.js --dry-run       # migrate plaintext passwords in 
 node scripts/grant-all-admin-permissions.js    # grant every permission to admins
 node scripts/store-report.js                   # read-only Redis size inventory
 node scripts/migrate-task-media.js             # move inline attachment bytes to their own keys
-node scripts/migrate-redis.js                  # one-time Upstash (old) -> Upstash (new)
+node scripts/gen-app-routes.js                 # regenerate app/api/**/route.js after adding a server/api handler
+OLD_REDIS_URL=… OLD_REDIS_TOKEN=… NEW_REDIS_URL=… NEW_REDIS_TOKEN=… \
+  node scripts/migrate-redis.js                # copy one Upstash database into another
 node scripts/seed-kv.js                        # seed projects/versions
 node scripts/seed-tasks.js [slug]              # seed tasks for a project
 ```
@@ -574,7 +697,8 @@ starter that renders a dependency graph parsed straight out of `PRD.md`. See
 | Layer | Technology |
 |---|---|
 | Framework | Next.js 16 (App Router) |
-| UI | React 18, vanilla CSS in `styles/globals.css` (no CSS modules) |
+| UI | React 18, vanilla CSS in `styles/globals.css` (no CSS modules), shadcn/ui components (Tailwind v4 + Radix) in `components/ui/`, lucide icons |
+| Charts | Hand-drawn SVG (`components/InsightsCharts.js`) |
 | Store | Upstash Redis (`@upstash/redis`, auto-pipelining) |
 | Auth | HMAC-signed HttpOnly cookie, scrypt password hashes |
 | Markdown | remark |
@@ -587,6 +711,13 @@ starter that renders a dependency graph parsed straight out of `PRD.md`. See
 - Never read identity from a request header — `getSessionUser(req)` is the only entry point.
 - Never store a password without `hashPassword()`.
 - Client fetches go through `apiFetch`.
+- New endpoint: handler in `server/api/`, then `node scripts/gen-app-routes.js`. Never
+  edit `app/api/**/route.js` by hand. New page: component in `views/`, thin wrapper in
+  `app/<route>/page.js`.
+- Client routing imports `useRouter` from `lib/router-compat`, never `next/router`.
+- Tailwind utilities only work in `components/ui/` and files listed with `@source` in
+  `styles/app.css`; everywhere else, add classes to `globals.css`.
+- Person names render through `PersonLink`; menus use `components/ui/dropdown-menu`.
 - Colours come from the tokens in `:root` (`--bg`, `--surface`, `--card`, `--border`,
   `--text`, `--muted`, `--accent`, `--on-accent`, and the `--tint-{hue}-bg` / `-fg`
   pairs). A pale hex paired with dark ink is exactly what disappears in dark mode.
@@ -596,11 +727,30 @@ starter that renders a dependency graph parsed straight out of `PRD.md`. See
 
 ---
 
+## Deploying
+
+- **Hosting:** Vercel, with the crons in `vercel.json`. Set the environment variables
+  above in the Vercel project; the live database is whatever `UPSTASH_REDIS_REST_URL`
+  points at.
+- **CI:** `.gitlab-ci.yml` runs `npm ci` and `npm run build` on Node 20 for branch pushes
+  and merge requests. GitLab's shared runners need a verified account; an unverified one
+  fails every pipeline before it starts. CI does not gate the Vercel deploy.
+- **Before a release that changes stored data** (like the sprint split), copy the
+  database first — `scripts/migrate-redis.js` can copy it into a spare Upstash database —
+  and note the current production deployment.
+- **Rolling back:** Vercel → Deployments → previous deployment → *Instant Rollback*, or
+  revert the merge in GitLab. Code that only adds fields is safe to roll back; check the
+  storage notes above for anything that rewrites data.
+- Never commit credentials. Scripts read them from environment variables.
+
+---
+
 ## Docs Map
 
 | File | What it holds |
 |---|---|
 | [PRD.md](PRD.md) | The product requirements doc for this tool — the system as built, plus specified-but-not-yet-built sections |
+| `/guide` (`views/guide.js`) | The in-app user guide: how to use each area, roles table, FAQ. Kept in step with the rules it describes |
 | [.claude/CLAUDE.md](.claude/CLAUDE.md) | Working instructions: key files, conventions, priority order |
 | [storage-audit.md](storage-audit.md) | Deep dive on Redis key growth and cost |
 | [README-graphify.md](README-graphify.md) | The PRD.md-derived starter graph |
