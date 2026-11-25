@@ -879,7 +879,7 @@ function UsersTab({ currentUser, isSuperAdmin }) {
     })
   }
 
-  const leads = users.filter(u => u.role === 'teamlead' || u.role === 'manager')
+  const leads = users.filter(u => u.role === 'teamlead' || u.role === 'designlead' || u.role === 'manager')
   const reportCount = name => users.filter(u => u.lead === name).length
   const roleOf = u => (MEMBER_ROLES.includes(u.role) ? u.role : isAdminAccount(u) ? u.role : 'dev')
   const counts = Object.fromEntries(ROLE_FILTERS.map(f => [f.key, f.key === '' ? users.length

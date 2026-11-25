@@ -181,7 +181,7 @@ export default function Guide({ currentUser }) {
                 <li>Give the lead the <strong>Team lead</strong> or <strong>Manager</strong> role — only those two can lead a team.</li>
                 <li>On each member's row, set <strong>Reports to</strong> to the lead. Set it back to <em>Nobody</em> to take someone off the team, or pick another lead to move them.</li>
               </ol>
-              <p>Someone can report to only one lead, and the lead must be above them: <strong>Dev / QA → Team lead → Manager</strong>. Devs and QA report to a team lead or manager, team leads report to a manager, and a manager can report only to another manager. <em>Reports to</em> only offers people who fit. Changing someone's role clears any link that no longer fits (you're told which), as does making someone an admin. Loops (A reports to B, B reports to A) are refused. Deleting a lead leaves their people with no lead; renaming one carries over.</p>
+              <p>Someone can report to only one lead, and the lead must be above them: <strong>Dev / QA / Designer → Team lead or Design lead → Manager</strong>. Devs, designers and QA report to a team lead, design lead or manager; team leads and design leads report to a manager; and a manager can report only to another manager. <em>Reports to</em> only offers people who fit. Changing someone's role clears any link that no longer fits (you're told which), as does making someone an admin. Loops (A reports to B, B reports to A) are refused. Deleting a lead leaves their people with no lead; renaming one carries over.</p>
               <h3>The Teams page</h3>
               <ul>
                 <li><strong>Managers and admins</strong> see every team, with an <em>Overview</em> comparing them: people, open, overdue, rework, done and points in the last 30 days, the share done on time, and how often QA passed work first time. <strong>Team leads</strong> see their own team.</li>
@@ -307,19 +307,19 @@ export default function Guide({ currentUser }) {
               <div className="guide-table-wrap">
                 <table className="guide-table">
                   <thead>
-                    <tr><th>Action</th><th>Dev</th><th>QA</th><th>Team lead</th><th>Manager</th><th>Admin</th><th>Super admin</th></tr>
+                    <tr><th>Action</th><th>Dev</th><th>Designer</th><th>QA</th><th>Team lead</th><th>Design lead</th><th>Manager</th><th>Admin</th><th>Super admin</th></tr>
                   </thead>
                   <tbody>
-                    <Row what="See projects, tasks, sprints, insights, the QA board" r="dqtmas" />
-                    <Row what="Change status of tasks assigned to you, hand a story to QA" r="dqtmas" />
-                    <Row what="Add sub-tasks" r="dqtmas" />
-                    <Row what="Pass a story or send it back for rework" r="qtmas" />
-                    <Row what="Add stories" r="tmas" />
-                    <Row what="Plan sprints, manage epics" r="tmas" />
-                    <Row what="Move stories into gated statuses (Done, Rework, Backlog, Blocked)" r="tmas" />
-                    <Row what="See your team's tasks and performance (My team, Teams)" r="tmas" />
-                    <Row what="See your own performance page" r="dqtmas" />
-                    <Row what="See the performance of people under you" r="tm" />
+                    <Row what="See projects, tasks, sprints, insights, the QA board" r="dgqtlmas" />
+                    <Row what="Change status of tasks assigned to you, hand a story to QA" r="dgqtlmas" />
+                    <Row what="Add sub-tasks" r="dgqtlmas" />
+                    <Row what="Pass a story or send it back for rework" r="qtlmas" />
+                    <Row what="Add stories" r="tlmas" />
+                    <Row what="Plan sprints, manage epics" r="tlmas" />
+                    <Row what="Move stories into gated statuses (Done, Rework, Backlog, Blocked)" r="tlmas" />
+                    <Row what="See your team's tasks and performance (My team, Teams)" r="tlmas" />
+                    <Row what="See your own performance page" r="dgqtlmas" />
+                    <Row what="See the performance of people under you" r="tlm" />
                     <Row what="See everyone's performance" r="mas" />
                     <Row what="See every team" r="mas" />
                     <Row what="Manage team members, their roles and who they report to" r="mas" />
@@ -335,7 +335,7 @@ export default function Guide({ currentUser }) {
             {isAdmin && (
               <Section s={sec('admin')} hidden={hidden}>
                 <ul>
-                  <li><strong>Admin</strong> (account menu) — users, admins, groups, holidays, snapshots and the audit log. In the Users list, each row has the person's <em>Role</em> (Manager, Team lead, Dev, QA — only admins can make someone a Manager; a super admin can also make someone an Admin or Super admin, or change an admin's role) and <em>Reports to</em> (their team). Sign-in, projects & permissions, rename and remove are in the row's <strong>⋯</strong> menu. Filter by role, or by <em>Can’t sign in</em> to find people with no username or password. Each section has its own link (<code>/admin?tab=audit</code>).</li>
+                  <li><strong>Admin</strong> (account menu) — users, admins, groups, holidays, snapshots and the audit log. In the Users list, each row has the person's <em>Role</em> (Manager, Team lead, Design lead, Dev, Designer, QA — only admins can make someone a Manager; a super admin can also make someone an Admin or Super admin, or change an admin's role) and <em>Reports to</em> (their team). Sign-in, projects & permissions, rename and remove are in the row's <strong>⋯</strong> menu. Filter by role, or by <em>Can’t sign in</em> to find people with no username or password. Each section has its own link (<code>/admin?tab=audit</code>).</li>
                   {superAdmin && <li><strong>Access control</strong> — what each role may do, globally or per project, and which statuses regular users may not set. Groups bundle permissions and project visibility for many people at once.</li>}
                   <li><strong>Sprint cadence</strong> — <em>Sprints → ⚙ Cadence</em>.</li>
                   <li><strong>Board columns and categories</strong> — edited from the board itself (super admin).</li>
@@ -387,10 +387,10 @@ function Tip({ children }) {
   return <div className="guide-tip"><strong>Tip</strong><span>{children}</span></div>
 }
 
-// r: which roles may — d dev, q QA, t team lead, m manager, a admin, s super admin.
+// r: which roles may — d dev, g designer, q QA, t team lead, l design lead, m manager, a admin, s super admin.
 function Row({ what, r }) {
   const mark = on => <td className={on ? 'guide-yes' : 'guide-no'}>{on ? '✓' : '—'}</td>
-  return <tr><td>{what}</td>{[...'dqtmas'].map(k => <Fragment key={k}>{mark(r.includes(k))}</Fragment>)}</tr>
+  return <tr><td>{what}</td>{[...'dgqtlmas'].map(k => <Fragment key={k}>{mark(r.includes(k))}</Fragment>)}</tr>
 }
 
 function Faq({ q, children }) {

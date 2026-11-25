@@ -113,7 +113,7 @@ export default function RolePolicyPage({ currentUser }) {
   const [userPerms, setUserPerms] = useState([])
   const [adminPerms, setAdminPerms] = useState([])
   // Manager / Team lead / QA ceilings (lib/roles.js), keyed by policy bucket.
-  const [teamPerms, setTeamPerms] = useState({ manager: [], teamlead: [], qa: [] })
+  const [teamPerms, setTeamPerms] = useState({ manager: [], teamlead: [], designlead: [], designer: [], qa: [] })
   const [restrictedStatuses, setRestrictedStatuses] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -150,7 +150,7 @@ export default function RolePolicyPage({ currentUser }) {
       .then(d => {
         if (d) {
           const p = d.policy || {}
-          setUserPerms(p.user || []); setAdminPerms(p.admin || []); setTeamPerms({ manager: p.manager || [], teamlead: p.teamlead || [], qa: p.qa || [] }); setRestrictedStatuses(p.userRestrictedStatuses || [])
+          setUserPerms(p.user || []); setAdminPerms(p.admin || []); setTeamPerms({ manager: p.manager || [], teamlead: p.teamlead || [], designlead: p.designlead || [], designer: p.designer || [], qa: p.qa || [] }); setRestrictedStatuses(p.userRestrictedStatuses || [])
           setCustom(scope === 'global' ? true : !!d.custom)
         }
       })
@@ -170,7 +170,7 @@ export default function RolePolicyPage({ currentUser }) {
       if (res.ok) {
         const d = await res.json()
         const p = d.policy || {}
-        setUserPerms(p.user || []); setAdminPerms(p.admin || []); setTeamPerms({ manager: p.manager || [], teamlead: p.teamlead || [], qa: p.qa || [] }); setRestrictedStatuses(p.userRestrictedStatuses || [])
+        setUserPerms(p.user || []); setAdminPerms(p.admin || []); setTeamPerms({ manager: p.manager || [], teamlead: p.teamlead || [], designlead: p.designlead || [], designer: p.designer || [], qa: p.qa || [] }); setRestrictedStatuses(p.userRestrictedStatuses || [])
         setCustom(true)
         setMsg(scope === 'global'
           ? 'Global default saved.'
@@ -253,6 +253,8 @@ export default function RolePolicyPage({ currentUser }) {
             {[
               { key: 'manager', title: 'Manager', subtitle: 'Leads the team: adds stories, plans sprints, gives QA verdicts. No admin pages.' },
               { key: 'teamlead', title: 'Team lead', subtitle: 'Adds stories, can plan sprints (Update projects) and give QA verdicts.' },
+              { key: 'designlead', title: 'Design lead', subtitle: 'A Team lead for design: adds stories, plans sprints, leads designers. Starts with the Team lead defaults.' },
+              { key: 'designer', title: 'Designer', subtitle: 'Design work with a Dev’s rights: adds sub-tasks only, never a story. Starts with the Dev defaults.' },
             ].map(b => (
               <RoleCard
                 key={b.key}

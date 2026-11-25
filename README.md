@@ -271,7 +271,7 @@ task in every project.
 
 `/admin`, tabbed:
 
-- **Users** — one row per person: role (Manager, Team lead, Dev, QA — only admins make
+- **Users** — one row per person: role (Manager, Team lead, Design lead, Dev, Designer, QA — only admins make
   Managers; a super admin can pick any role, Admin and Super admin included, for anyone
   but themselves) and **Reports to**. Sign-in, projects & permissions, rename and remove are in
   the row's ⋯ menu. Filter by role or *Can't sign in*. Each tab has its own URL
@@ -331,8 +331,10 @@ Stored on `user:{name}.role` (`lib/roles.js`); a missing role reads as Dev.
 | **Admin** | Any subset of the granular permissions, optionally scoped to projects. Manages users and roles; sees every team and everyone's performance. Cannot delete. |
 | **Manager** | Lead powers (add stories, plan sprints, epics, QA verdicts, gated statuses); sees every team and everyone's performance; manages team members |
 | **Team lead** | Lead powers; sees their own team's tasks and performance |
+| **Design lead** | A Team lead for design: same powers and defaults, its own policy bucket (`designlead`) |
 | **Dev** | Works tasks, adds sub-tasks, moves stories through non-gated statuses; sees their own performance |
 | **QA** | As Dev, plus Pass / Send back on the QA board |
+| **Designer** | As Dev, for design work: own policy bucket (`designer`), starts with the Dev defaults |
 
 Role changes go through `PUT /api/assignees/{name} { role }`. Never your own; Manager only
 by an admin. A super admin may set any role on anyone, admins included; everyone else
@@ -376,7 +378,7 @@ silently revoke access.
 **Teams** come from one field: `user:{name}.lead`, the person's team lead (Admin → Users
 → *Reports to*, `PUT /api/assignees/{name} { lead }`, needs `assignee:manage`).
 
-- The lead must sit above the person: **Dev / QA → Team lead → Manager** (a Manager may
+- The lead must sit above the person: **Dev / QA / Designer → Team lead or Design lead → Manager** (a Manager may
   report to another Manager). `canLead()` in `lib/roles.js`, `leadError()` in
   `lib/team.js`; loops are refused. Changing someone's role, or making them an admin,
   clears links that no longer fit (`brokenLinks()`). Deleting a lead clears their

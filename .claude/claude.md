@@ -19,7 +19,7 @@ Next.js 16 (App Router) + Upstash Redis. Product requirements & task management 
 - Frontend: Next.js, React, vanilla CSS (`styles/globals.css`) skinned to the shadcn/ui look, plus real shadcn components (Tailwind v4 + Radix) in `components/ui/`
 - Backend: pages-style handlers in `server/api/`, served by generated App Router routes in `app/api/**/route.js` through `lib/route-adapter.js`
 - Store: Upstash Redis via `lib/prd-store.js`
-- Auth: HMAC-signed HttpOnly session cookie (`prd_session`). Roles (`lib/roles.js`): `superadmin` / `admin` / `manager` / `teamlead` / `dev` / `qa` — stored on `user:{name}.role`; a missing role reads as `dev`. Passwords stored as scrypt hashes.
+- Auth: HMAC-signed HttpOnly session cookie (`prd_session`). Roles (`lib/roles.js`): `superadmin` / `admin` / `manager` / `teamlead` / `designlead` / `dev` / `designer` / `qa` — stored on `user:{name}.role`; a missing role reads as `dev`. Passwords stored as scrypt hashes.
 
 **Key entities:**
 - **Project**: `{ slug, name, description, status, priority, members[], createdAt, latestVersion, pendingProposals }`
@@ -31,7 +31,7 @@ Next.js 16 (App Router) + Upstash Redis. Product requirements & task management 
 - **Group**: `{ id, name, description, permissions[], assignedProjects[]|null, members[] }` — a bundle of permissions + project visibility granted to every member (union, never subtractive). Superadmin-only.
 
 **Access model (three layers, all enforced server-side):**
-1. `role-policy` / `role-policy:{slug}` — the ceiling per role, per project (`/settings/roles`). Buckets `admin`, `manager`, `teamlead`, `user` (= Dev), `qa`; pick one with `ceilingFor(policy, role)` — never `role === 'admin' ? admin : user`
+1. `role-policy` / `role-policy:{slug}` — the ceiling per role, per project (`/settings/roles`). Buckets `admin`, `manager`, `teamlead`, `designlead`, `user` (= Dev), `designer`, `qa` (design buckets added in `POLICY_VERSION` 5, derived from Dev / Team lead for stored policies); pick one with `ceilingFor(policy, role)` — never `role === 'admin' ? admin : user`
 2. personal grant on `user:{name}` — `permissions`, `assignedProjects` (Admin → Users → Access)
 3. groups the user belongs to — unioned into the personal grant
 Effective = (personal ∪ groups, or the whole role policy when nothing is set) ∩ role-policy ceiling.
@@ -77,7 +77,7 @@ Visibility perms (`project:view`, `version:view`, `proposal:view`, `task:view`, 
 | `lib/router-compat.js` | Pages-style `useRouter()` on `next/navigation` — views import this, never `next/router` |
 | `views/index.js` | Project list |
 | `views/my-tasks.js` | My tasks (`/my-tasks`) — tasks assigned to the signed-in account across visible projects, grouped by due date; Done = last 30 days. API `server/api/my-tasks.js` (per-project `project:view` + `task:view`) |
-| `lib/team.js` | Teams: `user:{name}.lead` = the person's team lead. Ladder Dev/QA → Team lead → Manager (Manager → Manager ok) via `canLead()` in `lib/roles.js` (shared with the Admin picker); no loops — `leadError()`. Role change / becoming admin clears links that no longer fit (`brokenLinks()`). `getTeam()` = direct + indirect reports; for a Manager, every team (`allTeams()`). Set via `PUT /api/assignees/{name} { lead }` (`assignee:manage`); delete/rename cascade. My tasks `?view=team` shows the team's tasks, limited to the caller's own visible projects |
+| `lib/team.js` | Teams: `user:{name}.lead` = the person's team lead. Ladder Dev/QA/Designer → Team lead or Design lead → Manager (Manager → Manager ok) via `canLead()` in `lib/roles.js` (shared with the Admin picker); no loops — `leadError()`. Role change / becoming admin clears links that no longer fit (`brokenLinks()`). `getTeam()` = direct + indirect reports; for a Manager, every team (`allTeams()`). Set via `PUT /api/assignees/{name} { lead }` (`assignee:manage`); delete/rename cascade. My tasks `?view=team` shows the team's tasks, limited to the caller's own visible projects |
 | `views/teams.js` | Teams (`/teams`, Nav link for manager/teamlead/admin) — team details, insights, Team performance + sortable Member performance table. API `server/api/teams.js`: manager/admin/superadmin = every team (`seesAllTeams()` in `lib/team.js`, also used by My team), others = teams they lead (and leads under them); team = lead + direct reports; stats only from the caller's visible projects; team totals dedupe shared tasks. Throughput chart `WeeklyBars` in `components/InsightsCharts.js` |
 | `views/people/[name].js` | Performance page (`/people/{name}`): open/overdue, done 30d, on-time rate, 12-week throughput, QA first pass, sent back, cycle time, carry-over, by project, open/done lists. API `server/api/people/[name].js` (who: `canViewPerson()` in `lib/team.js` — self; leads their tree; manager/admin everyone; stats only from the caller's visible projects). Stats shared with Teams in `lib/person-stats.js`. **Every rendered person name/avatar goes through `components/PersonLink.js`** (link when `canOpenProfile()` allows, plain text otherwise; never inside another `<a>`) |
 | `views/guide.js` | `/guide` — how to use the tool, linked from the top bar. Describes real behaviour (cadence defaults, sub-task rules, who can add what, roles table): **update it in the same change** when any of those rules change |

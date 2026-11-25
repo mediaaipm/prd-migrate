@@ -208,7 +208,7 @@ export default function Nav({ projectName }) {
       {currentUser && (
         <Link href="/my-tasks" className={`nav-link${pathname === '/my-tasks' ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>My tasks</Link>
       )}
-      {(['manager', 'teamlead', 'admin', 'superadmin'].includes(currentUser?.role) || currentUser?.isAdmin) && (
+      {(['manager', 'teamlead', 'designlead', 'admin', 'superadmin'].includes(currentUser?.role) || currentUser?.isAdmin) && (
         <Link href="/teams" className={`nav-link${pathname === '/teams' ? ' active' : ''}`} onClick={() => setMenuOpen(false)}>Teams</Link>
       )}
     </>
