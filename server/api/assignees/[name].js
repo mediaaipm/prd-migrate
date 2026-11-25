@@ -8,7 +8,7 @@ const { renameUser, RenameError } = require('../../../lib/rename-user')
 const { hashPassword } = require('../../../lib/password')
 const { getSessionUser } = require('../../../lib/session')
 const { removeUserFromAllGroups } = require('../../../lib/group-store')
-const { MEMBER_ROLES, roleLabel } = require('../../../lib/roles')
+const { ROLES, MEMBER_ROLES, roleLabel } = require('../../../lib/roles')
 const { allProfiles, leadError, brokenLinks } = require('../../../lib/team')
 
 const KEY = 'assignees'
@@ -49,31 +49,40 @@ export default async function handler(req, res) {
     }
 
     // Role change (lib/roles.js). Its own request: never mixed with credentials.
-    //  - team-member roles only; admin/superadmin are made and unmade under Admin → Admins
-    //  - an admin account cannot be moved here (that would be a silent demotion)
-    //  - nobody changes their own role
-    //  - only an admin/superadmin may hand out Manager (a manager may not mint peers)
+    //  - nobody changes their own role (so a super admin can never demote the last one: themselves)
+    //  - a super admin may set any role on anyone, admins included
+    //  - everyone else (assignee:manage): team-member roles only, and never on an admin
+    //    account (that would be a silent demotion); only an admin hands out Manager
+    //  - crossing the admin / team-member line clears the personal permission list, so
+    //    the person gets the whole policy of the new role (lib/user-access.js) instead of
+    //    a list chosen for the old one. Project access and groups stay.
     if (role !== undefined) {
       if (!await requirePermission('assignee:manage')(req, res)) return
-      const next = typeof role === 'string' ? role.trim().toLowerCase() : ''
-      if (!MEMBER_ROLES.includes(next)) return res.status(400).json({ error: `Role must be one of: ${MEMBER_ROLES.map(roleLabel).join(', ')}.` })
       const session = getSessionUser(req) || {}
+      const sessionIsSuper = session.role === 'superadmin' || (session.isAdmin === true && !session.role)
+      const allowed = sessionIsSuper ? ROLES.map(r => r.key) : MEMBER_ROLES
+      const next = typeof role === 'string' ? role.trim().toLowerCase() : ''
+      if (!allowed.includes(next)) return res.status(400).json({ error: `Role must be one of: ${allowed.map(roleLabel).join(', ')}.` })
       if (session.name === name) return res.status(403).json({ error: 'You cannot change your own role.' })
       const existing = await getKv().hgetall(`user:${name}`) || {}
       const known = Object.keys(existing).length > 0 || await getKv().sismember(KEY, name)
       if (!known) return res.status(404).json({ error: 'User not found.' })
-      if (existing.role === 'admin' || existing.role === 'superadmin') {
-        return res.status(403).json({ error: 'Admins are managed under Admin → Admins.' })
-      }
-      const sessionIsAdmin = session.role === 'admin' || session.role === 'superadmin' || (session.isAdmin === true && !session.role)
+      const wasAdmin = existing.role === 'admin' || existing.role === 'superadmin'
+      if (wasAdmin && !sessionIsSuper) return res.status(403).json({ error: 'Only a super admin can change an admin’s role.' })
+      const sessionIsAdmin = session.role === 'admin' || sessionIsSuper
       if (next === 'manager' && !sessionIsAdmin) return res.status(403).json({ error: 'Only an admin can make someone a Manager.' })
+      const from = existing.role || 'dev'
+      if (next === from) return res.json({ ok: true, role: next, clearedLeads: [] })
       // Read live on every request (lib/session-live.js): the change applies at once.
       await getKv().hset(`user:${name}`, { role: next })
+      const isAdmin = next === 'admin' || next === 'superadmin'
+      const resetPerms = wasAdmin !== isAdmin && existing.permissions !== undefined
+      if (resetPerms) await getKv().hdel(`user:${name}`, 'permissions', 'permsV')
       // Links the new role breaks (lib/team.js): cleared, never left pointing up the wrong way.
       const cleared = brokenLinks(await allProfiles(), name, next)
       await Promise.all(cleared.map(n => getKv().hset(`user:${n}`, { lead: '' })))
-      await logAudit(req, 'update_user_role', 'user', { name, from: existing.role || 'dev', to: next, ...(cleared.length ? { clearedLeads: cleared } : {}) })
-      return res.json({ ok: true, role: next, clearedLeads: cleared })
+      await logAudit(req, 'update_user_role', 'user', { name, from, to: next, ...(cleared.length ? { clearedLeads: cleared } : {}), ...(resetPerms ? { permissionsReset: true } : {}) })
+      return res.json({ ok: true, role: next, clearedLeads: cleared, permissionsReset: resetPerms })
     }
 
     // Rename is superadmin-only, and works for any role (user, admin, superadmin).

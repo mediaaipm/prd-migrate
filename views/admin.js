@@ -13,7 +13,7 @@ import HolidaysTab from '../components/HolidaysTab'
 import UserAccessEditor from '../components/UserAccessEditor'
 import SubmitButton from '../components/SubmitButton'
 import { hasPerm } from '../lib/client-permissions'
-import { MEMBER_ROLES, roleLabel, isLeadRole, canLead } from '../lib/roles'
+import { ROLES, MEMBER_ROLES, roleLabel, isLeadRole, canLead } from '../lib/roles'
 import { enqueue, onSync } from '../lib/submit-queue'
 import { useOptimistic } from '../lib/optimistic'
 
@@ -601,16 +601,29 @@ function RoleBadge({ role }) {
 
 const isAdminAccount = u => u.role === 'admin' || u.role === 'superadmin'
 
-// Team role picker for a member row (lib/roles.js). Admin accounts show their badge
-// only — they are managed under Admins. Not queued: the server refuses some changes
-// (own role, Manager from a non-admin) and the picker has to snap back when it does.
-function RolePicker({ user, currentUser, onSaved }) {
+// Role picker for a user row (lib/roles.js). A super admin picks any role for anyone,
+// admins included; everyone else picks team roles for team members, and admin accounts
+// show their badge only. Not queued: the server refuses some changes (own role, Manager
+// from a non-admin) and the picker has to snap back when it does.
+const isAdminRole = r => r === 'admin' || r === 'superadmin'
+
+function RolePicker({ user, currentUser, isSuperAdmin, onSaved }) {
   const [busy, setBusy] = useState(false)
-  const current = isAdminAccount(user) ? null : (MEMBER_ROLES.includes(user.role) ? user.role : 'dev')
-  if (!current || currentUser?.name === user.name) return <RoleBadge role={user.role || 'dev'} />
+  const current = isAdminAccount(user) ? user.role : (MEMBER_ROLES.includes(user.role) ? user.role : 'dev')
+  const choices = isSuperAdmin ? ROLES.map(r => r.key) : MEMBER_ROLES
+  if (currentUser?.name === user.name || !choices.includes(current)) return <RoleBadge role={user.role || 'dev'} />
   async function change(e) {
     const role = e.target.value
     if (role === current) return
+    // Crossing the admin line changes what they can reach, so say so first.
+    if (isAdminRole(role) !== isAdminRole(current) || role === 'superadmin') {
+      const what = role === 'superadmin'
+        ? `${user.name} will be a Super admin: full control, including other admins.`
+        : isAdminRole(role)
+          ? `${user.name} will be an Admin: admin pages, out of any team.`
+          : `${user.name} will no longer be an admin.`
+      if (!confirm(`${what} Their personal permission list resets to the ${roleLabel(role)} defaults; project access and groups stay. Continue?`)) { e.target.value = current; return }
+    }
     setBusy(true)
     const res = await apiFetch(`/api/assignees/${encodeURIComponent(user.name)}`, {
       method: 'PUT',
@@ -626,7 +639,7 @@ function RolePicker({ user, currentUser, onSaved }) {
   }
   return (
     <select className="admin-select" value={current} onChange={change} disabled={busy} aria-label={`Role of ${user.name}`}>
-      {MEMBER_ROLES.map(r => <option key={r} value={r}>{roleLabel(r)}</option>)}
+      {choices.map(r => <option key={r} value={r}>{roleLabel(r)}</option>)}
     </select>
   )
 }
@@ -742,7 +755,7 @@ function UserRow({ user, leads, reports, onRemove, onSaved, isSuperAdmin, curren
             </span>
           </div>
         </div>
-        <div className="admin-user-cell" data-label="Role"><RolePicker user={user} currentUser={currentUser} onSaved={onSaved} /></div>
+        <div className="admin-user-cell" data-label="Role"><RolePicker user={user} currentUser={currentUser} isSuperAdmin={isSuperAdmin} onSaved={onSaved} /></div>
         <div className="admin-user-cell" data-label="Reports to"><LeadPicker user={user} leads={leads} onSaved={onSaved} /></div>
         <div className="admin-user-actions">
           <MoreMenu

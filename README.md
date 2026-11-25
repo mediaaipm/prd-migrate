@@ -272,7 +272,8 @@ task in every project.
 `/admin`, tabbed:
 
 - **Users** — one row per person: role (Manager, Team lead, Dev, QA — only admins make
-  Managers) and **Reports to**. Sign-in, projects & permissions, rename and remove are in
+  Managers; a super admin can pick any role, Admin and Super admin included, for anyone
+  but themselves) and **Reports to**. Sign-in, projects & permissions, rename and remove are in
   the row's ⋯ menu. Filter by role or *Can't sign in*. Each tab has its own URL
   (`/admin?tab=audit`)
 - **Admins** — superadmin only
@@ -333,8 +334,11 @@ Stored on `user:{name}.role` (`lib/roles.js`); a missing role reads as Dev.
 | **Dev** | Works tasks, adds sub-tasks, moves stories through non-gated statuses; sees their own performance |
 | **QA** | As Dev, plus Pass / Send back on the QA board |
 
-Role changes go through `PUT /api/assignees/{name} { role }` (team roles only, never your
-own, Manager only by an admin). Admins and super admins are managed under Admin → Admins.
+Role changes go through `PUT /api/assignees/{name} { role }`. Never your own; Manager only
+by an admin. A super admin may set any role on anyone, admins included; everyone else
+sets team roles on team members only. Moving someone across the admin / team-member line
+clears their personal permission list, so the new role's policy applies (project access
+and groups stay). New admins can also be created under Admin → Admins.
 
 ### Permissions
 
